@@ -1,0 +1,8 @@
+---
+# Extends yamllint's default ruleset; only overrides what conflicts with
+# this repo's existing, consistent conventions.
+extends: default
+
+rules:
+  # No manifest in this repo uses a leading "---" document marker.
+  document-start: disable
