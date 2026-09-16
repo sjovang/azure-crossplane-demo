@@ -10,3 +10,4 @@ kind: Kustomization
 # CRD is ready.
 resources:
   - provider.yaml
+  - provider-network.yaml

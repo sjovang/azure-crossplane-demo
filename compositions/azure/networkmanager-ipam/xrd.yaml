@@ -1,0 +1,70 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xnetworkmanageripams.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XNetworkManagerIpam
+    plural: xnetworkmanageripams
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Logical name for the Network Manager and IPAM pool.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                resourceGroupRef:
+                  type: object
+                  description: Reference to the resource group hosting the Network Manager.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XResourceGroup.
+                  required:
+                    - name
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the Network Manager.
+                addressPrefixes:
+                  type: array
+                  items:
+                    type: string
+                  description: CIDR blocks for the root IPAM pool.
+                tags:
+                  type: object
+                  nullable: true
+                  default: null
+                  additionalProperties:
+                    type: string
+                  description: Optional tags to apply to the resources.
+              required:
+                - name
+                - resourceGroupRef
+                - addressPrefixes
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the Network Manager.
+                networkManagerId:
+                  type: string
+                  description: Azure resource ID of the Network Manager.
+                ipamPoolId:
+                  type: string
+                  description: Azure resource ID of the root IPAM pool.
+          required:
+            - spec
