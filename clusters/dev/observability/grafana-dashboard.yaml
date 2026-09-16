@@ -1,0 +1,241 @@
+# yamllint disable rule:line-length
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+data:
+  cluster-overview.json: |
+    {
+      "uid": "kiac-cluster-overview",
+      "title": "Cluster Overview",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Nodes",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "count(kube_node_info)"}]
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Running pods",
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "sum(kube_pod_status_phase{phase=\"Running\"})"}]
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Pods not running",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "sum(kube_pod_status_phase{phase!=\"Running\",phase!=\"Succeeded\"})"}]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Container restarts (1h)",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "sum(increase(kube_pod_container_status_restarts_total[1h]))"}]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Node CPU usage",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+          "targets": [{"refId": "A", "expr": "1 - avg by (node) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "{{node}}"}]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Node memory usage",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+          "targets": [{"refId": "A", "expr": "1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes", "legendFormat": "{{node}}"}]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Pods by phase",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "sum by (phase) (kube_pod_status_phase)", "legendFormat": "{{phase}}"}]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Container restarts by pod",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[10m])) > 0", "legendFormat": "{{namespace}}/{{pod}}"}]
+        }
+      ]
+    }
+  nodes.json: |
+    {
+      "uid": "kiac-nodes",
+      "title": "Nodes",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "CPU usage",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+          "targets": [{"refId": "A", "expr": "1 - avg by (node) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "{{node}}"}]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Memory used",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "bytes", "min": 0}},
+          "targets": [{"refId": "A", "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "legendFormat": "{{node}}"}]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Load average (1m)",
+          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "node_load1", "legendFormat": "{{node}}"}]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Filesystem usage",
+          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+          "targets": [{"refId": "A", "expr": "max by (node) (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs\"})", "legendFormat": "{{node}}"}]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Network throughput",
+          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "Bps", "min": 0}},
+          "targets": [
+            {"refId": "A", "expr": "sum by (node) (rate(node_network_receive_bytes_total{device!=\"lo\"}[5m]))", "legendFormat": "{{node}} rx"},
+            {"refId": "B", "expr": "sum by (node) (rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m]))", "legendFormat": "{{node}} tx"}
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Pods per node",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "expr": "sum by (node) (kube_pod_info)", "legendFormat": "{{node}}"}]
+        }
+      ]
+    }
+  crossplane-resources.json: |
+    {
+      "uid": "crossplane-resources",
+      "title": "Crossplane Resources",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Composite resources",
+          "gridPos": {
+            "h": 4, "w": 8, "x": 0, "y": 0
+          },
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{
+            "refId": "A",
+            "expr": "count(kube_customresource_xresourcegroup_info)"
+          }]
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Composite resources not synced",
+          "gridPos": {
+            "h": 4, "w": 8, "x": 8, "y": 0
+          },
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{
+            "refId": "A",
+            "expr": "sum(kube_customresource_xresourcegroup_condition{type=\"Synced\"} == bool 0)"
+          }]
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Composed Azure resources",
+          "gridPos": {
+            "h": 4, "w": 8, "x": 16, "y": 0
+          },
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{
+            "refId": "A",
+            "expr": "count(kube_customresource_resourcegroup_generation)"
+          }]
+        },
+        {
+          "id": 4,
+          "type": "table",
+          "title": "Composite resource conditions",
+          "gridPos": {
+            "h": 8, "w": 12, "x": 0, "y": 4
+          },
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{
+            "refId": "A",
+            "expr": "kube_customresource_xresourcegroup_condition",
+            "format": "table", "instant": true
+          }]
+        },
+        {
+          "id": 5,
+          "type": "table",
+          "title": "Composed Azure resource conditions",
+          "gridPos": {
+            "h": 8, "w": 12, "x": 12, "y": 4
+          },
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{
+            "refId": "A",
+            "expr": "kube_customresource_resourcegroup_condition",
+            "format": "table", "instant": true
+          }]
+        },
+        {
+          "id": 6,
+          "type": "table",
+          "title": "Composition resource references",
+          "gridPos": {
+            "h": 8, "w": 24, "x": 0, "y": 12
+          },
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{
+            "refId": "A",
+            "expr": "kube_customresource_xresourcegroup_resource_ref",
+            "format": "table", "instant": true
+          }]
+        }
+      ]
+    }

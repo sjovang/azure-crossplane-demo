@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Deliberately not referenced from clusters/dev/kustomization.yaml or
+# clusters/dev/crossplane/kustomization.yaml: these Function packages' CRD
+# (functions.pkg.crossplane.io) only exists once Crossplane core itself
+# (installed from ../core) has been installed, so
+# they must only ever be applied by the dependent crossplane-functions
+# Kustomization (../flux-kustomizations/functions-kustomization.yaml),
+# which targets this directory directly and retries independently until
+# the CRD is ready.
+resources:
+  - patch-and-transform.yaml
+  - go-templating.yaml
+  - kro.yaml

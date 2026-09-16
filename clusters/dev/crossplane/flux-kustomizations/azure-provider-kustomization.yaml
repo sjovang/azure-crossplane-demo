@@ -1,0 +1,22 @@
+# A separate Kustomization for the Provider package: its CRD
+# (providers.pkg.crossplane.io) only exists once Crossplane core itself
+# (installed from ../core) has finished installing, so it can't
+# be applied in the same batch as the HelmRelease. dependsOn + its own retry
+# loop lets it converge once ready, without blocking everything else in
+# flux-system.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: crossplane-azure-provider
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 2m
+  prune: true
+  path: ./clusters/dev/crossplane/providers/azure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: flux-system

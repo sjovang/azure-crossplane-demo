@@ -1,0 +1,21 @@
+# A separate Kustomization for the ProviderConfig: its CRD only exists once
+# the Azure Provider package (installed by crossplane-azure-provider) has
+# finished pulling and establishing itself, so it can't be applied in the
+# same batch as the Provider. dependsOn + its own retry loop lets it
+# converge once ready, without blocking everything else in flux-system.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: crossplane-azure-config
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 2m
+  prune: true
+  path: ./clusters/dev/crossplane/provider-configs/azure
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: crossplane-azure-provider

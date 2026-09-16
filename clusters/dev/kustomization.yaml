@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Explicitly scoped (rather than relying on Flux's implicit recursive
+# directory scan) so the root flux-system Kustomization never picks up
+# crossplane/provider-configs/azure/provider-config.yaml. That manifest's CRD
+# only exists once the Azure Provider package has established itself, so it
+# must stay owned solely by the dependent crossplane-azure-config
+# Kustomization in crossplane/flux-kustomizations/, never applied in this
+# batch.
+resources:
+  - flux-system
+  - crossplane
+  - observability-kustomization.yaml
+  - teams-kustomization.yaml

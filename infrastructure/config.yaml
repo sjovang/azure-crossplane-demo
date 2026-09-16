@@ -1,0 +1,27 @@
+# kiac cluster config, used with: kiac create cluster --config config.yaml
+#
+# Local Kubernetes cluster (kiac - Kubernetes in Apple Containers) for
+# macOS with 3 worker nodes, no GPU nodes, and the observability and
+# gateway addons enabled.
+
+name: dev            # cluster name: lowercase letters, digits, dashes
+distro: kubeadm      # kubeadm (default) or k3s
+workers: 3           # 3 worker node VMs, no GPU workers needed
+k8sVersion: "1.37"   # kubeadm default; also supports 1.32-1.36
+cni: kindnet         # pod network: kindnet, or none to bring your own
+ipFamily: ipv4       # single-stack IPv4
+
+cpus: "4"            # vCPUs per node VM (quoted so YAML keeps it a string)
+memory: 4G           # memory per worker node VM
+cpMemory: 4G          # memory for the control-plane VM
+wait: 5m             # timeout for nodes to become Ready
+
+# Addons are positive toggles; omitted keys keep the CLI defaults.
+addons:
+  metrics: true          # metrics-server (kubectl top nodes/pods)
+  storage: true          # local-path default StorageClass
+  loadBalancer: true     # kiac-lb, Services of type LoadBalancer,
+                          # required by observability and gateway
+  edgeProxy: true        # node-local TCP proxy for large external uploads
+  observability: true    # Prometheus + Grafana + node-exporter
+  gateway: true          # Gateway API CRDs + Traefik

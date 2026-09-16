@@ -129,7 +129,7 @@ step order is deliberate:
   `flux`, `kubectl`, `az`, `jq`) up front and fails fast → `kiac create
   cluster --config infrastructure/config.yaml` → idempotently pre-creates the
   `crossplane-system` namespace → creates (or reuses) the
-  `crossplane-azure-crossplane-demo` Azure service principal (override the name via
+  `azure-crossplane-demo` Azure service principal (override the name via
   `SP_NAME`) and applies it as the `azure-secret` Secret → **then**
   `flux bootstrap`. Azure credentials must exist *before* Flux is
   bootstrapped so the `ProviderConfig` above has working credentials
@@ -153,7 +153,7 @@ step order is deliberate:
 - Always use conventional commits. In both commits and pull request titles.
 - Text must be brief and to the point. Avoid overly verbose prose.
 - Fixed, reused names: kiac cluster `dev`, service principal
-  `crossplane-azure-crossplane-demo` (overridable via `SP_NAME`), secret
+  `azure-crossplane-demo` (overridable via `SP_NAME`), secret
   `azure-secret`/key `creds`. Changing one requires updating every reference
   (scripts, `provider-config.yaml`, README).
 - `bootstrap.sh`/`teardown.sh` use `set -euo pipefail` and idempotent

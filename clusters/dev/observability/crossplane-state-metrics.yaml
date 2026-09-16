@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crossplane-state-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crossplane-state-metrics
+  template:
+    metadata:
+      labels:
+        app: crossplane-state-metrics
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: crossplane-state-metrics
+      containers:
+        - name: kube-state-metrics
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0
+          args:
+            - --custom-resource-state-config-file=/etc/kube-state-metrics/custom-resource-state.yaml
+            - --custom-resource-state-only=true
+          ports:
+            - name: metrics
+              containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /etc/kube-state-metrics
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: crossplane-state-metrics-config

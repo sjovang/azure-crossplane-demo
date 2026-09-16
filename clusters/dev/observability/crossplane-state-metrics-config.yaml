@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crossplane-state-metrics-config
+data:
+  custom-resource-state.yaml: |
+    kind: CustomResourceStateMetrics
+    spec:
+      resources:
+        - groupVersionKind:
+            group: azure.platform.example.org
+            version: v1alpha1
+            kind: XResourceGroup
+          labelsFromPath:
+            name: [metadata, name]
+            namespace: [metadata, namespace]
+          metrics:
+            - name: xresourcegroup_info
+              help: Information about an XResourceGroup.
+              each:
+                type: Info
+                info:
+                  labelsFromPath:
+                    composition: [spec, crossplane, compositionRef, name]
+            - name: xresourcegroup_generation
+              help: The metadata generation of an XResourceGroup.
+              each:
+                type: Gauge
+                gauge:
+                  path: [metadata, generation]
+            - name: xresourcegroup_condition
+              help: Status condition of an XResourceGroup.
+              each:
+                type: Gauge
+                gauge:
+                  path: [status, conditions]
+                  labelsFromPath:
+                    type: [type]
+                  valueFrom: [status]
+
+
+            - name: xresourcegroup_resource_ref_info
+              help: Composed resource reference of an XResourceGroup.
+              each:
+                type: Info
+                info:
+                  path: [spec, crossplane, resourceRefs]
+                  labelsFromPath:
+                    api_version: [apiVersion]
+                    kind: [kind]
+                    resource_name: [name]
+        - groupVersionKind:
+            group: azure.m.upbound.io
+            version: v1beta1
+            kind: ResourceGroup
+          labelsFromPath:
+            name: [metadata, name]
+            namespace: [metadata, namespace]
+          metrics:
+            - name: resourcegroup_generation
+              help: The metadata generation of an Azure ResourceGroup.
+              each:
+                type: Gauge
+                gauge:
+                  path: [metadata, generation]
+            - name: resourcegroup_condition
+              help: Status condition of an Azure ResourceGroup.
+              each:
+                type: Gauge
+                gauge:
+                  path: [status, conditions]
+                  labelsFromPath:
+                    type: [type]
+                  valueFrom: [status]

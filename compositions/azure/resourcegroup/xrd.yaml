@@ -1,0 +1,54 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xresourcegroups.azure.platform.example.org
+spec:
+  # Namespaced XR style: each team's resource group is isolated in its own
+  # Kubernetes namespace and can be managed independently.
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XResourceGroup
+    plural: xresourcegroups
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the Azure resource group.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                location:
+                  type: string
+                  default: swedencentral
+                  description: >-
+                    Azure region for the resource group.
+                tags:
+                  type: object
+                  nullable: true
+                  default: null
+                  additionalProperties:
+                    type: string
+                  description: Optional tags to apply to the resource group.
+              required:
+                - name
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the resource group.
+                name:
+                  type: string
+                  description: Name of the provisioned resource group.
+          required:
+            - spec
