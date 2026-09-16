@@ -1,6 +1,12 @@
-# azure-crossplane-demo
+# Azure Crossplane Demo
 
 Demo environment for managing Azure resources with Crossplane
+
+> [!CAUTION]
+> This repository is for demonstrations and workshops only. Do not use it in
+> production. It grants broad Azure permissions, stores credentials locally,
+> and does not provide the security, reliability, or operational hardening
+> required for a production environment.
 
 Crossplane is installed through Flux from [`clusters/dev/crossplane/`](clusters/dev/crossplane/):
 
@@ -24,7 +30,14 @@ flowchart LR
 - [`infrastructure/bootstrap.sh`](infrastructure/bootstrap.sh) creates the Kubernetes `Secret` from a locally generated service principal before bootstrapping Flux.
 - Full convergence takes a minute or two after bootstrap. Watch it with `flux get kustomizations -A`.
 
-Crossplane `CompositeResourceDefinition`s and `Composition`s live in the shared, top-level [`compositions/`](compositions/) directory, outside `clusters/dev/`. They are grouped first by cloud provider and then by composition, allowing multiple clusters to use the same definitions. [`compositions/azure/resourcegroup/`](compositions/azure/resourcegroup/) is a working example: an `XResourceGroup` in the `azure.platform.example.org` API group composing an Azure `ResourceGroup`.
+> [!NOTE]
+> Crossplane `CompositeResourceDefinition`s and `Composition`s live in the
+> shared, top-level [`compositions/`](compositions/) directory, outside
+> `clusters/dev/`. They are grouped first by cloud provider and then by
+> composition, allowing multiple clusters to use the same definitions.
+> [`compositions/azure/resourcegroup/`](compositions/azure/resourcegroup/) is a
+> working example: an `XResourceGroup` in the `azure.platform.example.org` API
+> group composing an Azure `ResourceGroup`.
 
 ## Configuring the local Kubernetes cluster (kiac) + Azure access (for Crossplane)
 
@@ -87,7 +100,10 @@ Crossplane `CompositeResourceDefinition`s and `Composition`s live in the shared,
    ./infrastructure/bootstrap.sh
    ```
 
-   The script creates or reuses the Azure service principal, applies its credentials as the `azure-secret` Kubernetes `Secret`, and then bootstraps Flux. `GITHUB_TOKEN` is required because Flux configures Git access through the GitHub API.
+   The script creates or reuses the Azure service principal, applies its
+   credentials as the `azure-secret` Kubernetes `Secret`, and then bootstraps
+   Flux. `GITHUB_TOKEN` is required because Flux configures Git access through
+   the GitHub API.
 
    Optional environment variables:
 
@@ -100,7 +116,8 @@ Crossplane `CompositeResourceDefinition`s and `Composition`s live in the shared,
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
    | `SP_NAME` | `azure-crossplane-demo` | Azure service principal name |
 
-   Credentials are stored in the gitignored `infrastructure/azure-credentials.json` and reused on later runs.
+   Credentials are stored in the gitignored
+   `infrastructure/azure-credentials.json` and reused on later runs.
 
 8. Allow a minute or two for Flux to converge, then verify the cluster and Crossplane:
 
@@ -128,7 +145,7 @@ Team resources live in the shared, top-level [`teams/`](teams/) directory, with 
 
 ## Troubleshooting
 
-For a team resource that does not appear in Azure, check the deployment chain from Flux to Crossplane:
+For a resource that does not appear in Azure, check the deployment chain from Flux to Crossplane:
 
 1. Check Flux reconciliation:
 
