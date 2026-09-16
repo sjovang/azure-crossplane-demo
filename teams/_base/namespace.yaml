@@ -1,0 +1,9 @@
+# Shared template, not a team itself: never listed directly in
+# teams/kustomization.yaml or applied on its own. Each team's
+# kustomization.yaml can reference this folder and set its own
+# `namespace: <team>` field, which makes Kustomize rename this Namespace
+# object to match without requiring a full Namespace manifest per team.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: placeholder
