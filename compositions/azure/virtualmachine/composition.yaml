@@ -78,7 +78,7 @@ spec:
                   adminUsername: ${schema.spec.adminUsername}
                   adminSshKey:
                     - username: ${schema.spec.adminUsername}
-                      publicKey: ${string(base64.decode(sshPublicKey.data[schema.spec.sshPublicKeySecretRef.key])).trim()}
+                      publicKey: ${string(sshPublicKey.data[schema.spec.sshPublicKeySecretRef.key]).trim()}
                   networkInterfaceIds:
                     - ${networkInterface.status.atProvider.id}
                   osDisk:
