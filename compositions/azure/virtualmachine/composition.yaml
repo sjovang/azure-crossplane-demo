@@ -82,13 +82,13 @@ spec:
                   networkInterfaceIds:
                     - ${networkInterface.status.atProvider.id}
                   osDisk:
-                    - caching: ReadWrite
-                      storageAccountType: Standard_LRS
+                    caching: ReadWrite
+                    storageAccountType: Standard_LRS
                   sourceImageReference:
-                    - publisher: almalinux
-                      offer: almalinux-x86_64
-                      sku: 9-gen2
-                      version: latest
+                    publisher: almalinux
+                    offer: almalinux-x86_64
+                    sku: 9-gen2
+                    version: latest
           - id: windowsVm
             includeWhen:
               - ${schema.spec.os == "windows"}
@@ -113,10 +113,10 @@ spec:
                   networkInterfaceIds:
                     - ${networkInterface.status.atProvider.id}
                   osDisk:
-                    - caching: ReadWrite
-                      storageAccountType: Standard_LRS
+                    caching: ReadWrite
+                    storageAccountType: Standard_LRS
                   sourceImageReference:
-                    - publisher: MicrosoftWindowsServer
-                      offer: WindowsServer
-                      sku: 2025-datacenter-azure-edition
-                      version: latest
+                    publisher: MicrosoftWindowsServer
+                    offer: WindowsServer
+                    sku: 2025-datacenter-azure-edition
+                    version: latest
