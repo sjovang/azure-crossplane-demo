@@ -26,13 +26,15 @@ spec:
             - name: http
               containerPort: 7007
           env:
-            # Base config targets `kubectl port-forward svc/backstage
-            # 7007:7007`: the production build serves the built frontend
-            # from the backend, so both point at the same forwarded port.
+            # Backstage is reached through the kiac gateway addon's Traefik
+            # Gateway (see infra/httproute.yaml) at the hostname below,
+            # rather than via kubectl port-forward -- both the frontend and
+            # backend base URLs point at it since the production build
+            # serves the built frontend from the backend.
             - name: APP_BASE_URL
-              value: http://localhost:7007
+              value: http://backstage.local
             - name: BACKEND_BASE_URL
-              value: http://localhost:7007
+              value: http://backstage.local
             - name: AUTH_MICROSOFT_CLIENT_ID
               valueFrom:
                 secretKeyRef:

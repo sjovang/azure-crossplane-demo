@@ -1,0 +1,21 @@
+---
+# Attaches Backstage to the kiac gateway addon's pre-created Gateway
+# (GatewayClass traefik, Gateway kiac in namespace kiac-gateway -- see
+# https://github.com/saiyam1814/kiac/blob/main/examples/gateway-api-lab.md).
+# Requires the cluster to have been created with the gateway addon enabled
+# (infrastructure/config.yaml -> addons.gateway: true).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backstage
+  namespace: backstage
+spec:
+  parentRefs:
+    - name: kiac
+      namespace: kiac-gateway
+  hostnames:
+    - backstage.local
+  rules:
+    - backendRefs:
+        - name: backstage
+          port: 7007

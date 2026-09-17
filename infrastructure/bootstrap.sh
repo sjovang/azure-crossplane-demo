@@ -17,8 +17,10 @@ sp_name="${SP_NAME:-azure-crossplane-demo}"
 azure_resources_sp_name="${sp_name}-azure-resources"
 backstage_app_name="${sp_name}-backstage"
 # Fixed because it must match the redirect URI registered on the Backstage
-# app; this base config only supports the kubectl port-forward flow.
-backstage_redirect_uri="http://localhost:7007/api/auth/microsoft/handler/frame"
+# app; this base config targets the kiac gateway addon's Traefik Gateway at
+# http://backstage.local (see clusters/dev/apps/backstage/infra/httproute.yaml),
+# not kubectl port-forward.
+backstage_redirect_uri="http://backstage.local/api/auth/microsoft/handler/frame"
 
 # Defaults to your own GitHub user (the fork owner), resolved via the
 # authenticated gh CLI. Override if you pushed the fork elsewhere.
@@ -200,3 +202,9 @@ flux bootstrap github \
   --private="$FLUX_PRIVATE" \
   --personal \
   --token-auth
+
+echo "==> Done"
+echo "Once Flux has converged and the Backstage image has been built/pushed" \
+     "(see clusters/dev/apps/backstage/README.md), add backstage.local to" \
+     "/etc/hosts pointing at the Traefik LoadBalancer IP:"
+echo '  echo "$(kubectl get svc traefik -n kiac-gateway -o jsonpath="{.status.loadBalancer.ingress[0].ip}") backstage.local" | sudo tee -a /etc/hosts'

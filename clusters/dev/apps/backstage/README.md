@@ -2,8 +2,9 @@
 
 > [!NOTE]
 > This is a base configuration only: Microsoft Entra ID (Azure AD) OIDC
-> sign-in, no catalog integration with Crossplane resources yet, and no
-> Ingress/Traefik exposure — access is via `kubectl port-forward`.
+> sign-in, no catalog integration with Crossplane resources yet. Backstage
+> is exposed at `http://backstage.local` through the kiac cluster's Gateway
+> API addon (Traefik), not `kubectl port-forward`.
 
 Architecture:
 
@@ -14,24 +15,36 @@ Architecture:
     `app-config.yaml`/`app-config.production.yaml`, and its `Dockerfile`.
     This is the only application source code in the repo — everything else
     here is declarative manifests.
-  - [`infra/`](infra/) — the Kubernetes `Namespace`, `Deployment`, and
-    `Service` for Backstage, applied by the dependent `apps` Flux
-    Kustomization (`clusters/dev/apps-kustomization.yaml`,
+  - [`infra/`](infra/) — the Kubernetes `Namespace`, `Deployment`,
+    `Service`, and `HTTPRoute` for Backstage, applied by the dependent
+    `apps` Flux Kustomization (`clusters/dev/apps-kustomization.yaml`,
     `dependsOn: flux-system`, `path: ./clusters/dev/apps/backstage/infra`).
     Only `infra/` is ever applied by Flux — `app/` is not Kubernetes YAML.
+- [`infra/httproute.yaml`](infra/httproute.yaml) attaches Backstage to the
+  `kiac` `Gateway` (namespace `kiac-gateway`, `GatewayClass traefik`) that
+  [kiac's gateway addon](https://github.com/saiyam1814/kiac/blob/main/examples/gateway-api-lab.md)
+  pre-creates on cluster creation
+  (`infrastructure/config.yaml`'s `addons.gateway: true`), at the hostname
+  `backstage.local`. No Ingress/`type: LoadBalancer` Service is created
+  directly for Backstage; Traefik's own `LoadBalancer` Service in
+  `kiac-gateway` is the single entry point shared by every `HTTPRoute` on
+  the cluster.
 
 ## Prerequisites
 
 - Node.js 20 or 22
 - A container registry you can push to (e.g. GHCR, Docker Hub, ACR)
+- A kiac cluster created with the gateway addon enabled
+  (`infrastructure/config.yaml`'s `addons.gateway: true`, already the repo
+  default)
 - Run [`infrastructure/bootstrap.sh`](../../../../infrastructure/bootstrap.sh)
   first (see the top-level [README.md](../../../../README.md)) — it already
   creates the `<SP_NAME>-backstage` Entra ID app registration (redirect URI
-  `http://localhost:7007/api/auth/microsoft/handler/frame`, the least-privilege
-  Microsoft Graph permissions Backstage needs, and admin consent) and applies
-  its credentials as the `backstage-entra-secret` Kubernetes `Secret`. The
-  top-level README's prerequisites table lists the exact Azure/Entra ID roles
-  required to run it.
+  `http://backstage.local/api/auth/microsoft/handler/frame`, the
+  least-privilege Microsoft Graph permissions Backstage needs, and admin
+  consent) and applies its credentials as the `backstage-entra-secret`
+  Kubernetes `Secret`. The top-level README's prerequisites table lists the
+  exact Azure/Entra ID roles required to run it.
 
 ## Steps
 
@@ -54,13 +67,19 @@ Architecture:
    ```sh
    flux reconcile kustomization apps -n flux-system --with-source
    flux get kustomizations -A
+   kubectl get httproute backstage -n backstage -o wide
    ```
 
-3. **Port-forward and sign in**:
+   A healthy `HTTPRoute` shows an attached `Gateway` and
+   `Accepted=True`/`ResolvedRefs=True` conditions in
+   `kubectl describe httproute backstage -n backstage`.
+
+3. **Point `backstage.local` at the Traefik Gateway** (`bootstrap.sh`
+   prints this command too):
 
    ```sh
-   kubectl port-forward -n backstage svc/backstage 7007:7007
+   echo "$(kubectl get svc traefik -n kiac-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}') backstage.local" | sudo tee -a /etc/hosts
    ```
 
-   Open `http://localhost:7007` and confirm you're redirected to Entra ID
-   and back after signing in.
+4. **Sign in**: open `http://backstage.local` and confirm you're redirected
+   to Entra ID and back after signing in.
