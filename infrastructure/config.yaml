@@ -1,3 +1,4 @@
+---
 # kiac cluster config, used with: kiac create cluster --config config.yaml
 #
 # Local Kubernetes cluster (kiac - Kubernetes in Apple Containers) for
@@ -20,8 +21,7 @@ wait: 5m             # timeout for nodes to become Ready
 addons:
   metrics: true          # metrics-server (kubectl top nodes/pods)
   storage: true          # local-path default StorageClass
-  loadBalancer: true     # kiac-lb, Services of type LoadBalancer,
-                          # required by observability and gateway
+  loadBalancer: true     # kiac-lb and Services of type LoadBalancer
   edgeProxy: true        # node-local TCP proxy for large external uploads
   observability: true    # Prometheus + Grafana + node-exporter
   gateway: true          # Gateway API CRDs + Traefik

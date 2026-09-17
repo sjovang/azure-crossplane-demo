@@ -1,3 +1,4 @@
+---
 # A separate Kustomization for shared Compositions/XRDs (compositions/,
 # outside clusters/dev/ so other clusters can point at the same path).
 # CompositeResourceDefinition/Composition are core Crossplane CRDs

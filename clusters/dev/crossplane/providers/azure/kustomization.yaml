@@ -1,3 +1,4 @@
+---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # Deliberately not referenced from clusters/dev/kustomization.yaml or
@@ -10,3 +11,5 @@ kind: Kustomization
 # CRD is ready.
 resources:
   - provider.yaml
+  - provider-network.yaml
+  - provider-compute.yaml

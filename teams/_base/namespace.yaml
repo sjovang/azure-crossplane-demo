@@ -1,3 +1,4 @@
+---
 # Shared template, not a team itself: never listed directly in
 # teams/kustomization.yaml or applied on its own. Each team's
 # kustomization.yaml can reference this folder and set its own

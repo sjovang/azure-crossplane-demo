@@ -1,3 +1,4 @@
+---
 # A separate Kustomization for the ProviderConfig: its CRD only exists once
 # the Azure Provider package (installed by crossplane-azure-provider) has
 # finished pulling and establishing itself, so it can't be applied in the

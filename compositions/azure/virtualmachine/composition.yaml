@@ -1,0 +1,131 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: virtualmachines.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XVirtualMachine
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          # linuxVm/windowsVm are mutually exclusive (includeWhen); the excluded
+          # one resolves to an empty value, so concatenation picks the real one.
+          # "schema" isn't available in this status block, only in resources[].
+          id: '${linuxVm.status.atProvider.id + windowsVm.status.atProvider.id}'
+          vmSize: '${linuxVm.spec.forProvider.size + windowsVm.spec.forProvider.size}'
+          privateIp: ${networkInterface.status.atProvider.privateIpAddress}
+          networkInterfaceId: ${networkInterface.status.atProvider.id}
+        resources:
+          # The subnet to attach the NIC to is read off the referenced
+          # XVirtualNetwork's status, so teams never handle Azure resource IDs.
+          - id: virtualNetwork
+            externalRef:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XVirtualNetwork
+              metadata:
+                name: ${schema.spec.virtualNetworkRef.name}
+          # The Linux admin SSH public key is read from a Secret in the XR's
+          # namespace; Secret data is base64 encoded, hence the decode.
+          - id: sshPublicKey
+            includeWhen:
+              - ${schema.spec.os == "linux"}
+            externalRef:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ${schema.spec.sshPublicKeySecretRef.name}
+          - id: networkInterface
+            template:
+              apiVersion: network.azure.m.upbound.io/v1beta1
+              kind: NetworkInterface
+              metadata:
+                annotations:
+                  crossplane.io/external-name: nic-${schema.spec.name}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  location: ${schema.spec.location}
+                  resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
+                  ipConfiguration:
+                    - name: internal
+                      privateIpAddressAllocation: Dynamic
+                      subnetId: ${virtualNetwork.status.subnets.filter(s, s.name == schema.spec.virtualNetworkRef.subnet)[0].id}
+          - id: linuxVm
+            includeWhen:
+              - ${schema.spec.os == "linux"}
+            template:
+              apiVersion: compute.azure.m.upbound.io/v1beta1
+              kind: LinuxVirtualMachine
+              metadata:
+                annotations:
+                  crossplane.io/external-name: vm-${schema.spec.name}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  location: ${schema.spec.location}
+                  resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
+                  # anchored so windowsVm reuses the same tshirt-size mapping
+                  size: &vmSize '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
+                  adminUsername: ${schema.spec.adminUsername}
+                  adminSshKey:
+                    - username: ${schema.spec.adminUsername}
+                      publicKey: ${string(sshPublicKey.data[schema.spec.sshPublicKeySecretRef.key]).trim()}
+                  networkInterfaceIds:
+                    - ${networkInterface.status.atProvider.id}
+                  osDisk:
+                    caching: ReadWrite
+                    storageAccountType: Standard_LRS
+                  sourceImageReference:
+                    publisher: almalinux
+                    offer: almalinux-x86_64
+                    sku: 9-gen2
+                    version: latest
+          - id: windowsVm
+            includeWhen:
+              - ${schema.spec.os == "windows"}
+            template:
+              apiVersion: compute.azure.m.upbound.io/v1beta1
+              kind: WindowsVirtualMachine
+              metadata:
+                annotations:
+                  crossplane.io/external-name: vm-${schema.spec.name}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  location: ${schema.spec.location}
+                  resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
+                  size: *vmSize
+                  adminUsername: ${schema.spec.adminUsername}
+                  adminPasswordSecretRef:
+                    name: ${schema.spec.adminPasswordSecretRef.name}
+                    key: ${schema.spec.adminPasswordSecretRef.key}
+                  networkInterfaceIds:
+                    - ${networkInterface.status.atProvider.id}
+                  osDisk:
+                    caching: ReadWrite
+                    storageAccountType: Standard_LRS
+                  sourceImageReference:
+                    publisher: MicrosoftWindowsServer
+                    offer: WindowsServer
+                    sku: 2025-datacenter-azure-edition
+                    version: latest
+                  patchMode: AutomaticByPlatform
+    # function-kro doesn't set composed-resource readiness itself, unlike patch-and-transform.
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

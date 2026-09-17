@@ -1,0 +1,165 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xvirtualnetworks.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XVirtualNetwork
+    plural: xvirtualnetworks
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the Azure Virtual Network.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                resourceGroupRef:
+                  type: object
+                  description: >-
+                    Reference to the resource group hosting the Virtual Network.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XResourceGroup.
+                  required:
+                    - name
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the Virtual Network.
+                ipamAllocation:
+                  type: object
+                  description: >-
+                    Allocate address space dynamically from Azure Network
+                    Manager IPAM.
+                  properties:
+                    numberOfAllocatedIpAddresses:
+                      type: integer
+                      default: 256
+                      description: >-
+                        Number of IP addresses to allocate from the IPAM pool
+                        (e.g. 256 for a /24).
+                    ipamPoolId:
+                      type: string
+                      description: Resource ID of the IPAM pool.
+                  required:
+                    - numberOfAllocatedIpAddresses
+                subnets:
+                  type: array
+                  description: >-
+                    Child subnets to create with this virtual network.
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      numberOfAllocatedIpAddresses:
+                        type: integer
+                        description: Number of IP addresses to allocate.
+                        minimum: 1
+                      securityRules:
+                        type: array
+                        description: Optional Network Security Group rules.
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            priority:
+                              type: integer
+                              minimum: 100
+                              maximum: 4096
+                            direction:
+                              type: string
+                              enum:
+                                - Inbound
+                                - Outbound
+                              default: Inbound
+                            access:
+                              type: string
+                              enum:
+                                - Allow
+                                - Deny
+                              default: Allow
+                            protocol:
+                              type: string
+                              enum:
+                                - Tcp
+                                - Udp
+                                - Icmp
+                                - "*"
+                              default: Tcp
+                            sourcePortRange:
+                              type: string
+                              default: "*"
+                            destinationPortRange:
+                              type: string
+                              default: "*"
+                            sourceAddressPrefix:
+                              type: string
+                              default: "*"
+                            destinationAddressPrefix:
+                              type: string
+                              default: "*"
+                          required:
+                            - name
+                            - priority
+                    required:
+                      - name
+                      - numberOfAllocatedIpAddresses
+                tags:
+                  type: object
+                  nullable: true
+                  default: null
+                  additionalProperties:
+                    type: string
+                  description: Optional tags to apply to the Virtual Network.
+              required:
+                - name
+                - resourceGroupRef
+                - ipamAllocation
+                - subnets
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the Virtual Network.
+                name:
+                  type: string
+                  description: Name of the provisioned Virtual Network.
+                addressSpace:
+                  type: array
+                  items:
+                    type: string
+                  description: >-
+                    Allocated address prefixes for the Virtual Network.
+                subnets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      id:
+                        type: string
+                        description: Azure resource ID of the subnet.
+                      networkSecurityGroupId:
+                        type: string
+                        description: Azure resource ID of the subnet NSG.
+                  description: Provisioned subnet and NSG resource IDs.
+          required:
+            - spec

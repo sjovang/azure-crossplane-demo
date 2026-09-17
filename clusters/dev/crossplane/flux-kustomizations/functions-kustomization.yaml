@@ -1,3 +1,4 @@
+---
 # A separate Kustomization for Function packages: their CRD
 # (functions.pkg.crossplane.io) only exists once Crossplane core itself
 # (installed by the HelmRelease in ../core) has finished installing, so they

@@ -21,6 +21,19 @@ endings, executable shell scripts with shebangs, and pretty-printed JSON.
 Run the full `pre-commit` suite (or at least the relevant hook) before
 considering a change to manifests or scripts done.
 
+All YAML files must begin with the YAML document marker `---` on the first
+line, including single-document files and Kustomize manifests.
+
+Composition pipeline resource names must use camelCase because
+`function-kro` does not support kebab-case resource names. Use names such as
+`resourceGroup`, `networkManager`, `virtualNetwork`, `ipamPool`,
+`networkSecurityGroup`, and `subnetNsgAssociation` under
+`spec.pipeline[].input.resources[].name`.
+
+Every composite resource must expose the provisioned Azure resource ID as
+`status.id`. Populate it from the composed managed resource's
+`status.atProvider.id`; additional resource-specific status fields are allowed.
+
 ## Architecture: Flux reconciliation chain
 
 `clusters/dev/` is the single path Flux watches (see
@@ -85,9 +98,25 @@ requires following the chain across several files:
 
 Crossplane v2 (`v2.4.0` here) requires `mode: Pipeline` Compositions (no
 plain `resources:` list) and a `CompositeResourceDefinition`'s `spec.scope`
-`apiextensions.crossplane.io/v2`) must match the scope of whatever it
-  composes: a `Cluster`-scoped XRD to compose `Cluster`-scoped managed
-  resources, or `Namespaced` only when every composed resource is namespaced.
+(`apiextensions.crossplane.io/v2`) must match the scope of whatever it
+composes: a `Cluster`-scoped XRD to compose `Cluster`-scoped managed
+resources, or `Namespaced` only when every composed resource is namespaced.
+
+**Namespace scope is the repository default.** Keep XRDs and composed
+resources namespaced unless the provider schema explicitly requires cluster
+scope. The Upbound Azure Network provider resources used here are namespaced,
+including `Manager` and `ManagerIpamPool`, so their XRDs must use
+`spec.scope: Namespaced` and team Kustomizations may set their namespace.
+Verify the installed CRD's `.spec.scope` and `.spec.names.kind` before adding
+or changing a composed resource; Azure's resource hierarchy does not by
+itself determine Kubernetes CRD scope.
+
+Do not confuse Kubernetes scope with an Azure provider field named `scope`.
+For example, `Manager.spec.forProvider.scope.subscriptionIds` selects the
+Azure subscription while the Kubernetes resource remains namespaced. A
+subscription ID is non-secret configuration; Azure client credentials remain
+in the bootstrap-created Secret and must never be committed to manifests.
+
   This repository uses the namespaced Upbound Azure `ResourceGroup` at
   `azure.m.upbound.io/v1beta1`, so the `XResourceGroup` XRD is namespaced.
   Mismatching

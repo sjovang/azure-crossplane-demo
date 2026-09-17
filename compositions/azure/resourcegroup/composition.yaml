@@ -1,3 +1,4 @@
+---
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -15,13 +16,10 @@ spec:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
         resources:
-          - name: resource-group
+          - name: resourceGroup
             base:
               apiVersion: azure.m.upbound.io/v1beta1
               kind: ResourceGroup
-              metadata:
-                annotations:
-                  crossplane.io/external-name: ""
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig

@@ -1,0 +1,55 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XResourceGroup
+metadata:
+  name: crd-dev
+spec:
+  name: crd-dev
+  tags:
+    description: CRD development in Crossplane
+    managed-by: kiac
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManager
+metadata:
+  name: crd-dev
+spec:
+  name: crd-dev
+  subscriptionId: 297651e0-733c-45f9-b295-ad80c68785f1
+  resourceGroupRef:
+    name: crd-dev
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManagerIPAMPool
+metadata:
+  name: crd-dev
+spec:
+  name: crd-dev
+  networkManagerRef:
+    name: crd-dev
+  addressPrefixes:
+    - 10.42.0.0/16
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualNetwork
+metadata:
+  name: crd-dev
+spec:
+  name: crd-dev
+  resourceGroupRef:
+    name: crd-dev
+  ipamAllocation:
+    numberOfAllocatedIpAddresses: 256
+    ipamPoolId: /subscriptions/297651e0-733c-45f9-b295-ad80c68785f1/resourceGroups/rg-crd-dev/providers/Microsoft.Network/networkManagers/vnm-crd-dev/ipamPools/ipam-crd-dev  # yamllint disable-line rule:line-length
+  subnets:
+    - name: management
+      numberOfAllocatedIpAddresses: 32
+      securityRules:
+        - name: allow-ssh
+          priority: 1000
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          sourcePortRange: "*"
+          destinationPortRange: "22"
+          sourceAddressPrefix: 85.93.238.149

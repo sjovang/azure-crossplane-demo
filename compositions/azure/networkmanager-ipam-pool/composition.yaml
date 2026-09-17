@@ -1,0 +1,55 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: networkmanageripampools.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XNetworkManagerIPAMPool
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: ipamPool
+            base:
+              apiVersion: network.azure.m.upbound.io/v1beta1
+              kind: ManagerIpamPool
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.name
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: ipam-%s
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkManagerRef.name
+                toFieldPath: spec.forProvider.networkManagerIdRef.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: vnm-%s
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.location
+                toFieldPath: spec.forProvider.location
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.addressPrefixes
+                toFieldPath: spec.forProvider.addressPrefixes
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.tags
+                toFieldPath: spec.forProvider.tags
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.id
+                toFieldPath: status.id

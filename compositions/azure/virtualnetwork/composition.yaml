@@ -1,0 +1,115 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: virtualnetworks.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XVirtualNetwork
+  mode: Pipeline
+  pipeline:
+    - step: render-network
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            ---
+            apiVersion: network.azure.m.upbound.io/v1beta1
+            kind: VirtualNetwork
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "virtualNetwork" }}
+                crossplane.io/external-name: vnet-{{ $xr.spec.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                location: {{ $xr.spec.location }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+                ipAddressPool:
+                  - id: {{ $xr.spec.ipamAllocation.ipamPoolId }}
+                    numberOfIpAddresses: "{{ $xr.spec.ipamAllocation.numberOfAllocatedIpAddresses }}"
+            {{- if $xr.spec.tags }}
+                tags:
+            {{ toYaml $xr.spec.tags | nindent 10 }}
+            {{- end }}
+            {{- $virtualNetwork := getComposedResource . "virtualNetwork" }}
+            {{- if $virtualNetwork }}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XVirtualNetwork
+            status:
+              id: {{ $virtualNetwork.status.atProvider.id }}
+              name: {{ $virtualNetwork.status.atProvider.name }}
+              addressSpace:
+            {{ toYaml $virtualNetwork.status.atProvider.addressSpace | nindent 4 }}
+              subnets:
+            {{- range $index, $subnet := $xr.spec.subnets }}
+                - name: {{ $subnet.name }}
+                  id: {{ (index $.observed.resources (printf "subnet%d" $index)).resource.status.atProvider.id }}
+                  networkSecurityGroupId: {{ (index $.observed.resources (printf "networkSecurityGroup%d" $index)).resource.status.atProvider.id }}
+            {{- end }}
+            {{- end }}
+            {{- range $index, $subnet := $xr.spec.subnets }}
+            ---
+            apiVersion: network.azure.m.upbound.io/v1beta1
+            kind: Subnet
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation (printf "subnet%d" $index) }}
+                crossplane.io/external-name: snet-{{ $xr.spec.name }}-{{ $subnet.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+                virtualNetworkName: vnet-{{ $xr.spec.name }}
+                ipAddressPool:
+                  id: {{ $xr.spec.ipamAllocation.ipamPoolId }}
+                  numberOfIpAddresses: "{{ $subnet.numberOfAllocatedIpAddresses }}"
+            ---
+            apiVersion: network.azure.m.upbound.io/v1beta1
+            kind: SecurityGroup
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation (printf "networkSecurityGroup%d" $index) }}
+                crossplane.io/external-name: nsg-{{ $xr.spec.name }}-{{ $subnet.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                location: {{ $xr.spec.location }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+            {{- if $subnet.securityRules }}
+                securityRule:
+            {{ toYaml $subnet.securityRules | nindent 10 }}
+            {{- end }}
+            ---
+            apiVersion: network.azure.m.upbound.io/v1beta1
+            kind: SubnetNetworkSecurityGroupAssociation
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation (printf "subnetNsgAssociation%d" $index) }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                subnetIdSelector:
+                  matchControllerRef: true
+                networkSecurityGroupIdSelector:
+                  matchControllerRef: true
+            {{- end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

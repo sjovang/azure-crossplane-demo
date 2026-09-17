@@ -1,0 +1,68 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xnetworkmanageripampools.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XNetworkManagerIPAMPool
+    plural: xnetworkmanageripampools
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Logical name of the IPAM pool.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                networkManagerRef:
+                  type: object
+                  description: Reference to the parent Network Manager.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XNetworkManager.
+                  required:
+                    - name
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: networkManagerRef is immutable
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the IPAM pool.
+                addressPrefixes:
+                  type: array
+                  items:
+                    type: string
+                  description: CIDR blocks for the root IPAM pool.
+                tags:
+                  type: object
+                  nullable: true
+                  default: null
+                  additionalProperties:
+                    type: string
+                  description: Optional tags to apply to the IPAM pool.
+              required:
+                - name
+                - networkManagerRef
+                - addressPrefixes
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the IPAM pool.
+          required:
+            - spec
