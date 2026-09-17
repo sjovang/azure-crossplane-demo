@@ -74,18 +74,28 @@ spec:
                 adminPasswordSecretRef:
                   type: object
                   description: >-
-                    Secret in the same namespace holding the local
-                    administrator password.
-                  default:
-                    name: vm-admin-password
-                    key: password
+                    Windows only. Secret in the same namespace holding the
+                    local administrator password.
                   properties:
                     name:
                       type: string
-                      default: vm-admin-password
                     key:
                       type: string
                       default: password
+                  required:
+                    - name
+                    - key
+                sshPublicKeySecretRef:
+                  type: object
+                  description: >-
+                    Linux only. Secret in the same namespace holding the
+                    OpenSSH public key authorised for the admin user.
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+                      default: id_rsa.pub
                   required:
                     - name
                     - key
@@ -98,6 +108,21 @@ spec:
                 - os
                 - resourceGroupRef
                 - virtualNetworkRef
+              x-kubernetes-validations:
+                - rule: self.os != 'linux' || has(self.sshPublicKeySecretRef)
+                  message: linux virtual machines require sshPublicKeySecretRef
+                - rule: self.os != 'linux' || !has(self.adminPasswordSecretRef)
+                  message: >-
+                    linux virtual machines authenticate with SSH keys only,
+                    remove adminPasswordSecretRef
+                - rule: >-
+                    self.os != 'windows' || has(self.adminPasswordSecretRef)
+                  message: >-
+                    windows virtual machines require adminPasswordSecretRef
+                - rule: self.os != 'windows' || !has(self.sshPublicKeySecretRef)
+                  message: >-
+                    windows virtual machines do not support
+                    sshPublicKeySecretRef
             status:
               type: object
               properties:

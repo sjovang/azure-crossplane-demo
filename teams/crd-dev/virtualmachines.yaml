@@ -9,6 +9,13 @@ spec:
     description: Virtual machines for CRD development
     managed-by: kiac
 ---
+# The SSH public key Secret is created manually, it is not in git:
+#
+#   ssh-keygen -t ed25519 -f ~/.ssh/crd-dev-linuxdemo01 -C linuxdemo01 -N ''
+#   kubectl create secret generic linuxdemo01-ssh -n crd-dev \
+#     --from-file=id_ed25519.pub=$HOME/.ssh/crd-dev-linuxdemo01.pub
+#
+# Log in with: ssh -i ~/.ssh/crd-dev-linuxdemo01 azureuser@<private-ip>
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XVirtualMachine
 metadata:
@@ -22,6 +29,42 @@ spec:
   virtualNetworkRef:
     name: crd-dev
     subnet: management
+  sshPublicKeySecretRef:
+    name: linuxdemo01-ssh
+    key: id_ed25519.pub
+---
+# Stands in for a vault/OpenBao integration: external-secrets generates the
+# password. Retrieve it with
+#
+#   kubectl get secret windemo01-admin -n crd-dev \
+#     -o jsonpath='{.data.password}' | base64 -d
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: windemo01-admin
+spec:
+  length: 24
+  digits: 5
+  symbols: 5
+  symbolCharacters: "-_$@"
+  noUpper: false
+  allowRepeat: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: windemo01-admin
+spec:
+  # "0" generates the password once instead of rotating it under the VM.
+  refreshInterval: "0"
+  target:
+    name: windemo01-admin
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: windemo01-admin
 ---
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XVirtualMachine
@@ -36,3 +79,6 @@ spec:
   virtualNetworkRef:
     name: crd-dev
     subnet: management
+  adminPasswordSecretRef:
+    name: windemo01-admin
+    key: password

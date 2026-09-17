@@ -11,5 +11,6 @@ kind: Kustomization
 resources:
   - flux-system
   - crossplane
+  - external-secrets-kustomization.yaml
   - observability-kustomization.yaml
   - teams-kustomization.yaml

@@ -1,12 +1,12 @@
 ---
 # A separate Kustomization for teams/ (outside clusters/dev/, mimicking
-# separate teams/repos sharing one demo cluster). dependsOn both
-# flux-system and crossplane-compositions: a team's XResourceGroup manifest
-# requires its CRD to be established before this batch applies. Keep the
-# teams path explicitly scoped so Flux does not use an implicit recursive
-# kustomization that mixes team resources into an uncontrolled batch (the
-# same CRD-dependency deadlock this repo already hit with ProviderConfig/
-# Provider).
+# separate teams/repos sharing one demo cluster). dependsOn flux-system,
+# crossplane-compositions and external-secrets: a team's XResourceGroup and
+# ExternalSecret manifests require their CRDs to be established before this
+# batch applies. Keep the teams path explicitly scoped so Flux does not use
+# an implicit recursive kustomization that mixes team resources into an
+# uncontrolled batch (the same CRD-dependency deadlock this repo already hit
+# with ProviderConfig/Provider).
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -24,3 +24,4 @@ spec:
   dependsOn:
     - name: flux-system
     - name: crossplane-compositions
+    - name: external-secrets

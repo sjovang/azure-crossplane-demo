@@ -30,6 +30,16 @@ spec:
               kind: XVirtualNetwork
               metadata:
                 name: ${schema.spec.virtualNetworkRef.name}
+          # The Linux admin SSH public key is read from a Secret in the XR's
+          # namespace; Secret data is base64 encoded, hence the decode.
+          - id: sshPublicKey
+            includeWhen:
+              - ${schema.spec.os == "linux"}
+            externalRef:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ${schema.spec.sshPublicKeySecretRef.name}
           - id: networkInterface
             template:
               apiVersion: network.azure.m.upbound.io/v1beta1
@@ -66,10 +76,9 @@ spec:
                   resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
                   size: '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
                   adminUsername: ${schema.spec.adminUsername}
-                  adminPasswordSecretRef:
-                    name: ${schema.spec.adminPasswordSecretRef.name}
-                    key: ${schema.spec.adminPasswordSecretRef.key}
-                  disablePasswordAuthentication: false
+                  adminSshKey:
+                    - username: ${schema.spec.adminUsername}
+                      publicKey: ${string(base64.decode(sshPublicKey.data[schema.spec.sshPublicKeySecretRef.key])).trim()}
                   networkInterfaceIds:
                     - ${networkInterface.status.atProvider.id}
                   osDisk:
