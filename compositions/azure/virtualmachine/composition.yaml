@@ -17,8 +17,11 @@ spec:
         apiVersion: kro.fn.crossplane.io/v1alpha1
         kind: ResourceGraph
         status:
-          id: '${schema.spec.os == "linux" ? linuxVm.status.atProvider.id : windowsVm.status.atProvider.id}'
-          vmSize: '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
+          # linuxVm/windowsVm are mutually exclusive (includeWhen); the excluded
+          # one resolves to an empty value, so concatenation picks the real one.
+          # "schema" isn't available in this status block, only in resources[].
+          id: '${linuxVm.status.atProvider.id + windowsVm.status.atProvider.id}'
+          vmSize: '${linuxVm.spec.forProvider.size + windowsVm.spec.forProvider.size}'
           privateIp: ${networkInterface.status.atProvider.privateIpAddress}
           networkInterfaceId: ${networkInterface.status.atProvider.id}
         resources:
