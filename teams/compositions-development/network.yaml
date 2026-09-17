@@ -5,6 +5,9 @@ metadata:
   name: dev-networkmanager
 spec:
   name: dev-networkmanager
+  tags:
+    description: CRD development in Crossplane
+    managed-by: kiac
 ---
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XNetworkManagerIpam
@@ -16,36 +19,36 @@ spec:
     name: dev-networkmanager
   addressPrefixes:
     - 10.42.0.0/16
----
-apiVersion: azure.platform.example.org/v1alpha1
-kind: XVirtualNetwork
-metadata:
-  name: dev-vnet
-spec:
-  name: dev-vnet
-  resourceGroupRef:
-    name: dev-networkmanager
-  ipamAllocation:
-    numberOfAllocatedIpAddresses: 256
----
-apiVersion: azure.platform.example.org/v1alpha1
-kind: XSubnet
-metadata:
-  name: dev-subnet
-spec:
-  name: dev-subnet
-  resourceGroupRef:
-    name: dev-networkmanager
-  virtualNetworkRef:
-    name: dev-vnet
-  ipamAllocation:
-    numberOfAllocatedIpAddresses: 32
-  securityRules:
-    - name: allow-ssh
-      priority: 1000
-      direction: Inbound
-      access: Allow
-      protocol: Tcp
-      destinationPortRange: "22"
-      sourceAddressPrefix: "*"
-      destinationAddressPrefix: "*"
+# ---
+# apiVersion: azure.platform.example.org/v1alpha1
+# kind: XVirtualNetwork
+# metadata:
+#   name: dev-vnet
+# spec:
+#   name: dev-vnet
+#   resourceGroupRef:
+#     name: dev-networkmanager
+#   ipamAllocation:
+#     numberOfAllocatedIpAddresses: 256
+# ---
+# apiVersion: azure.platform.example.org/v1alpha1
+# kind: XSubnet
+# metadata:
+#   name: dev-subnet
+# spec:
+#   name: dev-subnet
+#   resourceGroupRef:
+#     name: dev-networkmanager
+#   virtualNetworkRef:
+#     name: dev-vnet
+#   ipamAllocation:
+#     numberOfAllocatedIpAddresses: 32
+#   securityRules:
+#     - name: allow-ssh
+#       priority: 1000
+#       direction: Inbound
+#       access: Allow
+#       protocol: Tcp
+#       destinationPortRange: "22"
+#       sourceAddressPrefix: "*"
+#       destinationAddressPrefix: "*"

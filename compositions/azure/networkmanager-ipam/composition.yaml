@@ -19,9 +19,6 @@ spec:
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: NetworkManager
-              metadata:
-                annotations:
-                  crossplane.io/external-name: ""
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -37,7 +34,7 @@ spec:
                   - type: string
                     string:
                       type: Format
-                      fmt: nm-%s
+                      fmt: vnm-%s
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.location
                 toFieldPath: spec.forProvider.location
@@ -62,9 +59,6 @@ spec:
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: NetworkManagerIPAMPool
-              metadata:
-                annotations:
-                  crossplane.io/external-name: ""
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig

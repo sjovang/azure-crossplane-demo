@@ -19,9 +19,6 @@ spec:
             base:
               apiVersion: azure.m.upbound.io/v1beta1
               kind: ResourceGroup
-              metadata:
-                annotations:
-                  crossplane.io/external-name: ""
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
