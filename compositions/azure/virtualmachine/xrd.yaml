@@ -85,6 +85,9 @@ spec:
                   required:
                     - name
                     - key
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: adminPasswordSecretRef is immutable
                 sshPublicKeySecretRef:
                   type: object
                   description: >-
@@ -99,6 +102,9 @@ spec:
                   required:
                     - name
                     - key
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: sshPublicKeySecretRef is immutable
                 location:
                   type: string
                   default: swedencentral

@@ -73,7 +73,7 @@ metadata:
 spec:
   name: windemo01
   os: windows
-  size: small
+  size: medium
   resourceGroupRef:
     name: crd-dev-virtualmachines
   virtualNetworkRef:
