@@ -22,9 +22,9 @@ backend:
 
 auth:
   # Base config: Microsoft Entra ID (Azure AD) OIDC provider only.
-  # No sign-in resolver configured yet -- see backstage/README.md and the
-  # repo README's "Developer Portal (Backstage)" section for the manual
-  # Entra ID App Registration steps required before this works.
+  # No sign-in resolver configured yet -- see the top-level repo README's
+  # "Developer Portal (Backstage)" section for the manual Entra ID App
+  # Registration steps required before this works.
   environment: development
   providers:
     microsoft:

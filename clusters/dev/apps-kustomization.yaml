@@ -1,9 +1,11 @@
 ---
-# Pointer Kustomization for apps/ (currently: Backstage). No CRD-dependency
-# deadlock risk here (plain Deployment/Service/Namespace), but it still gets
-# its own scoped kustomization.yaml and dedicated Flux Kustomization CR per
-# repo convention, rather than being swept into the root flux-system
-# Kustomization's implicit recursive scan.
+# Pointer Kustomization for apps/ (currently: Backstage). Path targets only
+# the infra/ subfolder -- app/ holds the Backstage application source
+# (package.json, Dockerfile, app-config.yaml), which is not Kubernetes YAML
+# and must never be swept into a Flux apply. No CRD-dependency deadlock risk
+# here (plain Deployment/Service/Namespace), but it still gets its own
+# scoped kustomization.yaml and dedicated Flux Kustomization CR per repo
+# convention, rather than relying on Flux's implicit recursive scan.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -14,7 +16,7 @@ spec:
   retryInterval: 1m
   timeout: 2m
   prune: true
-  path: ./clusters/dev/apps/backstage
+  path: ./clusters/dev/apps/backstage/infra
   sourceRef:
     kind: GitRepository
     name: flux-system

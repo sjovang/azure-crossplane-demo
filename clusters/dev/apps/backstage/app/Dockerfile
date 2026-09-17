@@ -3,7 +3,7 @@
 # output. Build/push is a manual step for this base iteration -- see the
 # repo README's "Developer Portal (Backstage)" section.
 #
-# Build (from the backstage/ directory):
+# Build (from the clusters/dev/apps/backstage/app/ directory):
 #   docker build -t <your-registry>/backstage:latest .
 # Push:
 #   docker push <your-registry>/backstage:latest

@@ -152,15 +152,20 @@ Team resources live in the shared, top-level [`teams/`](teams/) directory, with 
 
 Architecture:
 
-- [`backstage/`](backstage/) — the Backstage application source (a
-  standard `create-app`-style monorepo: `packages/backend`,
-  `packages/app`), its `app-config.yaml`/`app-config.production.yaml`, and
-  its `Dockerfile`. This is the only application source code in the repo —
-  everything else here is declarative manifests.
-- [`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/) — the
-  Kubernetes `Namespace`, `Deployment`, and `Service` for Backstage, applied
-  by the dependent `apps` Flux Kustomization
-  (`clusters/dev/apps-kustomization.yaml`, `dependsOn: flux-system`).
+- [`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/) — everything
+  Backstage, split into the two team-folder-style subfolders used elsewhere
+  in this repo:
+  - [`app/`](clusters/dev/apps/backstage/app/) — the Backstage application
+    source (a standard `create-app`-style monorepo: `packages/backend`,
+    `packages/app`), its `app-config.yaml`/`app-config.production.yaml`,
+    and its `Dockerfile`. This is the only application source code in the
+    repo — everything else here is declarative manifests.
+  - [`infra/`](clusters/dev/apps/backstage/infra/) — the Kubernetes
+    `Namespace`, `Deployment`, and `Service` for Backstage, applied by the
+    dependent `apps` Flux Kustomization
+    (`clusters/dev/apps-kustomization.yaml`, `dependsOn: flux-system`,
+    `path: ./clusters/dev/apps/backstage/infra`). Only `infra/` is ever
+    applied by Flux — `app/` is not Kubernetes YAML.
 
 ### Prerequisites
 
@@ -184,18 +189,19 @@ Architecture:
    - Note the **Application (client) ID** and **Directory (tenant) ID** from
      the App Registration's Overview page.
 
-2. **Build and push the Backstage image** (from the [`backstage/`](backstage/)
+2. **Build and push the Backstage image** (from the
+   [`clusters/dev/apps/backstage/app/`](clusters/dev/apps/backstage/app/)
    directory):
 
    ```sh
-   cd backstage
+   cd clusters/dev/apps/backstage/app
    npm install
    docker build -t <your-registry>/backstage:latest .
    docker push <your-registry>/backstage:latest
    ```
 
    Update the `image:` field in
-   [`clusters/dev/apps/backstage/deployment.yaml`](clusters/dev/apps/backstage/deployment.yaml)
+   [`clusters/dev/apps/backstage/infra/deployment.yaml`](clusters/dev/apps/backstage/infra/deployment.yaml)
    to match the image you pushed.
 
 3. **Create the `backstage-entra-secret` Secret** in the cluster, using the
