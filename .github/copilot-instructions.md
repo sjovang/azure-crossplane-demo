@@ -24,6 +24,12 @@ considering a change to manifests or scripts done.
 All YAML files must begin with the YAML document marker `---` on the first
 line, including single-document files and Kustomize manifests.
 
+Composition pipeline resource names must use camelCase because
+`function-kro` does not support kebab-case resource names. Use names such as
+`resourceGroup`, `networkManager`, `virtualNetwork`, `ipamPool`,
+`networkSecurityGroup`, and `subnetNsgAssociation` under
+`spec.pipeline[].input.resources[].name`.
+
 ## Architecture: Flux reconciliation chain
 
 `clusters/dev/` is the single path Flux watches (see

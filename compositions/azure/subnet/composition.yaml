@@ -68,7 +68,7 @@ spec:
               - type: ToCompositeFieldPath
                 fromFieldPath: status.atProvider.id
                 toFieldPath: status.subnetId
-          - name: network-security-group
+          - name: networkSecurityGroup
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: SecurityGroup
@@ -110,7 +110,7 @@ spec:
               - type: ToCompositeFieldPath
                 fromFieldPath: status.atProvider.id
                 toFieldPath: status.networkSecurityGroupId
-          - name: subnet-nsg-association
+          - name: subnetNsgAssociation
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: SubnetNetworkSecurityGroupAssociation

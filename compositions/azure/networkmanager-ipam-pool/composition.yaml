@@ -16,7 +16,7 @@ spec:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
         resources:
-          - name: ipam-pool
+          - name: ipamPool
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: ManagerIpamPool
