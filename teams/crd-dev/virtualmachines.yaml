@@ -65,20 +65,20 @@ spec:
           apiVersion: generators.external-secrets.io/v1alpha1
           kind: Password
           name: windemo01-admin
-# ---
-# apiVersion: azure.platform.example.org/v1alpha1
-# kind: XVirtualMachine
-# metadata:
-#   name: windemo01
-# spec:
-#   name: windemo01
-#   os: windows
-#   size: small
-#   resourceGroupRef:
-#     name: crd-dev-virtualmachines
-#   virtualNetworkRef:
-#     name: crd-dev
-#     subnet: management
-#   adminPasswordSecretRef:
-#     name: windemo01-admin
-#     key: password
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualMachine
+metadata:
+  name: windemo01
+spec:
+  name: windemo01
+  os: windows
+  size: small
+  resourceGroupRef:
+    name: crd-dev-virtualmachines
+  virtualNetworkRef:
+    name: crd-dev
+    subnet: management
+  adminPasswordSecretRef:
+    name: windemo01-admin
+    key: password
