@@ -102,6 +102,9 @@ spec:
                                 - Icmp
                                 - "*"
                               default: Tcp
+                            sourcePortRange:
+                              type: string
+                              default: "*"
                             destinationPortRange:
                               type: string
                               default: "*"
