@@ -6,4 +6,3 @@ resources:
   - networkmanager
   - networkmanager-ipam-pool
   - virtualnetwork
-  - subnet

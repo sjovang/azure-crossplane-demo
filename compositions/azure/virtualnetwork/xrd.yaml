@@ -57,6 +57,72 @@ spec:
                       description: Resource ID of the IPAM pool.
                   required:
                     - numberOfAllocatedIpAddresses
+                subnets:
+                  type: array
+                  description: >-
+                    Child subnets to create with this virtual network.
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        x-kubernetes-validations:
+                          - rule: self == oldSelf
+                            message: subnet name is immutable
+                      numberOfAllocatedIpAddresses:
+                        type: integer
+                        description: Number of IP addresses to allocate.
+                        minimum: 1
+                        x-kubernetes-validations:
+                          - rule: self == oldSelf
+                            message: subnet size is immutable
+                      securityRules:
+                        type: array
+                        description: Optional Network Security Group rules.
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            priority:
+                              type: integer
+                              minimum: 100
+                              maximum: 4096
+                            direction:
+                              type: string
+                              enum:
+                                - Inbound
+                                - Outbound
+                              default: Inbound
+                            access:
+                              type: string
+                              enum:
+                                - Allow
+                                - Deny
+                              default: Allow
+                            protocol:
+                              type: string
+                              enum:
+                                - Tcp
+                                - Udp
+                                - Icmp
+                                - "*"
+                              default: Tcp
+                            destinationPortRange:
+                              type: string
+                              default: "*"
+                            sourceAddressPrefix:
+                              type: string
+                              default: "*"
+                            destinationAddressPrefix:
+                              type: string
+                              default: "*"
+                          required:
+                            - name
+                            - priority
+                    required:
+                      - name
+                      - numberOfAllocatedIpAddresses
                 tags:
                   type: object
                   nullable: true
@@ -68,6 +134,7 @@ spec:
                 - name
                 - resourceGroupRef
                 - ipamAllocation
+                - subnets
             status:
               type: object
               properties:

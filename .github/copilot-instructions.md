@@ -30,6 +30,10 @@ Composition pipeline resource names must use camelCase because
 `networkSecurityGroup`, and `subnetNsgAssociation` under
 `spec.pipeline[].input.resources[].name`.
 
+Every composite resource must expose the provisioned Azure resource ID as
+`status.id`. Populate it from the composed managed resource's
+`status.atProvider.id`; additional resource-specific status fields are allowed.
+
 ## Architecture: Flux reconciliation chain
 
 `clusters/dev/` is the single path Flux watches (see
