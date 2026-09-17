@@ -144,5 +144,19 @@ spec:
                     type: string
                   description: >-
                     Allocated address prefixes for the Virtual Network.
+                subnets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      id:
+                        type: string
+                        description: Azure resource ID of the subnet.
+                      networkSecurityGroupId:
+                        type: string
+                        description: Azure resource ID of the subnet NSG.
+                  description: Provisioned subnet and NSG resource IDs.
           required:
             - spec

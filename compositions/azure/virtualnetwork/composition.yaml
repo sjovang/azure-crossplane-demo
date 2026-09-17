@@ -51,6 +51,12 @@ spec:
               name: {{ $virtualNetwork.status.atProvider.name }}
               addressSpace:
             {{ toYaml $virtualNetwork.status.atProvider.addressSpace | nindent 4 }}
+              subnets:
+            {{- range $index, $subnet := $xr.spec.subnets }}
+                - name: {{ $subnet.name }}
+                  id: {{ (index $.observed.resources (printf "subnet%d" $index)).resource.status.atProvider.id }}
+                  networkSecurityGroupId: {{ (index $.observed.resources (printf "networkSecurityGroup%d" $index)).resource.status.atProvider.id }}
+            {{- end }}
             {{- end }}
             {{- range $index, $subnet := $xr.spec.subnets }}
             ---
@@ -68,8 +74,8 @@ spec:
                 resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
                 virtualNetworkName: vnet-{{ $xr.spec.name }}
                 ipAddressPool:
-                  - id: {{ $xr.spec.ipamAllocation.ipamPoolId }}
-                    numberOfIpAddresses: "{{ $subnet.numberOfAllocatedIpAddresses }}"
+                  id: {{ $xr.spec.ipamAllocation.ipamPoolId }}
+                  numberOfIpAddresses: "{{ $subnet.numberOfAllocatedIpAddresses }}"
             ---
             apiVersion: network.azure.m.upbound.io/v1beta1
             kind: SecurityGroup
