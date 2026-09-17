@@ -34,8 +34,13 @@ spec:
                       type: Format
                       fmt: ipam-%s
               - type: FromCompositeFieldPath
-                fromFieldPath: spec.networkManagerId
-                toFieldPath: spec.forProvider.networkManagerId
+                fromFieldPath: spec.networkManagerRef.name
+                toFieldPath: spec.forProvider.networkManagerIdRef.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: vnm-%s
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.location
                 toFieldPath: spec.forProvider.location

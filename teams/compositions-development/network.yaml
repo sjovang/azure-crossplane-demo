@@ -2,9 +2,9 @@
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XResourceGroup
 metadata:
-  name: dev-networkmanager
+  name: crd-dev
 spec:
-  name: dev-networkmanager
+  name: crd-dev
   tags:
     description: CRD development in Crossplane
     managed-by: kiac
@@ -12,19 +12,20 @@ spec:
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XNetworkManager
 metadata:
-  name: dev-networkmanager
+  name: crd-dev
 spec:
-  name: dev-networkmanager
+  name: crd-dev
   subscriptionId: 297651e0-733c-45f9-b295-ad80c68785f1
   resourceGroupRef:
-    name: dev-networkmanager
+    name: crd-dev
 ---
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XNetworkManagerIPAMPool
 metadata:
-  name: dev-networkmanager-ipam
+  name: crd-dev
 spec:
-  name: dev-networkmanager-ipam
-  networkManagerId: /subscriptions/297651e0-733c-45f9-b295-ad80c68785f1/resourceGroups/rg-dev-networkmanager/providers/Microsoft.Network/networkManagers/vnm-dev-networkmanager  # yamllint disable-line rule:line-length
+  name: crd-dev
+  networkManagerRef:
+    name: crd-dev
   addressPrefixes:
     - 10.42.0.0/16

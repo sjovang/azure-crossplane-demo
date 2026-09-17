@@ -20,6 +20,7 @@ spec:
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: Manager
+              metadata: {}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -29,6 +30,14 @@ spec:
                     - Connectivity
                     - SecurityAdmin
             patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.name
+                toFieldPath: metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: vnm-%s
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.name
                 toFieldPath: metadata.annotations[crossplane.io/external-name]
