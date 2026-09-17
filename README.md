@@ -51,7 +51,22 @@ flowchart LR
 - Flux CLI: `brew install fluxcd/tap/flux`
 - Azure CLI: `brew install azure-cli`
 - Jq: `brew install jq`
-- An Azure account with permission to create a service principal and assign it a role on your subscription
+- An Azure account whose user has the roles below, following the
+  principle of least privilege: only what `bootstrap.sh` needs to create
+  the Crossplane service principal and the Backstage Entra ID app
+  registration, nothing broader (e.g. no Global Administrator/Owner).
+
+  | Role | Scope | Why the bootstrap user needs it |
+  | --- | --- | --- |
+  | [Application Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#application-administrator) | Microsoft Entra ID tenant | Create/manage both app registrations `bootstrap.sh` creates (`<SP_NAME>-azure-resources`, `<SP_NAME>-backstage`), create their service principals and client secrets, and grant admin consent for the Backstage app's requested Microsoft Graph delegated permissions (`email`, `offline_access`, `openid`, `profile`, `User.Read`) |
+  | [Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#contributor) | Azure subscription | Register the `Microsoft.Network` and `Microsoft.Compute` resource providers Crossplane-managed resources depend on |
+  | [User Access Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator) | Azure subscription | Assign the `Contributor` role to the newly created `<SP_NAME>-azure-resources` service principal (`az ad sp create-for-rbac --role Contributor`) |
+
+  > [!NOTE]
+  > The `<SP_NAME>-backstage` app registration itself is granted **no**
+  > Azure RBAC role — it's used only for user sign-in (OIDC), never to
+  > manage Azure resources, so it needs nothing beyond the Microsoft Graph
+  > delegated permissions above.
 
 ### Steps
 
@@ -87,23 +102,25 @@ flowchart LR
    kiac doctor
    ```
 
-6. Log in to Azure (needed so `bootstrap.sh` can create the service principal Crossplane uses):
+6. Log in to Azure (needed so `bootstrap.sh` can create the Crossplane service principal and the Backstage Entra ID app registration):
 
    ```sh
    az login
    ```
 
-7. Export a token, then create the cluster, set up Azure credentials for Crossplane, and bootstrap [Flux](https://fluxcd.io) against your fork:
+7. Export a token, then create the cluster, set up Azure credentials for Crossplane and Backstage, and bootstrap [Flux](https://fluxcd.io) against your fork:
 
    ```sh
    export GITHUB_TOKEN=$(gh auth token)
    ./infrastructure/bootstrap.sh
    ```
 
-   The script creates or reuses the Azure service principal, applies its
-   credentials as the `azure-secret` Kubernetes `Secret`, and then bootstraps
-   Flux. `GITHUB_TOKEN` is required because Flux configures Git access through
-   the GitHub API.
+   The script creates or reuses the Azure service principal
+   (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration
+   (`<SP_NAME>-backstage`), applies their credentials as the `azure-secret`
+   and `backstage-entra-secret` Kubernetes `Secret`s, and then bootstraps
+   Flux. `GITHUB_TOKEN` is required because Flux configures Git access
+   through the GitHub API.
 
    Optional environment variables:
 
@@ -114,10 +131,11 @@ flowchart LR
    | `FLUX_BRANCH` | `main` | Git branch |
    | `FLUX_PATH` | `clusters/dev` | Flux path |
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
-   | `SP_NAME` | `azure-crossplane-demo` | Azure service principal name |
+   | `SP_NAME` | `azure-crossplane-demo` | Common prefix for the Azure identities `bootstrap.sh` creates: the Crossplane service principal (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration (`<SP_NAME>-backstage`) |
 
    Credentials are stored in the gitignored
-   `infrastructure/azure-credentials.json` and reused on later runs.
+   `infrastructure/azure-credentials.json` and
+   `infrastructure/backstage-credentials.json`, and reused on later runs.
 
 8. Allow a minute or two for Flux to converge, then verify the cluster and Crossplane:
 
@@ -128,7 +146,7 @@ flowchart LR
       flux get kustomizations -A
    ```
 
-9. When you're done, tear everything down — this deletes both the Azure service principal and the kiac cluster:
+9. When you're done, tear everything down — this deletes the Backstage Entra ID app registration, the Azure service principal, and the kiac cluster:
 
    ```sh
    ./infrastructure/teardown.sh
@@ -146,8 +164,10 @@ Team resources live in the shared, top-level [`teams/`](teams/) directory, with 
 ## Developer Portal (Backstage)
 
 A base Backstage configuration with Microsoft Entra ID (Azure AD) OIDC sign-in lives in
-[`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/) — see [its README](clusters/dev/apps/backstage/README.md)
-for architecture and setup steps.
+[`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/). `infrastructure/bootstrap.sh`
+above already creates the `<SP_NAME>-backstage` Entra ID app registration and its
+`backstage-entra-secret` — see [its README](clusters/dev/apps/backstage/README.md)
+for the remaining setup steps (build/push the image, reconcile Flux, sign in).
 
 ## Troubleshooting
 

@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
 # Creates the kiac cluster, sets up the Azure service principal + secret that
-# Crossplane needs, and bootstraps Flux against your fork of this repo.
+# Crossplane needs, creates the Backstage Entra ID app registration + secret
+# for OIDC sign-in, and bootstraps Flux against your fork of this repo.
 # Configure via env vars (defaults shown), e.g.:
 #   FLUX_BRANCH=my-branch ./infrastructure/bootstrap.sh
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 credentials_file="$script_dir/azure-credentials.json"
+backstage_credentials_file="$script_dir/backstage-credentials.json"
+# SP_NAME is the common prefix for both Azure identities this script
+# creates: the Crossplane service principal (<SP_NAME>-azure-resources) and
+# the Backstage Entra ID app registration (<SP_NAME>-backstage). See
+# README.md for the least-privilege permissions required to create each.
 sp_name="${SP_NAME:-azure-crossplane-demo}"
+azure_resources_sp_name="${sp_name}-azure-resources"
+backstage_app_name="${sp_name}-backstage"
+# Fixed because it must match the redirect URI registered on the Backstage
+# app; this base config only supports the kubectl port-forward flow.
+backstage_redirect_uri="http://localhost:7007/api/auth/microsoft/handler/frame"
 
 # Defaults to your own GitHub user (the fork owner), resolved via the
 # authenticated gh CLI. Override if you pushed the fork elsewhere.
@@ -65,10 +76,10 @@ else
   subscription_id=$(az account show --query id -o tsv)
   tenant_id=$(az account show --query tenantId -o tsv)
 
-  echo "Creating service principal '$sp_name' (Contributor on subscription $subscription_id)"
+  echo "Creating service principal '$azure_resources_sp_name' (Contributor on subscription $subscription_id)"
   # --sdk-auth is deprecated, so the credentials JSON below is built manually
   # from plain `az` output instead.
-  sp_json=$(az ad sp create-for-rbac --name "$sp_name" --role Contributor \
+  sp_json=$(az ad sp create-for-rbac --name "$azure_resources_sp_name" --role Contributor \
     --scopes "/subscriptions/$subscription_id" -o json)
   client_id=$(echo "$sp_json" | jq -r .appId)
   client_secret=$(echo "$sp_json" | jq -r .password)
@@ -108,6 +119,74 @@ echo "==> Applying azure-secret"
 kubectl create secret generic azure-secret \
   --namespace crossplane-system \
   --from-file=creds="$credentials_file" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+echo "==> Setting up Backstage Entra ID app registration"
+if [[ -f "$backstage_credentials_file" ]]; then
+  echo "Reusing existing $backstage_credentials_file (delete it if you want a fresh app registration)"
+else
+  if ! az account show >/dev/null 2>&1; then
+    echo "Not logged in to Azure. Run 'az login' first." >&2
+    exit 1
+  fi
+
+  backstage_tenant_id=$(az account show --query tenantId -o tsv)
+
+  echo "Creating app registration '$backstage_app_name'"
+  # This app registration is used only for user sign-in (OIDC), never given
+  # an Azure RBAC role -- least privilege, unlike the azure-resources SP
+  # above which needs Contributor to manage Azure resources.
+  backstage_app_json=$(az ad app create \
+    --display-name "$backstage_app_name" \
+    --sign-in-audience AzureADMyOrg \
+    --web-redirect-uris "$backstage_redirect_uri" \
+    -o json)
+  backstage_client_id=$(echo "$backstage_app_json" | jq -r .appId)
+
+  # A service principal (enterprise application) is required for users in
+  # this tenant to sign in and for admin consent to take effect.
+  az ad sp create --id "$backstage_client_id" >/dev/null
+
+  # Microsoft Graph delegated permissions required by Backstage's Microsoft
+  # auth provider (see README.md's permissions table): email, offline_access,
+  # openid, profile, User.Read. GUIDs are Microsoft Graph's well-known
+  # delegated permission IDs, not secrets.
+  graph_api_id="00000003-0000-0000-c000-000000000000"
+  for scope_id in \
+    64a6cdd6-aab1-4aaf-94b8-3cc8405e90d0 \
+    7427e0e9-2fba-42fe-b0c0-848c9e6a8182 \
+    37f7f235-527c-4136-accd-4a02d197296e \
+    14dad69e-099b-42c9-810b-d002981feec1 \
+    e1fe6dd8-ba31-4d61-89e7-88639da4683d; do
+    az ad app permission add --id "$backstage_client_id" \
+      --api "$graph_api_id" --api-permissions "${scope_id}=Scope" >/dev/null
+  done
+  # Requires the Application Administrator role (or higher); see README.md.
+  az ad app permission admin-consent --id "$backstage_client_id"
+
+  echo "Creating client secret for '$backstage_app_name'"
+  backstage_client_secret=$(az ad app credential reset --id "$backstage_client_id" \
+    --years 1 --query password -o tsv)
+
+  cat > "$backstage_credentials_file" <<EOF
+{
+  "clientId": "$backstage_client_id",
+  "clientSecret": "$backstage_client_secret",
+  "tenantId": "$backstage_tenant_id"
+}
+EOF
+  chmod 600 "$backstage_credentials_file"
+fi
+
+echo "==> Ensuring backstage namespace exists"
+kubectl create namespace backstage --dry-run=client -o yaml | kubectl apply -f -
+
+echo "==> Applying backstage-entra-secret"
+kubectl create secret generic backstage-entra-secret \
+  --namespace backstage \
+  --from-literal=clientId="$(jq -r .clientId "$backstage_credentials_file")" \
+  --from-literal=clientSecret="$(jq -r .clientSecret "$backstage_credentials_file")" \
+  --from-literal=tenantId="$(jq -r .tenantId "$backstage_credentials_file")" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "==> Bootstrapping Flux"

@@ -1,9 +1,7 @@
 ---
-# Base config only: image must be built and pushed manually (see repo
-# README's "Developer Portal (Backstage)" section) and the
-# backstage-entra-secret Secret must be created manually before this
-# Deployment can start successfully -- both are intentionally not
-# committed to git.
+# Base config only: image must be built and pushed manually (see this
+# directory's README.md). The backstage-entra-secret Secret is created
+# automatically by infrastructure/bootstrap.sh (not committed to git).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
