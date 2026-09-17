@@ -1,12 +1,14 @@
 # Base Dockerfile for the Backstage backend (which also serves the built
 # frontend as static assets). Modeled on the standard `@backstage/create-app`
-# output. Build/push is a manual step for this base iteration -- see the
-# repo README's "Developer Portal (Backstage)" section.
+# output. Built locally with Apple's `container` CLI (already a repo
+# prerequisite, see README.md) and loaded straight into the kiac cluster's
+# nodes with `kiac load image` -- no registry needed. See this directory's
+# README.md for the full command sequence.
 #
 # Build (from the clusters/dev/apps/backstage/app/ directory):
-#   docker build -t <your-registry>/backstage:latest .
-# Push:
-#   docker push <your-registry>/backstage:latest
+#   container build -t backstage:dev .
+# Load into the kiac cluster's nodes (no push/registry required):
+#   kiac load image backstage:dev --name dev
 
 FROM node:20-bookworm-slim AS build
 

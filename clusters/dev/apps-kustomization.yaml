@@ -22,3 +22,14 @@ spec:
     name: flux-system
   dependsOn:
     - name: flux-system
+  postBuild:
+    substituteFrom:
+      # Provides ${BACKSTAGE_HOSTNAME} (see infra/httproute.yaml and
+      # infra/deployment.yaml), applied imperatively by
+      # infrastructure/set-backstage-hostname.sh -- never committed to git,
+      # same pattern as the azure-secret/backstage-entra-secret Secrets.
+      # optional: true so the very first reconcile (before bootstrap.sh has
+      # applied the ConfigMap) doesn't hard-fail the whole Kustomization.
+      - kind: ConfigMap
+        name: backstage-vars
+        optional: true

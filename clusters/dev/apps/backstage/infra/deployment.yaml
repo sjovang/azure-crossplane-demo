@@ -1,6 +1,9 @@
 ---
-# Base config only: image must be built and pushed manually (see this
-# directory's README.md). The backstage-entra-secret Secret is created
+# Base config only: image is built locally and loaded into the kiac
+# cluster's nodes with `kiac load image` (see this directory's README.md)
+# -- no registry, in-cluster or external, is required. imagePullPolicy:
+# Never enforces that kubelet uses the locally loaded image instead of
+# attempting a registry pull. The backstage-entra-secret Secret is created
 # automatically by infrastructure/bootstrap.sh (not committed to git).
 apiVersion: apps/v1
 kind: Deployment
@@ -21,7 +24,8 @@ spec:
     spec:
       containers:
         - name: backstage
-          image: ghcr.io/sjovang/azure-crossplane-demo-backstage:latest
+          image: backstage:dev
+          imagePullPolicy: Never
           ports:
             - name: http
               containerPort: 7007
@@ -30,11 +34,14 @@ spec:
             # Gateway (see infra/httproute.yaml) at the hostname below,
             # rather than via kubectl port-forward -- both the frontend and
             # backend base URLs point at it since the production build
-            # serves the built frontend from the backend.
+            # serves the built frontend from the backend. ${BACKSTAGE_HOSTNAME}
+            # is resolved by Flux's postBuild.substituteFrom -- see the
+            # comment in infra/httproute.yaml and
+            # clusters/dev/apps/backstage/README.md.
             - name: APP_BASE_URL
-              value: http://backstage.local
+              value: http://${BACKSTAGE_HOSTNAME}
             - name: BACKEND_BASE_URL
-              value: http://backstage.local
+              value: http://${BACKSTAGE_HOSTNAME}
             - name: AUTH_MICROSOFT_CLIENT_ID
               valueFrom:
                 secretKeyRef:

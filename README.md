@@ -118,9 +118,12 @@ flowchart LR
    The script creates or reuses the Azure service principal
    (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration
    (`<SP_NAME>-backstage`), applies their credentials as the `azure-secret`
-   and `backstage-entra-secret` Kubernetes `Secret`s, and then bootstraps
-   Flux. `GITHUB_TOKEN` is required because Flux configures Git access
-   through the GitHub API.
+   and `backstage-entra-secret` Kubernetes `Secret`s, builds the Backstage
+   image and loads it into every cluster node (`container build` +
+   `kiac load image` — no container registry involved), configures how
+   Backstage is reached (`BACKSTAGE_HOSTNAME`, see below), and then
+   bootstraps Flux. `GITHUB_TOKEN` is required because Flux configures Git
+   access through the GitHub API.
 
    Optional environment variables:
 
@@ -132,6 +135,7 @@ flowchart LR
    | `FLUX_PATH` | `clusters/dev` | Flux path |
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
    | `SP_NAME` | `azure-crossplane-demo` | Common prefix for the Azure identities `bootstrap.sh` creates: the Crossplane service principal (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration (`<SP_NAME>-backstage`) |
+   | `BACKSTAGE_HOSTNAME` | `backstage.local` | Hostname Backstage is reached at. The default requires one manual, `sudo`-requiring `/etc/hosts` command printed at the end (never run automatically); set it to a domain you control public DNS for instead to avoid touching `/etc/hosts` at all — see [the Backstage README](clusters/dev/apps/backstage/README.md#choosing-how-to-reach-backstage) |
 
    Credentials are stored in the gitignored
    `infrastructure/azure-credentials.json` and
@@ -165,9 +169,10 @@ Team resources live in the shared, top-level [`teams/`](teams/) directory, with 
 
 A base Backstage configuration with Microsoft Entra ID (Azure AD) OIDC sign-in lives in
 [`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/). `infrastructure/bootstrap.sh`
-above already creates the `<SP_NAME>-backstage` Entra ID app registration and its
-`backstage-entra-secret` — see [its README](clusters/dev/apps/backstage/README.md)
-for the remaining setup steps (build/push the image, reconcile Flux, sign in).
+above already creates the `<SP_NAME>-backstage` Entra ID app registration and
+`backstage-entra-secret`, and builds/loads the image (no registry required) — see
+[its README](clusters/dev/apps/backstage/README.md) for the two ways to reach
+Backstage (`BACKSTAGE_HOSTNAME`, above) and troubleshooting.
 
 ## Troubleshooting
 

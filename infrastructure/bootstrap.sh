@@ -16,11 +16,16 @@ backstage_credentials_file="$script_dir/backstage-credentials.json"
 sp_name="${SP_NAME:-azure-crossplane-demo}"
 azure_resources_sp_name="${sp_name}-azure-resources"
 backstage_app_name="${sp_name}-backstage"
-# Fixed because it must match the redirect URI registered on the Backstage
-# app; this base config targets the kiac gateway addon's Traefik Gateway at
-# http://backstage.local (see clusters/dev/apps/backstage/infra/httproute.yaml),
-# not kubectl port-forward.
-backstage_redirect_uri="http://backstage.local/api/auth/microsoft/handler/frame"
+# Selects how Backstage is reached: "backstage.local" (default) needs a
+# manual, sudo-requiring /etc/hosts entry (never written automatically);
+# any other value is treated as a domain you control public DNS for, in
+# which case you create your own DNS A record instead -- no /etc/hosts
+# edit at all. See infrastructure/set-backstage-hostname.sh (called below)
+# and clusters/dev/apps/backstage/README.md for both options in detail.
+BACKSTAGE_HOSTNAME="${BACKSTAGE_HOSTNAME:-backstage.local}"
+backstage_redirect_uri="http://$BACKSTAGE_HOSTNAME/api/auth/microsoft/handler/frame"
+backstage_app_dir="$script_dir/../clusters/dev/apps/backstage/app"
+backstage_image="backstage:dev"
 
 # Defaults to your own GitHub user (the fork owner), resolved via the
 # authenticated gh CLI. Override if you pushed the fork elsewhere.
@@ -33,7 +38,7 @@ FLUX_PRIVATE="${FLUX_PRIVATE:-true}"
 
 echo "==> Checking required tools"
 missing_tools=()
-for tool in gh kiac flux kubectl az jq; do
+for tool in gh kiac flux kubectl az jq container; do
   command -v "$tool" >/dev/null 2>&1 || missing_tools+=("$tool")
 done
 if (( ${#missing_tools[@]} > 0 )); then
@@ -56,8 +61,27 @@ if [[ -z "$FLUX_OWNER" ]]; then
   exit 1
 fi
 
+cluster_name=$(awk '/^name:/{print $2; exit}' "$script_dir/config.yaml")
+if [[ -z "$cluster_name" ]]; then
+  echo "Could not read cluster name from $script_dir/config.yaml." >&2
+  exit 1
+fi
+
 echo "==> Creating kiac cluster"
 kiac create cluster --config "$script_dir/config.yaml"
+
+echo "==> Building and loading the Backstage image"
+# kiac clusters have no image registry of their own; `kiac load image` copies
+# a locally built image straight onto every node's containerd (the same
+# trick `kind load docker-image` uses), so no registry -- in-cluster or
+# external -- is ever needed. Re-run this script (or just these two
+# commands) after changing clusters/dev/apps/backstage/app/ source, then
+# `kubectl rollout restart deployment/backstage -n backstage`.
+(
+  cd "$backstage_app_dir"
+  container build -t "$backstage_image" .
+)
+kiac load image "$backstage_image" --name "$cluster_name"
 
 echo "==> Ensuring crossplane-system namespace exists"
 # Pre-created here (idempotently) so the azure-secret below can be applied
@@ -191,6 +215,14 @@ kubectl create secret generic backstage-entra-secret \
   --from-literal=tenantId="$(jq -r .tenantId "$backstage_credentials_file")" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+echo "==> Configuring Backstage hostname"
+# Idempotent: applies the backstage-vars ConfigMap the apps Flux
+# Kustomization's postBuild.substituteFrom reads ${BACKSTAGE_HOSTNAME} from,
+# and keeps the Entra app registration's redirect URI in sync -- always
+# re-run, even when the app registration/credentials already existed,
+# in case BACKSTAGE_HOSTNAME changed since the last run.
+BACKSTAGE_HOSTNAME="$BACKSTAGE_HOSTNAME" "$script_dir/set-backstage-hostname.sh"
+
 echo "==> Bootstrapping Flux"
 # --token-auth: use the GitHub token over HTTPS instead of an SSH deploy key,
 # since outbound SSH (port 22) is often blocked on corporate/workshop networks.
@@ -204,7 +236,5 @@ flux bootstrap github \
   --token-auth
 
 echo "==> Done"
-echo "Once Flux has converged and the Backstage image has been built/pushed" \
-     "(see clusters/dev/apps/backstage/README.md), add backstage.local to" \
-     "/etc/hosts pointing at the Traefik LoadBalancer IP:"
-echo '  echo "$(kubectl get svc traefik -n kiac-gateway -o jsonpath="{.status.loadBalancer.ingress[0].ip}") backstage.local" | sudo tee -a /etc/hosts'
+echo "Once Flux has converged (flux get kustomizations -A), open" \
+     "http://$BACKSTAGE_HOSTNAME and sign in with Microsoft Entra ID."

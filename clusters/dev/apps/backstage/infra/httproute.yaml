@@ -4,6 +4,13 @@
 # https://github.com/saiyam1814/kiac/blob/main/examples/gateway-api-lab.md).
 # Requires the cluster to have been created with the gateway addon enabled
 # (infrastructure/config.yaml -> addons.gateway: true).
+#
+# ${BACKSTAGE_HOSTNAME} is resolved by Flux's postBuild.substituteFrom (see
+# clusters/dev/apps-kustomization.yaml) from the backstage-vars ConfigMap,
+# applied by infrastructure/set-backstage-hostname.sh -- not committed here
+# so switching hostnames (backstage.local vs. a public domain you control,
+# see clusters/dev/apps/backstage/README.md) never requires editing this
+# file.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -14,7 +21,7 @@ spec:
     - name: kiac
       namespace: kiac-gateway
   hostnames:
-    - backstage.local
+    - ${BACKSTAGE_HOSTNAME}
   rules:
     - backendRefs:
         - name: backstage
