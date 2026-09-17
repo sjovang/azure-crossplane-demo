@@ -12,3 +12,6 @@ spec:
     - subnets.network.azure.m.upbound.io
     - securitygroups.network.azure.m.upbound.io
     - subnetnetworksecuritygroupassociations.network.azure.m.upbound.io
+    - networkinterfaces.network.azure.m.upbound.io
+    - linuxvirtualmachines.compute.azure.m.upbound.io
+    - windowsvirtualmachines.compute.azure.m.upbound.io

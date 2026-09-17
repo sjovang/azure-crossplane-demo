@@ -13,3 +13,4 @@ resources:
   - patch-and-transform.yaml
   - go-templating.yaml
   - kro.yaml
+  - auto-ready.yaml

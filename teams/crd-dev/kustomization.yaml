@@ -5,6 +5,7 @@ namespace: crd-dev
 resources:
   - ../_base
   - network.yaml
+  - virtualmachines.yaml
 patches:
   - target:
       group: azure.platform.example.org

@@ -1,0 +1,117 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xvirtualmachines.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XVirtualMachine
+    plural: xvirtualmachines
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 12
+                  description: Name of the virtual machine.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                os:
+                  type: string
+                  enum:
+                    - linux
+                    - windows
+                  description: >-
+                    Operating system: linux installs the latest AlmaLinux,
+                    windows installs the latest Windows Server.
+                size:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  default: small
+                  description: >-
+                    T-shirt size: small = 2 vCPU, medium = 4 vCPU,
+                    large = 8 vCPU.
+                resourceGroupRef:
+                  type: object
+                  description: Resource group hosting the virtual machine.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XResourceGroup.
+                  required:
+                    - name
+                virtualNetworkRef:
+                  type: object
+                  description: Virtual network and subnet hosting the NIC.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XVirtualNetwork.
+                    subnet:
+                      type: string
+                      description: Name of the subnet within that network.
+                  required:
+                    - name
+                    - subnet
+                adminUsername:
+                  type: string
+                  default: azureuser
+                  description: Local administrator user name.
+                adminPasswordSecretRef:
+                  type: object
+                  description: >-
+                    Secret in the same namespace holding the local
+                    administrator password.
+                  default:
+                    name: vm-admin-password
+                    key: password
+                  properties:
+                    name:
+                      type: string
+                      default: vm-admin-password
+                    key:
+                      type: string
+                      default: password
+                  required:
+                    - name
+                    - key
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the virtual machine.
+              required:
+                - name
+                - os
+                - resourceGroupRef
+                - virtualNetworkRef
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the virtual machine.
+                vmSize:
+                  type: string
+                  description: Azure VM SKU resolved from the requested size.
+                privateIp:
+                  type: string
+                  description: Private IP address assigned to the NIC.
+                networkInterfaceId:
+                  type: string
+                  description: Azure resource ID of the network interface.
+          required:
+            - spec

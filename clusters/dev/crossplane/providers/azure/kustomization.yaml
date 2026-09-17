@@ -12,3 +12,4 @@ kind: Kustomization
 resources:
   - provider.yaml
   - provider-network.yaml
+  - provider-compute.yaml

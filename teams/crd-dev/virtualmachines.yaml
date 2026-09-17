@@ -1,0 +1,38 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XResourceGroup
+metadata:
+  name: crd-dev-virtualmachines
+spec:
+  name: crd-dev-virtualmachines
+  tags:
+    description: Virtual machines for CRD development
+    managed-by: kiac
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualMachine
+metadata:
+  name: linuxdemo01
+spec:
+  name: linuxdemo01
+  os: linux
+  size: small
+  resourceGroupRef:
+    name: crd-dev-virtualmachines
+  virtualNetworkRef:
+    name: crd-dev
+    subnet: management
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualMachine
+metadata:
+  name: windemo01
+spec:
+  name: windemo01
+  os: windows
+  size: small
+  resourceGroupRef:
+    name: crd-dev-virtualmachines
+  virtualNetworkRef:
+    name: crd-dev
+    subnet: management

@@ -110,3 +110,6 @@ spec:
                 networkSecurityGroupIdSelector:
                   matchControllerRef: true
             {{- end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready
