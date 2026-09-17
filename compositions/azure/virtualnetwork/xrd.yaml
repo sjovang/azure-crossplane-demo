@@ -66,16 +66,10 @@ spec:
                     properties:
                       name:
                         type: string
-                        x-kubernetes-validations:
-                          - rule: self == oldSelf
-                            message: subnet name is immutable
                       numberOfAllocatedIpAddresses:
                         type: integer
                         description: Number of IP addresses to allocate.
                         minimum: 1
-                        x-kubernetes-validations:
-                          - rule: self == oldSelf
-                            message: subnet size is immutable
                       securityRules:
                         type: array
                         description: Optional Network Security Group rules.
