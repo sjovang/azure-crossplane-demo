@@ -9,7 +9,7 @@ metadata:
 spec:
   interval: 1m0s
   ref:
-    branch: main
+    branch: feat/compositions
   secretRef:
     name: flux-system
   url: https://github.com/sjovang/azure-crossplane-demo.git
