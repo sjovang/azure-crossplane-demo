@@ -41,16 +41,16 @@ spec:
                 tags:
             {{ toYaml $xr.spec.tags | nindent 10 }}
             {{- end }}
-            {{- $virtualNetwork := getComposedResource "virtualNetwork" }}
+            {{- $virtualNetwork := getComposedResource . "virtualNetwork" }}
             {{- if $virtualNetwork }}
             ---
             apiVersion: azure.platform.example.org/v1alpha1
             kind: XVirtualNetwork
             status:
-              id: {{ $virtualNetwork.resource.status.atProvider.id }}
-              name: {{ $virtualNetwork.resource.status.atProvider.name }}
+              id: {{ $virtualNetwork.status.atProvider.id }}
+              name: {{ $virtualNetwork.status.atProvider.name }}
               addressSpace:
-            {{ toYaml $virtualNetwork.resource.status.atProvider.addressSpace | nindent 4 }}
+            {{ toYaml $virtualNetwork.status.atProvider.addressSpace | nindent 4 }}
             {{- end }}
             {{- range $index, $subnet := $xr.spec.subnets }}
             ---
