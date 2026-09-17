@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: virtualnetworks.azure.platform.example.org
+  name: networkmanageripampools.azure.platform.example.org
 spec:
   compositeTypeRef:
     apiVersion: azure.platform.example.org/v1alpha1
-    kind: XVirtualNetwork
+    kind: XNetworkManagerIPAMPool
   mode: Pipeline
   pipeline:
     - step: patch-and-transform
@@ -16,13 +16,10 @@ spec:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
         resources:
-          - name: virtual-network
+          - name: ipam-pool
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
-              kind: VirtualNetwork
-              metadata:
-                annotations:
-                  crossplane.io/external-name: ""
+              kind: ManagerIpamPool
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -35,35 +32,19 @@ spec:
                   - type: string
                     string:
                       type: Format
-                      fmt: vnet-%s
+                      fmt: ipam-%s
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.networkManagerId
+                toFieldPath: spec.forProvider.networkManagerId
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.location
                 toFieldPath: spec.forProvider.location
               - type: FromCompositeFieldPath
-                fromFieldPath: spec.resourceGroupRef.name
-                toFieldPath: spec.forProvider.resourceGroupName
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: rg-%s
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.ipamAllocation.numberOfAllocatedIpAddresses
-                toFieldPath: spec.forProvider.ipamPoolPrefixAllocation[0].numberOfAllocatedIpAddresses
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.ipamAllocation.ipamPoolId
-                toFieldPath: spec.forProvider.ipamPoolPrefixAllocation[0].id
-                policy:
-                  fromFieldPath: Optional
+                fromFieldPath: spec.addressPrefixes
+                toFieldPath: spec.forProvider.addressPrefixes
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.tags
                 toFieldPath: spec.forProvider.tags
               - type: ToCompositeFieldPath
                 fromFieldPath: status.atProvider.id
                 toFieldPath: status.id
-              - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.name
-                toFieldPath: status.name
-              - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.addressSpace
-                toFieldPath: status.addressSpace

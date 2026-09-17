@@ -1,3 +1,4 @@
+---
 # A separate Kustomization for teams/ (outside clusters/dev/, mimicking
 # separate teams/repos sharing one demo cluster). dependsOn both
 # flux-system and crossplane-compositions: a team's XResourceGroup manifest

@@ -1,3 +1,4 @@
+---
 apiVersion: apiextensions.crossplane.io/v1alpha1
 kind: ManagedResourceActivationPolicy
 metadata:
@@ -5,8 +6,8 @@ metadata:
 spec:
   activate:
     - resourcegroups.azure.m.upbound.io
-    - networkmanagers.network.azure.m.upbound.io
-    - networkmanageripampools.network.azure.m.upbound.io
+    - managers.network.azure.m.upbound.io
+    - manageripampools.network.azure.m.upbound.io
     - virtualnetworks.network.azure.m.upbound.io
     - subnets.network.azure.m.upbound.io
     - securitygroups.network.azure.m.upbound.io

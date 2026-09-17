@@ -8,6 +8,9 @@ repos:
       - id: check-merge-conflict
       - id: check-json
       - id: check-yaml
+        args: [
+          '--allow-multiple-documents',
+        ]
         exclude: ^clusters/dev/flux-system/(gotk-components|gotk-sync)\.yaml$
       - id: detect-private-key
       - id: mixed-line-ending

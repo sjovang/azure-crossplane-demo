@@ -2,15 +2,13 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: xresourcegroups.azure.platform.example.org
+  name: xnetworkmanageripampools.azure.platform.example.org
 spec:
-  # Namespaced XR style: each team's resource group is isolated in its own
-  # Kubernetes namespace and can be managed independently.
   scope: Namespaced
   group: azure.platform.example.org
   names:
-    kind: XResourceGroup
-    plural: xresourcegroups
+    kind: XNetworkManagerIPAMPool
+    plural: xnetworkmanageripampools
   versions:
     - name: v1alpha1
       served: true
@@ -24,32 +22,41 @@ spec:
               properties:
                 name:
                   type: string
-                  description: Name of the Azure resource group.
+                  description: Logical name of the IPAM pool.
                   x-kubernetes-validations:
                     - rule: self == oldSelf
                       message: name is immutable
+                networkManagerId:
+                  type: string
+                  description: Azure resource ID of the parent Network Manager.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: networkManagerId is immutable
                 location:
                   type: string
                   default: swedencentral
-                  description: >-
-                    Azure region for the resource group.
+                  description: Azure region for the IPAM pool.
+                addressPrefixes:
+                  type: array
+                  items:
+                    type: string
+                  description: CIDR blocks for the root IPAM pool.
                 tags:
                   type: object
                   nullable: true
                   default: null
                   additionalProperties:
                     type: string
-                  description: Optional tags to apply to the resource group.
+                  description: Optional tags to apply to the IPAM pool.
               required:
                 - name
+                - networkManagerId
+                - addressPrefixes
             status:
               type: object
               properties:
                 id:
                   type: string
-                  description: Azure resource ID of the resource group.
-                name:
-                  type: string
-                  description: Name of the provisioned resource group.
+                  description: Azure resource ID of the IPAM pool.
           required:
             - spec

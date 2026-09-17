@@ -10,45 +10,21 @@ spec:
     managed-by: kiac
 ---
 apiVersion: azure.platform.example.org/v1alpha1
-kind: XNetworkManagerIpam
+kind: XNetworkManager
 metadata:
   name: dev-networkmanager
 spec:
   name: dev-networkmanager
+  subscriptionId: 297651e0-733c-45f9-b295-ad80c68785f1
   resourceGroupRef:
     name: dev-networkmanager
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManagerIPAMPool
+metadata:
+  name: dev-networkmanager-ipam
+spec:
+  name: dev-networkmanager-ipam
+  networkManagerId: /subscriptions/297651e0-733c-45f9-b295-ad80c68785f1/resourceGroups/rg-dev-networkmanager/providers/Microsoft.Network/networkManagers/vnm-dev-networkmanager  # yamllint disable-line rule:line-length
   addressPrefixes:
     - 10.42.0.0/16
-# ---
-# apiVersion: azure.platform.example.org/v1alpha1
-# kind: XVirtualNetwork
-# metadata:
-#   name: dev-vnet
-# spec:
-#   name: dev-vnet
-#   resourceGroupRef:
-#     name: dev-networkmanager
-#   ipamAllocation:
-#     numberOfAllocatedIpAddresses: 256
-# ---
-# apiVersion: azure.platform.example.org/v1alpha1
-# kind: XSubnet
-# metadata:
-#   name: dev-subnet
-# spec:
-#   name: dev-subnet
-#   resourceGroupRef:
-#     name: dev-networkmanager
-#   virtualNetworkRef:
-#     name: dev-vnet
-#   ipamAllocation:
-#     numberOfAllocatedIpAddresses: 32
-#   securityRules:
-#     - name: allow-ssh
-#       priority: 1000
-#       direction: Inbound
-#       access: Allow
-#       protocol: Tcp
-#       destinationPortRange: "22"
-#       sourceAddressPrefix: "*"
-#       destinationAddressPrefix: "*"

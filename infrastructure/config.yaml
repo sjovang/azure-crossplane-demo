@@ -1,3 +1,4 @@
+---
 # kiac cluster config, used with: kiac create cluster --config config.yaml
 #
 # Local Kubernetes cluster (kiac - Kubernetes in Apple Containers) for

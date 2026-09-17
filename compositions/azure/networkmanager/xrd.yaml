@@ -1,13 +1,14 @@
+---
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: xnetworkmanageripams.azure.platform.example.org
+  name: xnetworkmanagers.azure.platform.example.org
 spec:
   scope: Namespaced
   group: azure.platform.example.org
   names:
-    kind: XNetworkManagerIpam
-    plural: xnetworkmanageripams
+    kind: XNetworkManager
+    plural: xnetworkmanagers
   versions:
     - name: v1alpha1
       served: true
@@ -21,13 +22,21 @@ spec:
               properties:
                 name:
                   type: string
-                  description: Logical name for the Network Manager and IPAM pool.
+                  description: Logical name of the Network Manager.
                   x-kubernetes-validations:
                     - rule: self == oldSelf
                       message: name is immutable
+                subscriptionId:
+                  type: string
+                  description: >-
+                    Azure subscription containing the Network Manager.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: subscriptionId is immutable
                 resourceGroupRef:
                   type: object
-                  description: Reference to the resource group hosting the Network Manager.
+                  description: >-
+                    Reference to the resource group hosting the Network Manager.
                   properties:
                     name:
                       type: string
@@ -37,34 +46,24 @@ spec:
                 location:
                   type: string
                   default: swedencentral
-                  description: Azure region for the Network Manager.
-                addressPrefixes:
-                  type: array
-                  items:
-                    type: string
-                  description: CIDR blocks for the root IPAM pool.
+                  description: >-
+                    Azure region for the Network Manager.
                 tags:
                   type: object
                   nullable: true
                   default: null
                   additionalProperties:
                     type: string
-                  description: Optional tags to apply to the resources.
+                  description: Optional tags to apply to the Network Manager.
               required:
                 - name
+                - subscriptionId
                 - resourceGroupRef
-                - addressPrefixes
             status:
               type: object
               properties:
                 id:
                   type: string
                   description: Azure resource ID of the Network Manager.
-                networkManagerId:
-                  type: string
-                  description: Azure resource ID of the Network Manager.
-                ipamPoolId:
-                  type: string
-                  description: Azure resource ID of the root IPAM pool.
           required:
             - spec

@@ -1,3 +1,4 @@
+---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # Shared across clusters: any cluster wanting these compositions adds its own

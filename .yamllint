@@ -4,5 +4,5 @@
 extends: default
 
 rules:
-  # No manifest in this repo uses a leading "---" document marker.
-  document-start: disable
+  document-start:
+    present: true

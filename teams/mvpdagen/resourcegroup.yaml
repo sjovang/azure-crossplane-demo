@@ -1,3 +1,4 @@
+---
 # Namespaced (see compositions/azure/resourcegroup/xrd.yaml) — the team
 # Kustomization supplies the team's namespace automatically.
 apiVersion: azure.platform.example.org/v1alpha1

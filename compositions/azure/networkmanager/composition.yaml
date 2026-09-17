@@ -1,11 +1,12 @@
+---
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: networkmanageripams.azure.platform.example.org
+  name: networkmanagers.azure.platform.example.org
 spec:
   compositeTypeRef:
     apiVersion: azure.platform.example.org/v1alpha1
-    kind: XNetworkManagerIpam
+    kind: XNetworkManager
   mode: Pipeline
   pipeline:
     - step: patch-and-transform
@@ -18,14 +19,15 @@ spec:
           - name: network-manager
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
-              kind: NetworkManager
+              kind: Manager
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
                   name: default
                 forProvider:
                   scopeAccesses:
-                    - Ipam
+                    - Connectivity
+                    - SecurityAdmin
             patches:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.name
@@ -35,6 +37,9 @@ spec:
                     string:
                       type: Format
                       fmt: vnm-%s
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subscriptionId
+                toFieldPath: spec.forProvider.scope.subscriptionIds[0]
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.location
                 toFieldPath: spec.forProvider.location
@@ -52,38 +57,3 @@ spec:
               - type: ToCompositeFieldPath
                 fromFieldPath: status.atProvider.id
                 toFieldPath: status.id
-              - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.id
-                toFieldPath: status.networkManagerId
-          - name: ipam-pool
-            base:
-              apiVersion: network.azure.m.upbound.io/v1beta1
-              kind: NetworkManagerIPAMPool
-              spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  networkManagerIdSelector:
-                    matchControllerRef: true
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.name
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: ipam-%s
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.location
-                toFieldPath: spec.forProvider.location
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.addressPrefixes
-                toFieldPath: spec.forProvider.addressPrefixes
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.tags
-                toFieldPath: spec.forProvider.tags
-              - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.id
-                toFieldPath: status.ipamPoolId

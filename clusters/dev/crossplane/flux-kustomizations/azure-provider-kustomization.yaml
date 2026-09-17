@@ -1,3 +1,4 @@
+---
 # A separate Kustomization for the Provider package: its CRD
 # (providers.pkg.crossplane.io) only exists once Crossplane core itself
 # (installed from ../core) has finished installing, so it can't
