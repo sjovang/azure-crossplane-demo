@@ -77,7 +77,8 @@ spec:
                 forProvider:
                   location: ${schema.spec.location}
                   resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
-                  size: '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
+                  # anchored so windowsVm reuses the same tshirt-size mapping
+                  size: &vmSize '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
                   adminUsername: ${schema.spec.adminUsername}
                   adminSshKey:
                     - username: ${schema.spec.adminUsername}
@@ -108,7 +109,7 @@ spec:
                 forProvider:
                   location: ${schema.spec.location}
                   resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
-                  size: '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
+                  size: *vmSize
                   adminUsername: ${schema.spec.adminUsername}
                   adminPasswordSecretRef:
                     name: ${schema.spec.adminPasswordSecretRef.name}
