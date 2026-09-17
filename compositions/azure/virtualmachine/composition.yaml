@@ -123,3 +123,7 @@ spec:
                     offer: WindowsServer
                     sku: 2025-datacenter-azure-edition
                     version: latest
+    # function-kro doesn't set composed-resource readiness itself, unlike patch-and-transform.
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready
