@@ -40,6 +40,11 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.subscriptionId
                 toFieldPath: spec.forProvider.scope.subscriptionIds[0]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: /subscriptions/%s
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.location
                 toFieldPath: spec.forProvider.location

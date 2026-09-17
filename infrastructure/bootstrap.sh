@@ -90,6 +90,15 @@ EOF
   chmod 600 "$credentials_file"
 fi
 
+subscription_id=$(jq -r .subscriptionId "$credentials_file")
+registration_state=$(az provider show --namespace Microsoft.Network \
+  --subscription "$subscription_id" --query registrationState -o tsv)
+if [[ "$registration_state" != "Registered" ]]; then
+  echo "==> Registering Microsoft.Network on subscription $subscription_id"
+  az provider register --namespace Microsoft.Network \
+    --subscription "$subscription_id" --wait
+fi
+
 echo "==> Applying azure-secret"
 # Kept at $credentials_file (gitignored, never deleted) so re-running this
 # script after a 'kiac delete cluster' + recreate reuses the same service

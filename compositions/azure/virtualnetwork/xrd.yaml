@@ -28,7 +28,8 @@ spec:
                       message: name is immutable
                 resourceGroupRef:
                   type: object
-                  description: Reference to the resource group hosting the Virtual Network.
+                  description: >-
+                    Reference to the resource group hosting the Virtual Network.
                   properties:
                     name:
                       type: string
@@ -41,12 +42,16 @@ spec:
                   description: Azure region for the Virtual Network.
                 ipamAllocation:
                   type: object
-                  description: Allocate address space dynamically from Azure Network Manager IPAM.
+                  description: >-
+                    Allocate address space dynamically from Azure Network
+                    Manager IPAM.
                   properties:
                     numberOfAllocatedIpAddresses:
                       type: integer
                       default: 256
-                      description: Number of IP addresses to allocate from the IPAM pool (e.g. 256 for a /24).
+                      description: >-
+                        Number of IP addresses to allocate from the IPAM pool
+                        (e.g. 256 for a /24).
                     ipamPoolId:
                       type: string
                       description: Resource ID of the IPAM pool.
@@ -76,6 +81,7 @@ spec:
                   type: array
                   items:
                     type: string
-                  description: Allocated address prefixes for the Virtual Network.
+                  description: >-
+                    Allocated address prefixes for the Virtual Network.
           required:
             - spec

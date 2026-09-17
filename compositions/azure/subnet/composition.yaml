@@ -54,7 +54,7 @@ spec:
                       fmt: vnet-%s
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.ipamAllocation.numberOfAllocatedIpAddresses
-                toFieldPath: spec.forProvider.ipamPoolPrefixAllocation[0].numberOfAllocatedIpAddresses
+                toFieldPath: spec.forProvider.ipamPoolPrefixAllocation[0].numberOfAllocatedIpAddresses  # yamllint disable-line rule:line-length
                 policy:
                   fromFieldPath: Optional
               - type: FromCompositeFieldPath

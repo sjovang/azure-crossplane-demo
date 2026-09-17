@@ -28,7 +28,8 @@ spec:
                       message: name is immutable
                 resourceGroupRef:
                   type: object
-                  description: Reference to the resource group hosting the Subnet and NSG.
+                  description: >-
+                    Reference to the resource group hosting the Subnet and NSG.
                   properties:
                     name:
                       type: string
@@ -46,12 +47,16 @@ spec:
                     - name
                 ipamAllocation:
                   type: object
-                  description: Allocate address space dynamically from the parent Virtual Network / IPAM pool.
+                  description: >-
+                    Allocate address space dynamically from the parent Virtual
+                    Network / IPAM pool.
                   properties:
                     numberOfAllocatedIpAddresses:
                       type: integer
                       default: 256
-                      description: Number of IP addresses to allocate (e.g. 256 for a /24).
+                      description: >-
+                        Number of IP addresses to allocate (e.g. 256 for a
+                        /24).
                     ipamPoolId:
                       type: string
                       description: Resource ID of the IPAM pool.
@@ -100,7 +105,8 @@ spec:
                       destinationPortRange:
                         type: string
                         default: "*"
-                        description: Destination port or range (e.g. 22 or 80-443).
+                        description: >-
+                          Destination port or range (e.g. 22 or 80-443).
                       sourceAddressPrefix:
                         type: string
                         default: "*"
@@ -135,6 +141,7 @@ spec:
                   description: Azure resource ID of the Subnet.
                 networkSecurityGroupId:
                   type: string
-                  description: Azure resource ID of the attached Network Security Group.
+                  description: >-
+                    Azure resource ID of the attached Network Security Group.
           required:
             - spec
