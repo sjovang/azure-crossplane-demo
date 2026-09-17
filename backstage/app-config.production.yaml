@@ -1,0 +1,23 @@
+---
+# Overrides applied when NODE_ENV=production (used by the Dockerfile /
+# in-cluster Deployment). Values here should stay generic; anything
+# environment-specific is supplied via env vars, not hardcoded.
+app:
+  baseUrl: ${APP_BASE_URL}
+
+backend:
+  baseUrl: ${BACKEND_BASE_URL}
+  listen:
+    port: 7007
+  cors:
+    origin: ${APP_BASE_URL}
+
+auth:
+  environment: production
+  providers:
+    microsoft:
+      production:
+        clientId: ${AUTH_MICROSOFT_CLIENT_ID}
+        clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
+        tenantId: ${AUTH_MICROSOFT_TENANT_ID}
+        domainHint: ${AUTH_MICROSOFT_TENANT_ID}

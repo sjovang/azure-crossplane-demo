@@ -13,4 +13,5 @@ resources:
   - crossplane
   - external-secrets-kustomization.yaml
   - observability-kustomization.yaml
+  - apps-kustomization.yaml
   - teams-kustomization.yaml

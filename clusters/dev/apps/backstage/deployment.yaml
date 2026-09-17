@@ -1,0 +1,64 @@
+---
+# Base config only: image must be built and pushed manually (see repo
+# README's "Developer Portal (Backstage)" section) and the
+# backstage-entra-secret Secret must be created manually before this
+# Deployment can start successfully -- both are intentionally not
+# committed to git.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+  namespace: backstage
+  labels:
+    app.kubernetes.io/name: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backstage
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backstage
+    spec:
+      containers:
+        - name: backstage
+          image: ghcr.io/sjovang/azure-crossplane-demo-backstage:latest
+          ports:
+            - name: http
+              containerPort: 7007
+          env:
+            # Base config targets `kubectl port-forward svc/backstage
+            # 7007:7007`: the production build serves the built frontend
+            # from the backend, so both point at the same forwarded port.
+            - name: APP_BASE_URL
+              value: http://localhost:7007
+            - name: BACKEND_BASE_URL
+              value: http://localhost:7007
+            - name: AUTH_MICROSOFT_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-entra-secret
+                  key: clientId
+            - name: AUTH_MICROSOFT_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-entra-secret
+                  key: clientSecret
+            - name: AUTH_MICROSOFT_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-entra-secret
+                  key: tenantId
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
