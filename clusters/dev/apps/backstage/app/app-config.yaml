@@ -1,0 +1,40 @@
+---
+app:
+  title: Azure Crossplane Demo Developer Portal
+  baseUrl: http://localhost:3000
+
+organization:
+  name: Azure Crossplane Demo
+
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
+  cors:
+    origin: http://localhost:3000
+    methods: [GET, POST, PUT, DELETE]
+    credentials: true
+  # Base config only: no database configured yet, defaults to the in-memory
+  # SQLite database. Add a `database:` block (e.g. Postgres) before relying
+  # on this for anything beyond auth login testing.
+
+auth:
+  # Base config: Microsoft Entra ID (Azure AD) OIDC provider only.
+  # No sign-in resolver configured yet -- see the top-level repo README's
+  # "Developer Portal (Backstage)" section for the manual Entra ID App
+  # Registration steps required before this works.
+  environment: development
+  providers:
+    microsoft:
+      development:
+        clientId: ${AUTH_MICROSOFT_CLIENT_ID}
+        clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
+        tenantId: ${AUTH_MICROSOFT_TENANT_ID}
+        domainHint: ${AUTH_MICROSOFT_TENANT_ID}
+
+# Base config only: no catalog locations registered yet. This is a
+# follow-up phase (Crossplane XR/Composition catalog integration).
+catalog:
+  locations: []

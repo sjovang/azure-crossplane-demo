@@ -1,0 +1,20 @@
+{
+  "name": "backstage",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "20 || 22"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run start --workspace=packages/backend\" \"npm run start --workspace=packages/app\"",
+    "build:backend": "npm run build --workspace=packages/backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

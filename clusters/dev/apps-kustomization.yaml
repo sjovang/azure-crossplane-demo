@@ -1,0 +1,35 @@
+---
+# Pointer Kustomization for apps/ (currently: Backstage). Path targets only
+# the infra/ subfolder -- app/ holds the Backstage application source
+# (package.json, Dockerfile, app-config.yaml), which is not Kubernetes YAML
+# and must never be swept into a Flux apply. No CRD-dependency deadlock risk
+# here (plain Deployment/Service/Namespace), but it still gets its own
+# scoped kustomization.yaml and dedicated Flux Kustomization CR per repo
+# convention, rather than relying on Flux's implicit recursive scan.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 2m
+  prune: true
+  path: ./clusters/dev/apps/backstage/infra
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: flux-system
+  postBuild:
+    substituteFrom:
+      # Provides ${BACKSTAGE_HOSTNAME} (see infra/httproute.yaml and
+      # infra/deployment.yaml), applied imperatively by
+      # infrastructure/set-backstage-hostname.sh -- never committed to git,
+      # same pattern as the azure-secret/backstage-entra-secret Secrets.
+      # optional: true so the very first reconcile (before bootstrap.sh has
+      # applied the ConfigMap) doesn't hard-fail the whole Kustomization.
+      - kind: ConfigMap
+        name: backstage-vars
+        optional: true
