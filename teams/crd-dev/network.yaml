@@ -40,7 +40,8 @@ spec:
     name: crd-dev
   ipamAllocation:
     numberOfAllocatedIpAddresses: 256
-    ipamPoolId: /subscriptions/297651e0-733c-45f9-b295-ad80c68785f1/resourceGroups/rg-crd-dev/providers/Microsoft.Network/networkManagers/vnm-crd-dev/ipamPools/ipam-crd-dev  # yamllint disable-line rule:line-length
+    # yamllint disable-line rule:line-length
+    ipamPoolId: /subscriptions/297651e0-733c-45f9-b295-ad80c68785f1/resourceGroups/rg-crd-dev/providers/Microsoft.Network/networkManagers/vnm-crd-dev/ipamPools/ipam-crd-dev
   subnets:
     - name: management
       numberOfAllocatedIpAddresses: 32

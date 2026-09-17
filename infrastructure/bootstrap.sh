@@ -91,13 +91,15 @@ EOF
 fi
 
 subscription_id=$(jq -r .subscriptionId "$credentials_file")
-registration_state=$(az provider show --namespace Microsoft.Network \
-  --subscription "$subscription_id" --query registrationState -o tsv)
-if [[ "$registration_state" != "Registered" ]]; then
-  echo "==> Registering Microsoft.Network on subscription $subscription_id"
-  az provider register --namespace Microsoft.Network \
-    --subscription "$subscription_id" --wait
-fi
+for provider_namespace in Microsoft.Network Microsoft.Compute; do
+  registration_state=$(az provider show --namespace "$provider_namespace" \
+    --subscription "$subscription_id" --query registrationState -o tsv)
+  if [[ "$registration_state" != "Registered" ]]; then
+    echo "==> Registering $provider_namespace on subscription $subscription_id"
+    az provider register --namespace "$provider_namespace" \
+      --subscription "$subscription_id" --wait
+  fi
+done
 
 echo "==> Applying azure-secret"
 # Kept at $credentials_file (gitignored, never deleted) so re-running this
