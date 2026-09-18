@@ -13,3 +13,6 @@ resources:
   - provider.yaml
   - provider-network.yaml
   - provider-compute.yaml
+  - provider-web.yaml
+  - provider-containerapp.yaml
+  - provider-postgresql.yaml

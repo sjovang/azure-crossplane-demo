@@ -1,0 +1,78 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: databases.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XDatabase
+  mode: Pipeline
+  pipeline:
+    - step: render-database
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $skuName := "B_Standard_B1ms" -}}
+            {{- $storageMb := 32768 -}}
+            {{- if eq $xr.spec.size "medium" }}{{ $skuName = "GP_Standard_D2s_v3" }}{{ $storageMb = 131072 }}{{ end -}}
+            {{- if eq $xr.spec.size "large" }}{{ $skuName = "GP_Standard_D4s_v3" }}{{ $storageMb = 262144 }}{{ end -}}
+            {{- $databaseName := $xr.spec.name -}}
+            {{- if $xr.spec.databaseName }}{{ $databaseName = $xr.spec.databaseName }}{{ end -}}
+            ---
+            apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+            kind: FlexibleServer
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "flexibleServer" }}
+                crossplane.io/external-name: psql-{{ $xr.spec.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                location: {{ $xr.spec.location }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+                skuName: {{ $skuName }}
+                storageMb: {{ $storageMb }}
+                version: "{{ $xr.spec.postgresVersion }}"
+                administratorLogin: {{ $xr.spec.adminUsername }}
+                administratorPasswordSecretRef:
+                  name: {{ $xr.spec.adminPasswordSecretRef.name }}
+                  key: {{ $xr.spec.adminPasswordSecretRef.key }}
+                  namespace: {{ $xr.metadata.namespace }}
+            ---
+            apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+            kind: FlexibleServerDatabase
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "flexibleServerDatabase" }}
+                crossplane.io/external-name: {{ $databaseName }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                serverIdSelector:
+                  matchControllerRef: true
+            {{- $flexibleServer := getComposedResource . "flexibleServer" }}
+            {{- $flexibleServerDatabase := getComposedResource . "flexibleServerDatabase" }}
+            {{- if and $flexibleServer $flexibleServerDatabase }}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XDatabase
+            status:
+              id: {{ $flexibleServer.status.atProvider.id }}
+              fqdn: {{ $flexibleServer.status.atProvider.fqdn }}
+              databaseId: {{ $flexibleServerDatabase.status.atProvider.id }}
+            {{- end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

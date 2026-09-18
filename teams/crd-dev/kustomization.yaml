@@ -6,6 +6,7 @@ resources:
   - ../_base
   - network.yaml
   - virtualmachines.yaml
+  - apps.yaml
 patches:
   - target:
       group: azure.platform.example.org
