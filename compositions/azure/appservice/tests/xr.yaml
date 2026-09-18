@@ -1,0 +1,15 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XAppService
+metadata:
+  name: test-appservice
+  namespace: test
+spec:
+  name: test-appservice
+  size: small
+  resourceGroupRef:
+    name: test
+  image: docker.io/library/nginx:latest
+  port: 80
+  envVars:
+    LOG_LEVEL: info

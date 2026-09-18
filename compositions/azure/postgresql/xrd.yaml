@@ -1,0 +1,105 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xdatabases.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XDatabase
+    plural: xdatabases
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the PostgreSQL Flexible Server.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                resourceGroupRef:
+                  type: object
+                  description: Resource group hosting the database server.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XResourceGroup.
+                  required:
+                    - name
+                size:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  default: small
+                  description: >-
+                    T-shirt size: small = B_Standard_B1ms/32GB,
+                    medium = GP_Standard_D2s_v3/128GB,
+                    large = GP_Standard_D4s_v3/256GB.
+                postgresVersion:
+                  type: string
+                  enum:
+                    - "13"
+                    - "14"
+                    - "15"
+                    - "16"
+                  default: "16"
+                  description: PostgreSQL major version.
+                adminUsername:
+                  type: string
+                  default: pgadmin
+                  description: Administrator login name for the server.
+                adminPasswordSecretRef:
+                  type: object
+                  description: >-
+                    Secret in the same namespace holding the administrator
+                    password.
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+                      default: password
+                  required:
+                    - name
+                    - key
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: adminPasswordSecretRef is immutable
+                databaseName:
+                  type: string
+                  description: >-
+                    Name of the default database created on the server.
+                    Defaults to spec.name.
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the database server.
+              required:
+                - name
+                - resourceGroupRef
+                - adminPasswordSecretRef
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the Flexible Server.
+                fqdn:
+                  type: string
+                  description: Fully qualified domain name of the server.
+                databaseId:
+                  type: string
+                  description: Azure resource ID of the default database.
+          required:
+            - spec
