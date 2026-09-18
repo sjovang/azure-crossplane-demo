@@ -1,9 +1,0 @@
----
-apiVersion: pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  # Installing a family sub-provider also installs the shared
-  # provider-family-azure meta-provider (handles auth) as a dependency.
-  name: provider-azure-resources
-spec:
-  package: xpkg.upbound.io/upbound/provider-azure-resources:v2.7.2
