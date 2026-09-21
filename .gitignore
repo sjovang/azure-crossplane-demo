@@ -5,3 +5,4 @@
 infrastructure/azure-credentials.json
 infrastructure/backstage-credentials.json
 .vscode
+.envrc
