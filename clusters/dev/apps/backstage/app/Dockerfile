@@ -10,14 +10,17 @@
 # Load into the kiac cluster's nodes (no push/registry required):
 #   kiac load image backstage:dev --name dev
 
-FROM node:20-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
-COPY . .
+COPY package.json backstage.json yarn.lock ./
+COPY packages/app/package.json packages/app/package.json
+COPY packages/backend/package.json packages/backend/package.json
 RUN npm install
+COPY . .
 RUN npm run build:backend
 
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 ENV NODE_ENV=production
