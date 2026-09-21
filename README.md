@@ -108,22 +108,24 @@ flowchart LR
    az login
    ```
 
-7. Export a token, then create the cluster, set up Azure credentials for Crossplane and Backstage, and bootstrap [Flux](https://fluxcd.io) against your fork:
+7. Export a token, then create or reuse the cluster, set up Azure credentials for Crossplane and optionally Backstage, and bootstrap [Flux](https://fluxcd.io) against your fork:
 
    ```sh
    export GITHUB_TOKEN=$(gh auth token)
    ./infrastructure/bootstrap.sh
    ```
 
-   The script creates or reuses the Azure service principal
-   (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration
-   (`<SP_NAME>-backstage`), applies their credentials as the `azure-secret`
-   and `backstage-entra-secret` Kubernetes `Secret`s, builds the Backstage
-   image and loads it into every cluster node (`container build` +
+   The script prompts if the named kiac cluster already exists, creates or
+   reuses the Azure service principal (`<SP_NAME>-azure-resources`), applies
+   its credentials as the `azure-secret` Kubernetes `Secret`, and bootstraps
+   Flux. When `BACKSTAGE_ENABLED=true`, it also creates or reuses the
+   Backstage Entra ID app registration (`<SP_NAME>-backstage`), applies its
+   credentials as the `backstage-entra-secret` Kubernetes `Secret`, builds the
+   Backstage image and loads it into every cluster node (`container build` +
    `kiac load image` — no container registry involved), configures how
-   Backstage is reached (`BACKSTAGE_HOSTNAME`, see below), and then
-   bootstraps Flux. `GITHUB_TOKEN` is required because Flux configures Git
-   access through the GitHub API.
+   Backstage is reached (`BACKSTAGE_HOSTNAME`, see below), and points Flux at
+   the Backstage-enabled GitOps root. `GITHUB_TOKEN` is required because Flux
+   configures Git access through the GitHub API.
 
    Optional environment variables:
 
@@ -132,9 +134,11 @@ flowchart LR
    | `FLUX_OWNER` | GitHub user from `gh` | Repository owner |
    | `FLUX_REPO` | `azure-crossplane-demo` | Repository name |
    | `FLUX_BRANCH` | `main` | Git branch |
-   | `FLUX_PATH` | `clusters/dev` | Flux path |
+   | `FLUX_PATH` | `clusters/dev-with-backstage` when `BACKSTAGE_ENABLED=true`, otherwise `clusters/dev` | Flux path. Override only if you know which GitOps root you want Flux to reconcile |
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
    | `SP_NAME` | `azure-crossplane-demo` | Common prefix for the Azure identities `bootstrap.sh` creates: the Crossplane service principal (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration (`<SP_NAME>-backstage`) |
+   | `KIAC_EXISTING_CLUSTER_ACTION` | prompt | What to do when the named kiac cluster already exists: `use-existing`, `halt`, or `redeploy` |
+   | `BACKSTAGE_ENABLED` | `true` | Build/load and deploy the Backstage developer portal by selecting the Backstage-enabled Flux root. Set to `false` to skip its image build, Entra ID app registration, secrets, hostname config, and GitOps root |
    | `BACKSTAGE_HOSTNAME` | `backstage.local` | Hostname Backstage is reached at. The default requires one manual, `sudo`-requiring `/etc/hosts` command printed at the end (never run automatically); set it to a domain you control public DNS for instead to avoid touching `/etc/hosts` at all — see [the Backstage README](clusters/dev/apps/backstage/README.md#choosing-how-to-reach-backstage) |
 
    Credentials are stored in the gitignored
@@ -168,9 +172,12 @@ Team resources live in the shared, top-level [`teams/`](teams/) directory, with 
 ## Developer Portal (Backstage)
 
 A base Backstage configuration with Microsoft Entra ID (Azure AD) OIDC sign-in lives in
-[`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/). `infrastructure/bootstrap.sh`
-above already creates the `<SP_NAME>-backstage` Entra ID app registration and
-`backstage-entra-secret`, and builds/loads the image (no registry required) — see
+[`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/). With the default
+`BACKSTAGE_ENABLED=true`, `infrastructure/bootstrap.sh` creates the
+`<SP_NAME>-backstage` Entra ID app registration and `backstage-entra-secret`,
+builds/loads the image (no registry required), and points Flux at
+[`clusters/dev-with-backstage/`](clusters/dev-with-backstage/). Set
+`BACKSTAGE_ENABLED=false` to use [`clusters/dev/`](clusters/dev/) and skip the developer portal — see
 [its README](clusters/dev/apps/backstage/README.md) for the two ways to reach
 Backstage (`BACKSTAGE_HOSTNAME`, above) and troubleshooting.
 

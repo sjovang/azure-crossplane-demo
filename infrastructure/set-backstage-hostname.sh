@@ -19,7 +19,7 @@
 # In both modes this script:
 #   - applies the backstage-vars ConfigMap (namespace flux-system) that the
 #     apps Flux Kustomization's postBuild.substituteFrom reads
-#     ${BACKSTAGE_HOSTNAME} from (see clusters/dev/apps-kustomization.yaml),
+#     ${BACKSTAGE_HOSTNAME} from (see clusters/dev/flux-kustomizations/apps/),
 #   - keeps the Backstage Entra ID app registration's redirect URI in sync
 #     with the current hostname (az ad app update, idempotent).
 set -euo pipefail

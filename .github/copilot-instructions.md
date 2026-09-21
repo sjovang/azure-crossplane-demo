@@ -45,8 +45,11 @@ incidental (see "CRD-dependency deadlock" below). Understanding changes here
 requires following the chain across several files:
 
 1. `clusters/dev/kustomization.yaml` — the root, applied by the `flux-system`
-   Kustomization: references `flux-system/`, `crossplane/`, and the `teams`
-   pointer Kustomization (below).
+  Kustomization: references `flux-system/`, `crossplane/`, shared platform
+  Kustomizations, and the `teams` pointer Kustomization (below). It does
+  **not** reference `flux-kustomizations/apps/`; Backstage is optional and
+  `infrastructure/bootstrap.sh` chooses `clusters/dev-with-backstage` as the
+  Flux path when `BACKSTAGE_ENABLED=true`.
 2. `clusters/dev/crossplane/` — cluster-specific Crossplane resources grouped
   by responsibility. `core/` contains the namespace and Helm installation;
   `flux-kustomizations/` contains the pointer Kustomization CRs that enforce

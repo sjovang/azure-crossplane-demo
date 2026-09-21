@@ -6,7 +6,7 @@
 # (infrastructure/config.yaml -> addons.gateway: true).
 #
 # ${BACKSTAGE_HOSTNAME} is resolved by Flux's postBuild.substituteFrom (see
-# clusters/dev/apps-kustomization.yaml) from the backstage-vars ConfigMap,
+# clusters/dev/flux-kustomizations/apps/) from the backstage-vars ConfigMap,
 # applied by infrastructure/set-backstage-hostname.sh -- not committed here
 # so switching hostnames (backstage.local vs. a public domain you control,
 # see clusters/dev/apps/backstage/README.md) never requires editing this

@@ -18,7 +18,7 @@ Architecture:
     here is declarative manifests.
   - [`infra/`](infra/) — the Kubernetes `Namespace`, `Deployment`,
     `Service`, and `HTTPRoute` for Backstage, applied by the dependent
-    `apps` Flux Kustomization (`clusters/dev/apps-kustomization.yaml`,
+    `apps` Flux Kustomization (`clusters/dev/flux-kustomizations/apps/`,
     `dependsOn: flux-system`, `path: ./clusters/dev/apps/backstage/infra`).
     Only `infra/` is ever applied by Flux — `app/` is not Kubernetes YAML.
 - [`infra/httproute.yaml`](infra/httproute.yaml) attaches Backstage to the
@@ -33,7 +33,7 @@ Architecture:
 - `${BACKSTAGE_HOSTNAME}` in `infra/httproute.yaml` and
   `infra/deployment.yaml` is resolved by the `apps` Flux Kustomization's
   `spec.postBuild.substituteFrom` (see
-  [`clusters/dev/apps-kustomization.yaml`](../../apps-kustomization.yaml)),
+  [`clusters/dev/flux-kustomizations/apps/`](../../flux-kustomizations/apps/)),
   reading from a `backstage-vars` `ConfigMap` in `flux-system`. That
   `ConfigMap` is never committed to git — it's applied imperatively by
   [`infrastructure/set-backstage-hostname.sh`](../../../../infrastructure/set-backstage-hostname.sh),
@@ -45,15 +45,18 @@ Architecture:
   [README.md](../../../../README.md)) — no container registry, in-cluster or
   external, is needed
 - Run [`infrastructure/bootstrap.sh`](../../../../infrastructure/bootstrap.sh)
-  (see the top-level [README.md](../../../../README.md)) — it creates the
-  kiac cluster, builds the Backstage image (`container build`) and loads it
-  into every node (`kiac load image`, no registry involved), creates the
+  (see the top-level [README.md](../../../../README.md)) with
+  `BACKSTAGE_ENABLED=true` (the default) — it creates or reuses the kiac
+  cluster, builds the Backstage image (`container build`) and loads it into
+  every node (`kiac load image`, no registry involved), creates the
   `<SP_NAME>-backstage` Entra ID app registration (the least-privilege
   Microsoft Graph permissions Backstage needs, and admin consent), applies
   its credentials as the `backstage-entra-secret` Kubernetes `Secret`,
-  configures how Backstage is reached (see below), and bootstraps Flux. The
-  top-level README's prerequisites table lists the exact Azure/Entra ID
-  roles required to run it.
+  configures how Backstage is reached (see below), bootstraps Flux against
+  `clusters/dev-with-backstage`, and lets GitOps deploy the Backstage Flux
+  Kustomization. The top-level README's prerequisites table lists the exact
+  Azure/Entra ID roles required to run it. Set `BACKSTAGE_ENABLED=false` to
+  use the `clusters/dev` root and skip deploying the developer portal.
 
 ## Choosing how to reach Backstage
 

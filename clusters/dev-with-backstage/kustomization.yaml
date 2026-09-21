@@ -1,0 +1,12 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Backstage-enabled Flux root. bootstrap.sh selects this path when
+# BACKSTAGE_ENABLED=true; clusters/dev remains the root without Backstage.
+resources:
+  - flux-system
+  - ../dev/crossplane
+  - ../dev/flux-kustomizations/external-secrets
+  - ../dev/flux-kustomizations/observability
+  - ../dev/flux-kustomizations/apps
+  - ../dev/flux-kustomizations/teams
