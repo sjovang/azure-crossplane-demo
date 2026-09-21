@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-types/
+.cache/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*

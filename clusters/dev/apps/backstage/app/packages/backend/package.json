@@ -2,6 +2,9 @@
   "name": "backend",
   "version": "0.1.0",
   "private": true,
+  "backstage": {
+    "role": "backend"
+  },
   "main": "dist/index.cjs.js",
   "scripts": {
     "start": "backstage-cli package start",
