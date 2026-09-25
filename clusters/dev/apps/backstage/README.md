@@ -46,7 +46,7 @@ Architecture:
   external, is needed
 - Run [`infrastructure/bootstrap.sh`](../../../../infrastructure/bootstrap.sh)
   (see the top-level [README.md](../../../../README.md)) with
-  `BACKSTAGE_ENABLED=true` (the default) — it creates or reuses the kiac
+  `BACKSTAGE_ENABLED=true` — it creates or reuses the kiac
   cluster, builds the Backstage image (`container build`) and loads it into
   every node (`kiac load image`, no registry involved), creates the
   `<SP_NAME>-backstage` Entra ID app registration (the least-privilege
@@ -55,8 +55,8 @@ Architecture:
   configures how Backstage is reached (see below), bootstraps Flux against
   `clusters/dev-with-backstage`, and lets GitOps deploy the Backstage Flux
   Kustomization. The top-level README's prerequisites table lists the exact
-  Azure/Entra ID roles required to run it. Set `BACKSTAGE_ENABLED=false` to
-  use the `clusters/dev` root and skip deploying the developer portal.
+  Azure/Entra ID roles required to run it. Backstage is disabled by default;
+  an unset or false value uses the `clusters/dev` root and skips it.
 
 ## Choosing how to reach Backstage
 

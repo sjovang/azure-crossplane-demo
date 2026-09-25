@@ -11,7 +11,8 @@ repos:
         args: [
           '--allow-multiple-documents',
         ]
-        exclude: ^clusters/dev/flux-system/(gotk-components|gotk-sync)\.yaml$
+        exclude: >-
+          ^clusters/dev(-with-backstage)?/flux-system/gotk-.*\.yaml$
       - id: detect-private-key
       - id: mixed-line-ending
         args: [
@@ -32,7 +33,7 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
-        exclude: ^clusters/dev/flux-system/
+        exclude: ^clusters/dev(-with-backstage)?/flux-system/
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.26.1

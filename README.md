@@ -138,7 +138,7 @@ flowchart LR
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
    | `SP_NAME` | `azure-crossplane-demo` | Common prefix for the Azure identities `bootstrap.sh` creates: the Crossplane service principal (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration (`<SP_NAME>-backstage`) |
    | `KIAC_EXISTING_CLUSTER_ACTION` | prompt | What to do when the named kiac cluster already exists: `use-existing`, `halt`, or `redeploy` |
-   | `BACKSTAGE_ENABLED` | `true` | Build/load and deploy the Backstage developer portal by selecting the Backstage-enabled Flux root. Set to `false` to skip its image build, Entra ID app registration, secrets, hostname config, and GitOps root |
+   | `BACKSTAGE_ENABLED` | `false` | Set to `true` to build/load and deploy the Backstage developer portal using the Backstage-enabled Flux root. When unset or `false`, all Backstage build and setup steps are skipped |
    | `BACKSTAGE_HOSTNAME` | `backstage.local` | Hostname Backstage is reached at. The default requires one manual, `sudo`-requiring `/etc/hosts` command printed at the end (never run automatically); set it to a domain you control public DNS for instead to avoid touching `/etc/hosts` at all — see [the Backstage README](clusters/dev/apps/backstage/README.md#choosing-how-to-reach-backstage) |
 
    Credentials are stored in the gitignored
@@ -172,12 +172,12 @@ Team resources live in the shared, top-level [`teams/`](teams/) directory, with 
 ## Developer Portal (Backstage)
 
 A base Backstage configuration with Microsoft Entra ID (Azure AD) OIDC sign-in lives in
-[`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/). With the default
+[`clusters/dev/apps/backstage/`](clusters/dev/apps/backstage/). With
 `BACKSTAGE_ENABLED=true`, `infrastructure/bootstrap.sh` creates the
 `<SP_NAME>-backstage` Entra ID app registration and `backstage-entra-secret`,
 builds/loads the image (no registry required), and points Flux at
-[`clusters/dev-with-backstage/`](clusters/dev-with-backstage/). Set
-`BACKSTAGE_ENABLED=false` to use [`clusters/dev/`](clusters/dev/) and skip the developer portal — see
+[`clusters/dev-with-backstage/`](clusters/dev-with-backstage/). By default it
+uses [`clusters/dev/`](clusters/dev/) and skips the developer portal — see
 [its README](clusters/dev/apps/backstage/README.md) for the two ways to reach
 Backstage (`BACKSTAGE_HOSTNAME`, above) and troubleshooting.
 

@@ -27,10 +27,9 @@ BACKSTAGE_HOSTNAME="${BACKSTAGE_HOSTNAME:-backstage.local}"
 backstage_redirect_uri="http://$BACKSTAGE_HOSTNAME/api/auth/microsoft/handler/frame"
 backstage_app_dir="$script_dir/../clusters/dev/apps/backstage/app"
 backstage_image="backstage:dev"
-# Set BACKSTAGE_ENABLED=false to skip building/loading the local Backstage
-# image, creating its Entra ID app registration, and applying its Flux
-# Kustomization.
-BACKSTAGE_ENABLED="${BACKSTAGE_ENABLED:-true}"
+# Set BACKSTAGE_ENABLED=true to build/load the local Backstage image, create
+# its Entra ID app registration, and select its Flux GitOps root.
+BACKSTAGE_ENABLED="${BACKSTAGE_ENABLED:-false}"
 KIAC_EXISTING_CLUSTER_ACTION="${KIAC_EXISTING_CLUSTER_ACTION:-}"
 
 # Defaults to your own GitHub user (the fork owner), resolved via the
@@ -200,7 +199,6 @@ ensure_container_builder_ready() {
 
 ensure_cluster
 
-echo "==> Building and loading the Backstage image"
 # kiac clusters have no image registry of their own; `kiac load image` copies
 # a locally built image straight onto every node's containerd (the same
 # trick `kind load docker-image` uses), so no registry -- in-cluster or
@@ -208,6 +206,7 @@ echo "==> Building and loading the Backstage image"
 # commands) after changing clusters/dev/apps/backstage/app/ source, then
 # `kubectl rollout restart deployment/backstage -n backstage`.
 if is_true "$BACKSTAGE_ENABLED"; then
+  echo "==> Building and loading the Backstage image"
   ensure_container_builder_ready
   (
     cd "$backstage_app_dir"
@@ -215,7 +214,7 @@ if is_true "$BACKSTAGE_ENABLED"; then
   )
   kiac load image "$backstage_image" --name "$cluster_name"
 else
-  echo "Skipping Backstage image build/load because BACKSTAGE_ENABLED=$BACKSTAGE_ENABLED"
+  echo "==> Backstage disabled; skipping image build and load"
 fi
 
 echo "==> Ensuring crossplane-system namespace exists"
