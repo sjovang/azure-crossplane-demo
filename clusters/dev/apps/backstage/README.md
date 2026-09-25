@@ -26,10 +26,11 @@ Architecture:
   [kiac's gateway addon](https://github.com/saiyam1814/kiac/blob/main/examples/gateway-api-lab.md)
   pre-creates on cluster creation
   (`infrastructure/config.yaml`'s `addons.gateway: true`), at the hostname
-  `${BACKSTAGE_HOSTNAME}`. No Ingress/`type: LoadBalancer` Service is
+  `https://${BACKSTAGE_HOSTNAME}`. No Ingress/`type: LoadBalancer` Service is
   created directly for Backstage; Traefik's own `LoadBalancer` Service in
   `kiac-gateway` is the single entry point shared by every `HTTPRoute` on
-  the cluster.
+  the cluster. Bootstrap creates a self-signed certificate for the hostname,
+  adds an HTTPS listener to the kiac Gateway, and redirects HTTP to HTTPS.
 - `${BACKSTAGE_HOSTNAME}` in `infra/httproute.yaml` and
   `infra/deployment.yaml` is resolved by the `apps` Flux Kustomization's
   `spec.postBuild.substituteFrom` (see
@@ -92,7 +93,8 @@ BACKSTAGE_HOSTNAME=backstage.example.com ./infrastructure/set-backstage-hostname
    `BACKSTAGE_HOSTNAME` first if you want the public-DNS option, then
    follow the `/etc/hosts` or DNS instructions it prints.
 2. Once Flux has converged (`flux get kustomizations -A`), open
-   `http://$BACKSTAGE_HOSTNAME` and sign in with Microsoft Entra ID.
+  `https://$BACKSTAGE_HOSTNAME`, accept the self-signed certificate warning,
+  and sign in with Microsoft Entra ID.
 
 Re-running `infrastructure/bootstrap.sh` after changing the app source under
 [`app/`](app/) rebuilds and reloads the image, then you only need:

@@ -24,7 +24,7 @@ backstage_app_name="${sp_name}-backstage"
 # edit at all. See infrastructure/set-backstage-hostname.sh (called below)
 # and clusters/dev/apps/backstage/README.md for both options in detail.
 BACKSTAGE_HOSTNAME="${BACKSTAGE_HOSTNAME:-backstage.local}"
-backstage_redirect_uri="http://$BACKSTAGE_HOSTNAME/api/auth/microsoft/handler/frame"
+backstage_redirect_uri="https://$BACKSTAGE_HOSTNAME/api/auth/microsoft/handler/frame"
 backstage_app_dir="$script_dir/../clusters/dev/apps/backstage/app"
 backstage_image="backstage:dev"
 backstage_image_qualified="docker.io/library/$backstage_image"
@@ -65,7 +65,7 @@ check_required_tools() {
   missing_tools=()
   required_tools=(gh kiac flux kubectl az jq)
   if is_true "$BACKSTAGE_ENABLED"; then
-    required_tools+=(container)
+    required_tools+=(container openssl)
   fi
 
   for tool in "${required_tools[@]}"; do
@@ -384,7 +384,7 @@ flux bootstrap github \
 echo "==> Done"
 if is_true "$BACKSTAGE_ENABLED"; then
   echo "Once Flux has converged (flux get kustomizations -A), open" \
-       "http://$BACKSTAGE_HOSTNAME and sign in with Microsoft Entra ID."
+      "https://$BACKSTAGE_HOSTNAME and sign in with Microsoft Entra ID."
 else
   echo "Backstage was disabled. Watch Flux converge with: flux get kustomizations -A"
 fi

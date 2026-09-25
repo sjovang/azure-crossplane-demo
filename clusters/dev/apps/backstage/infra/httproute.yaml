@@ -20,6 +20,7 @@ spec:
   parentRefs:
     - name: kiac
       namespace: kiac-gateway
+      sectionName: https
   hostnames:
     - ${BACKSTAGE_HOSTNAME}
   rules:

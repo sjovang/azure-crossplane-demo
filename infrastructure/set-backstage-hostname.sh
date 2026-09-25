@@ -20,8 +20,10 @@
 #   - applies the backstage-vars ConfigMap (namespace flux-system) that the
 #     apps Flux Kustomization's postBuild.substituteFrom reads
 #     ${BACKSTAGE_HOSTNAME} from (see clusters/dev/flux-kustomizations/apps/),
-#   - keeps the Backstage Entra ID app registration's redirect URI in sync
-#     with the current hostname (az ad app update, idempotent).
+#   - creates a self-signed TLS certificate and adds an HTTPS listener to the
+#     kiac Gateway,
+#   - keeps the Backstage Entra ID app registration's HTTPS redirect URI in
+#     sync with the current hostname (az ad app update, idempotent).
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,7 +31,7 @@ backstage_credentials_file="$script_dir/backstage-credentials.json"
 
 backstage_hostname="${1:-${BACKSTAGE_HOSTNAME:-backstage.local}}"
 
-for tool in kubectl; do
+for tool in kubectl openssl; do
   command -v "$tool" >/dev/null 2>&1 || {
     echo "Required tool '$tool' not found." >&2
     exit 1
@@ -37,6 +39,47 @@ for tool in kubectl; do
 done
 
 echo "==> Setting Backstage hostname to $backstage_hostname"
+
+tls_dir=$(mktemp -d)
+trap 'rm -rf "$tls_dir"' EXIT
+openssl req -x509 -nodes -newkey rsa:2048 -sha256 -days 365 \
+  -subj "/CN=$backstage_hostname" \
+  -addext "subjectAltName=DNS:$backstage_hostname" \
+  -keyout "$tls_dir/tls.key" \
+  -out "$tls_dir/tls.crt" >/dev/null 2>&1
+
+echo "==> Applying self-signed Backstage TLS certificate"
+kubectl create secret tls backstage-tls \
+  --namespace kiac-gateway \
+  --cert="$tls_dir/tls.crt" \
+  --key="$tls_dir/tls.key" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+echo "==> Configuring HTTPS on the kiac Gateway"
+kubectl patch gateway kiac --namespace kiac-gateway --type=merge --patch "$(cat <<EOF
+spec:
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      hostname: $backstage_hostname
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: backstage-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+EOF
+)"
 
 # Pre-created idempotently (like crossplane-system in bootstrap.sh) so this
 # can run before 'flux bootstrap' has created flux-system itself.
@@ -50,14 +93,14 @@ kubectl create configmap backstage-vars \
 if [[ -f "$backstage_credentials_file" ]]; then
   if ! command -v az >/dev/null 2>&1; then
     echo "az CLI not found; skipping Entra redirect URI sync." >&2
-    echo "Update it manually: az ad app update --id <clientId> --web-redirect-uris http://$backstage_hostname/api/auth/microsoft/handler/frame" >&2
+    echo "Update it manually: az ad app update --id <clientId> --web-redirect-uris https://$backstage_hostname/api/auth/microsoft/handler/frame" >&2
   elif ! command -v jq >/dev/null 2>&1; then
     echo "jq not found; skipping Entra redirect URI sync." >&2
   elif ! az account show >/dev/null 2>&1; then
     echo "Not logged in to Azure ('az login'); skipping Entra redirect URI sync." >&2
   else
     backstage_client_id=$(jq -r .clientId "$backstage_credentials_file")
-    backstage_redirect_uri="http://$backstage_hostname/api/auth/microsoft/handler/frame"
+    backstage_redirect_uri="https://$backstage_hostname/api/auth/microsoft/handler/frame"
     echo "Syncing redirect URI for app registration $backstage_client_id -> $backstage_redirect_uri"
     az ad app update --id "$backstage_client_id" --web-redirect-uris "$backstage_redirect_uri"
   fi

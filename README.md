@@ -139,7 +139,7 @@ flowchart LR
    | `SP_NAME` | `azure-crossplane-demo` | Common prefix for the Azure identities `bootstrap.sh` creates: the Crossplane service principal (`<SP_NAME>-azure-resources`) and the Backstage Entra ID app registration (`<SP_NAME>-backstage`) |
    | `KIAC_EXISTING_CLUSTER_ACTION` | prompt | What to do when the named kiac cluster already exists: `use-existing`, `halt`, or `redeploy` |
    | `BACKSTAGE_ENABLED` | `false` | Set to `true` to build/load and deploy the Backstage developer portal using the Backstage-enabled Flux root. When unset or `false`, all Backstage build and setup steps are skipped |
-   | `BACKSTAGE_HOSTNAME` | `backstage.local` | Hostname Backstage is reached at. The default requires one manual, `sudo`-requiring `/etc/hosts` command printed at the end (never run automatically); set it to a domain you control public DNS for instead to avoid touching `/etc/hosts` at all — see [the Backstage README](clusters/dev/apps/backstage/README.md#choosing-how-to-reach-backstage) |
+   | `BACKSTAGE_HOSTNAME` | `backstage.local` | HTTPS hostname Backstage is reached at using a self-signed demo certificate. The default requires one manual, `sudo`-requiring `/etc/hosts` command printed at the end; set it to a domain you control public DNS for instead — see [the Backstage README](clusters/dev/apps/backstage/README.md#choosing-how-to-reach-backstage) |
 
    Credentials are stored in the gitignored
    `infrastructure/azure-credentials.json` and
