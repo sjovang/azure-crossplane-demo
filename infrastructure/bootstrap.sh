@@ -178,17 +178,23 @@ ensure_cluster() {
 
 ensure_container_builder_ready() {
   echo "==> Ensuring container builder is running"
-  container builder start
+  container system start >/dev/null 2>&1 || true
 
-  for _ in {1..30}; do
-    if container builder status | awk 'NR > 1 && $1 == "buildkit" && $3 == "running" { found = 1 } END { exit !found }'; then
+  # `builder status` only reports the VM state and can say "running" while
+  # BuildKit inside it is unreachable. `builder start` is idempotent and also
+  # connects to the builder service, making it the useful readiness probe.
+  for attempt in {1..2}; do
+    if container builder start; then
+      echo "Container builder is ready"
       return 0
     fi
-    sleep 2
+    echo "Container builder connection attempt $attempt failed." >&2
   done
 
-  echo "Timed out waiting for container builder to become ready." >&2
-  echo "Try 'container builder stop && container builder start', then rerun bootstrap." >&2
+  echo "Container builder VM is present but BuildKit is not responding." >&2
+  echo "Restart Apple container services, resume the cluster, then rerun:" >&2
+  echo "  container system stop && container system start" >&2
+  echo "  kiac resume cluster --name $cluster_name" >&2
   return 1
 }
 
