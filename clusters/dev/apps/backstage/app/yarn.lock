@@ -1856,7 +1856,7 @@
     openapi-merge "^1.3.2"
     openapi3-ts "^3.1.2"
 
-"@backstage/backend-plugin-api@^0.7.0":
+"@backstage/backend-plugin-api@^0.7.0", "@backstage/backend-plugin-api@0.7.0":
   version "0.7.0"
   resolved "https://registry.npmjs.org/@backstage/backend-plugin-api/-/backend-plugin-api-0.7.0.tgz"
   integrity sha512-cq93C7UkS1t/D6VP3XZ8gLD8o3cRmbeSsIUGk+AYiUm0e8aSCWSAlBBiFYrylVOAuQXzEIgE9Gb3MNNFbl+Qug==
@@ -2678,7 +2678,7 @@
     winston "^3.2.1"
     yn "^4.0.0"
 
-"@backstage/plugin-auth-node@^0.4.17":
+"@backstage/plugin-auth-node@^0.4.17", "@backstage/plugin-auth-node@0.4.17":
   version "0.4.17"
   resolved "https://registry.npmjs.org/@backstage/plugin-auth-node/-/plugin-auth-node-0.4.17.tgz"
   integrity sha512-nNZPWPRMCfU0LoxV15bfClPUfZ8XbnKDC4VTMRGyXo37FdRI9uNvrSrZm++e0QKCR/xGfab377SByp/9jITKmQ==

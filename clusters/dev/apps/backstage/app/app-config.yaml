@@ -21,10 +21,9 @@ backend:
   # on this for anything beyond auth login testing.
 
 auth:
-  # Base config: Microsoft Entra ID (Azure AD) OIDC provider only.
-  # No sign-in resolver configured yet -- see the top-level repo README's
-  # "Developer Portal (Backstage)" section for the manual Entra ID App
-  # Registration steps required before this works.
+  # Microsoft Entra ID (Azure AD) OIDC provider. This workshop has no user
+  # catalog, so the resolver deliberately permits sign-in without a matching
+  # User entity and derives the identity from the email local part.
   environment: development
   providers:
     microsoft:
