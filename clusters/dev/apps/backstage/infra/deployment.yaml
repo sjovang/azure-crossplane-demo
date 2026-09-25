@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: backstage
-          image: backstage:dev
+          image: docker.io/library/backstage:dev
           imagePullPolicy: Never
           ports:
             - name: http
