@@ -11,14 +11,15 @@
     "build": "backstage-cli package build"
   },
   "dependencies": {
-    "@backstage/backend-defaults": "^0.5.0",
-    "@backstage/plugin-app-backend": "^0.4.0",
-    "@backstage/plugin-auth-backend": "^0.24.0",
-    "@backstage/plugin-auth-backend-module-microsoft-provider": "^0.3.0",
-    "@backstage/plugin-catalog-backend": "^1.29.0",
-    "@backstage/plugin-catalog-backend-module-scaffolder-entity-model": "^0.2.0"
+    "@backstage/backend-defaults": "0.4.0",
+    "@backstage/plugin-app-backend": "0.3.71",
+    "@backstage/plugin-auth-backend": "0.22.9",
+    "@backstage/plugin-auth-backend-module-microsoft-provider": "0.1.17",
+    "@backstage/plugin-catalog-backend": "1.24.0",
+    "@backstage/plugin-catalog-backend-module-scaffolder-entity-model": "0.1.20",
+    "app": "0.1.0"
   },
   "devDependencies": {
-    "@backstage/cli": "^0.29.0"
+    "@backstage/cli": "0.26.11"
   }
 }

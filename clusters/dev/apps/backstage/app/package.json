@@ -16,5 +16,9 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-arm64-gnu": "4.63.4",
+    "@swc/core-linux-arm64-gnu": "1.16.2"
   }
 }

@@ -27,6 +27,7 @@ BACKSTAGE_HOSTNAME="${BACKSTAGE_HOSTNAME:-backstage.local}"
 backstage_redirect_uri="http://$BACKSTAGE_HOSTNAME/api/auth/microsoft/handler/frame"
 backstage_app_dir="$script_dir/../clusters/dev/apps/backstage/app"
 backstage_image="backstage:dev"
+backstage_image_qualified="docker.io/library/$backstage_image"
 # Set BACKSTAGE_ENABLED=true to build/load the local Backstage image, create
 # its Entra ID app registration, and select its Flux GitOps root.
 BACKSTAGE_ENABLED="${BACKSTAGE_ENABLED:-false}"
@@ -213,6 +214,13 @@ if is_true "$BACKSTAGE_ENABLED"; then
     container build -t "$backstage_image" .
   )
   kiac load image "$backstage_image" --name "$cluster_name"
+  # kiac imports the literal short tag into containerd. Kubelet normalizes
+  # image names through CRI, so add the fully qualified alias used by the
+  # Deployment or imagePullPolicy: Never will report ErrImageNeverPull.
+  for node in $(kubectl get nodes -o name | cut -d/ -f2); do
+    container exec "$node" ctr -n k8s.io images tag \
+      "$backstage_image" "$backstage_image_qualified" >/dev/null
+  done
 else
   echo "==> Backstage disabled; skipping image build and load"
 fi

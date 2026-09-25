@@ -2,7 +2,7 @@ import { createBackend } from '@backstage/backend-defaults';
 
 const backend = createBackend();
 
-backend.add(import('@backstage/plugin-app-backend'));
+backend.add(import('@backstage/plugin-app-backend/alpha'));
 backend.add(import('@backstage/plugin-catalog-backend/alpha'));
 
 // Base config: Microsoft Entra ID (Azure AD) OIDC provider only. No custom

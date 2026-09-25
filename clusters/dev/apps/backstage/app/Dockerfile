@@ -13,10 +13,10 @@
 FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
-COPY package.json backstage.json yarn.lock ./
+COPY package.json package-lock.json backstage.json yarn.lock ./
 COPY packages/app/package.json packages/app/package.json
 COPY packages/backend/package.json packages/backend/package.json
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build:backend
 
@@ -25,8 +25,10 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/packages/backend/dist /app/packages/backend/dist
+COPY --from=build /app/packages/backend/dist/bundle.tar.gz /tmp/bundle.tar.gz
+RUN tar -xzf /tmp/bundle.tar.gz -C /app && rm /tmp/bundle.tar.gz
 COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/packages/backend/node_modules /app/packages/backend/node_modules
 COPY app-config.yaml app-config.production.yaml ./
 
 EXPOSE 7007
