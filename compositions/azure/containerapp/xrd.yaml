@@ -1,0 +1,97 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xcontainerapps.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XContainerApp
+    plural: xcontainerapps
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the Container App.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                resourceGroupRef:
+                  type: object
+                  description: Resource group hosting the Container App.
+                  properties:
+                    name:
+                      type: string
+                      description: Logical name of the XResourceGroup.
+                  required:
+                    - name
+                size:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  default: small
+                  description: >-
+                    T-shirt size: small = 0.25 vCPU/0.5Gi, medium = 0.5
+                    vCPU/1Gi, large = 1 vCPU/2Gi.
+                image:
+                  type: string
+                  description: >-
+                    Container image reference to run, e.g.
+                    docker.io/library/nginx:latest.
+                port:
+                  type: integer
+                  default: 8080
+                  description: Port the container listens on.
+                envVars:
+                  type: object
+                  nullable: true
+                  default: null
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Plain (non-secret) environment variables passed to the
+                    container.
+                minReplicas:
+                  type: integer
+                  default: 1
+                  description: Minimum number of container replicas.
+                maxReplicas:
+                  type: integer
+                  default: 3
+                  description: Maximum number of container replicas.
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the Container App.
+              required:
+                - name
+                - resourceGroupRef
+                - image
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the Container App.
+                environmentId:
+                  type: string
+                  description: >-
+                    Azure resource ID of the Container App Environment.
+                fqdn:
+                  type: string
+                  description: >-
+                    Public fully qualified domain name of the Container App.
+          required:
+            - spec

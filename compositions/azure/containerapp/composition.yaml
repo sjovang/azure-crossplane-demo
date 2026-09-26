@@ -1,0 +1,89 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: containerapps.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XContainerApp
+  mode: Pipeline
+  pipeline:
+    - step: render-containerapp
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $cpu := "0.25" -}}
+            {{- $memory := "0.5Gi" -}}
+            {{- if eq $xr.spec.size "medium" }}{{ $cpu = "0.5" }}{{ $memory = "1Gi" }}{{ end -}}
+            {{- if eq $xr.spec.size "large" }}{{ $cpu = "1" }}{{ $memory = "2Gi" }}{{ end -}}
+            ---
+            apiVersion: app.azure.m.upbound.io/v1beta1
+            kind: ContainerAppEnvironment
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "containerAppEnvironment" }}
+                crossplane.io/external-name: cae-{{ $xr.spec.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                location: {{ $xr.spec.location }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+            ---
+            apiVersion: app.azure.m.upbound.io/v1beta1
+            kind: ContainerApp
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "containerApp" }}
+                crossplane.io/external-name: ca-{{ $xr.spec.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+                containerAppEnvironmentIdSelector:
+                  matchControllerRef: true
+                revisionMode: Single
+                ingress:
+                  - externalEnabled: true
+                    targetPort: {{ $xr.spec.port }}
+                    transport: auto
+                template:
+                  - minReplicas: {{ $xr.spec.minReplicas }}
+                    maxReplicas: {{ $xr.spec.maxReplicas }}
+                    container:
+                      - name: {{ $xr.spec.name }}
+                        image: {{ $xr.spec.image }}
+                        cpu: {{ $cpu }}
+                        memory: {{ $memory }}
+            {{- if $xr.spec.envVars }}
+                        env:
+            {{- range $key, $value := $xr.spec.envVars }}
+                          - name: {{ $key }}
+                            value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- $containerApp := getComposedResource . "containerApp" }}
+            {{- $containerAppEnvironment := getComposedResource . "containerAppEnvironment" }}
+            {{- if and $containerApp $containerAppEnvironment }}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XContainerApp
+            status:
+              id: {{ $containerApp.status.atProvider.id }}
+              environmentId: {{ $containerAppEnvironment.status.atProvider.id }}
+              fqdn: {{ $containerApp.status.atProvider.latestRevisionFqdn }}
+            {{- end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

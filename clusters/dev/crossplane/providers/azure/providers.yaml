@@ -1,0 +1,44 @@
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  # Installing a family sub-provider also installs the shared
+  # provider-family-azure meta-provider (handles auth) as a dependency.
+  name: provider-azure-resources
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-resources:v2.7.2
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azure-network
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-network:v2.7.2
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azure-compute
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-compute:v2.7.2
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azure-web
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-web:v2.7.2
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azure-containerapp
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-containerapp:v2.7.2
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azure-dbforpostgresql
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-dbforpostgresql:v2.7.2

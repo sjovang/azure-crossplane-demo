@@ -1,0 +1,79 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XResourceGroup
+metadata:
+  name: crd-dev-apps
+spec:
+  name: crd-dev-apps
+  tags:
+    description: App hosting and database examples for CRD development
+    managed-by: kiac
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XAppService
+metadata:
+  name: appservicedemo01
+spec:
+  name: appservicedemo01
+  size: small
+  resourceGroupRef:
+    name: crd-dev-apps
+  image: docker.io/library/nginx:latest
+  port: 80
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XContainerApp
+metadata:
+  name: containerappdemo01
+spec:
+  name: containerappdemo01
+  size: small
+  resourceGroupRef:
+    name: crd-dev-apps
+  image: docker.io/library/nginx:latest
+  port: 80
+---
+# Stands in for a vault/OpenBao integration: external-secrets generates the
+# password (see teams/crd-dev/virtualmachines.yaml windemo01-admin for the
+# same pattern).
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: dbdemo01-admin
+spec:
+  length: 24
+  digits: 5
+  symbols: 5
+  symbolCharacters: "-_$@"
+  noUpper: false
+  allowRepeat: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dbdemo01-admin
+spec:
+  # "0" generates the password once instead of rotating it under the server.
+  refreshInterval: "0"
+  target:
+    name: dbdemo01-admin
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: dbdemo01-admin
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XDatabase
+metadata:
+  name: dbdemo01
+spec:
+  name: dbdemo01
+  size: small
+  resourceGroupRef:
+    name: crd-dev-apps
+  adminUsername: pgadmin
+  adminPasswordSecretRef:
+    name: dbdemo01-admin
+    key: password

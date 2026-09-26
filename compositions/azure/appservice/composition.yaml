@@ -1,0 +1,76 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: appservices.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XAppService
+  mode: Pipeline
+  pipeline:
+    - step: render-appservice
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            ---
+            apiVersion: web.azure.m.upbound.io/v1beta1
+            kind: ServicePlan
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "servicePlan" }}
+                crossplane.io/external-name: asp-{{ $xr.spec.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                location: {{ $xr.spec.location }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+                osType: Linux
+                skuName: {{ if eq $xr.spec.size "small" }}B1{{ else if eq $xr.spec.size "medium" }}P1v3{{ else }}P2v3{{ end }}
+            ---
+            apiVersion: web.azure.m.upbound.io/v1beta1
+            kind: LinuxWebApp
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "linuxWebApp" }}
+                crossplane.io/external-name: app-{{ $xr.spec.name }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                location: {{ $xr.spec.location }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+                servicePlanIdSelector:
+                  matchControllerRef: true
+                siteConfig:
+                  - applicationStack:
+                      - dockerImageName: {{ $xr.spec.image }}
+                appSettings:
+                  WEBSITES_PORT: "{{ $xr.spec.port }}"
+            {{- if $xr.spec.envVars }}
+            {{ toYaml $xr.spec.envVars | nindent 18 }}
+            {{- end }}
+            {{- $linuxWebApp := getComposedResource . "linuxWebApp" }}
+            {{- $servicePlan := getComposedResource . "servicePlan" }}
+            {{- if and $linuxWebApp $servicePlan }}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XAppService
+            status:
+              id: {{ $linuxWebApp.status.atProvider.id }}
+              servicePlanId: {{ $servicePlan.status.atProvider.id }}
+              defaultHostname: {{ $linuxWebApp.status.atProvider.defaultHostname }}
+            {{- end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready
