@@ -14,7 +14,7 @@ spec:
   retryInterval: 1m
   timeout: 2m
   prune: true
-  path: ./clusters/dev/crossplane/provider-configs/azure
+  path: ./clusters/base/crossplane/provider-configs/azure
   sourceRef:
     kind: GitRepository
     name: flux-system

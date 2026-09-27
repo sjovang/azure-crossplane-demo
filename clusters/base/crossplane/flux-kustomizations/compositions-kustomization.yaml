@@ -1,6 +1,6 @@
 ---
 # A separate Kustomization for shared Compositions/XRDs (compositions/,
-# outside clusters/dev/ so other clusters can point at the same path).
+# outside clusters/base/ so other clusters can point at the same path).
 # CompositeResourceDefinition/Composition are core Crossplane CRDs
 # (established by the HelmRelease in ../core), so this only needs to
 # wait on flux-system, not on any specific provider or function - applying

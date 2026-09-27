@@ -14,7 +14,7 @@ sp_name="${SP_NAME:-azure-crossplane-demo}"
 FLUX_OWNER="${FLUX_OWNER:-$(gh api user --jq .login 2>/dev/null || true)}"
 FLUX_REPO="${FLUX_REPO:-azure-crossplane-demo}"
 FLUX_BRANCH="${FLUX_BRANCH:-main}"
-FLUX_PATH="${FLUX_PATH:-clusters/dev}"
+FLUX_PATH="${FLUX_PATH:-clusters/local}"
 # Set to false once the repo is public: ongoing Flux sync then needs no secret.
 FLUX_PRIVATE="${FLUX_PRIVATE:-true}"
 
@@ -49,7 +49,7 @@ kiac create cluster --config "$script_dir/config.yaml"
 echo "==> Ensuring crossplane-system namespace exists"
 # Pre-created here (idempotently) so the azure-secret below can be applied
 # before Flux/Crossplane are ever bootstrapped. Flux later reconciles the same
-# bare Namespace from clusters/dev/crossplane/core/namespace.yaml without
+# bare Namespace from clusters/base/crossplane/core/namespace.yaml without
 # conflict.
 kubectl create namespace crossplane-system --dry-run=client -o yaml | kubectl apply -f -
 
