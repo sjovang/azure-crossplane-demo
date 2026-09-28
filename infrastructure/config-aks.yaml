@@ -11,7 +11,7 @@
 
 resourceGroup: azure-crossplane-demo  # created + deleted by this script
 name: azure-crossplane-demo  # cluster name: lowercase letters/digits/dashes
-location: westeurope  # Azure region
+location: swedencentral  # Azure region
 k8sVersion: ""  # empty = az aks default, e.g. "1.31"
 
 nodeCount: 2  # worker node count
