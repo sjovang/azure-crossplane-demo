@@ -1,5 +1,9 @@
 # Composition documentation site
 
+> [!CAUTION]
+> The documentation site is very experimental. It is 99% vibes, 1% brains, 0% QA
+> The primary function is to show the importance of user friendly docs to make the crossplane compositions easier to use
+
 A [Zensical](https://zensical.org/) site that documents the Crossplane
 compositions in `compositions/`.
 
