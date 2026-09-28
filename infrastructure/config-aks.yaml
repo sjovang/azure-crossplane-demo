@@ -26,3 +26,12 @@ addons:
   managedGrafana: true  # Managed Grafana workspace, linked to the cluster
   keda: true  # --enable-keda, KEDA event-driven autoscaling (may incur cost)
   vpa: true  # --enable-vpa, Vertical Pod Autoscaler (may incur cost)
+
+# Publishes the documentation site (apps/docs) at a public hostname. The DNS
+# zone must already exist; this script never creates or deletes the zone
+# itself, only the record for `hostname` inside it.
+docs:
+  dnsZone: demo.liasis.dev  # existing Azure public DNS zone
+  dnsZoneResourceGroup: rg-public-dns  # resource group holding that zone
+  hostname: docs.demo.liasis.dev  # must be inside dnsZone
+  acmeEmail: ""  # Let's Encrypt contact; empty disables the docs site

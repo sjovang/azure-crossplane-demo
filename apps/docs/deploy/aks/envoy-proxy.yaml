@@ -1,0 +1,18 @@
+---
+# Configures the LoadBalancer Service that Envoy Gateway creates for the
+# Gateway below. Referenced from the Gateway's infrastructure.parametersRef.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: docs-site
+  namespace: documentation-site
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+        annotations:
+          service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+      envoyDeployment:
+        replicas: 1

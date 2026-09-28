@@ -54,3 +54,27 @@ flowchart LR
 - [Configuring an AKS cluster](docs/aks.md) — a real Azure-hosted cluster meeting the [aks-desktop cluster requirements](https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md).
 - [Working with Resources](docs/working-with-resources.md)
 - [Troubleshooting](docs/troubleshooting.md)
+
+## Documentation site
+
+[`apps/docs/`](apps/docs/) is a Material for MkDocs site whose reference pages
+are generated from the XRD schemas in `compositions/`, so they cannot drift
+from the APIs the cluster actually serves.
+
+It runs **in the cluster**, in the `documentation-site` namespace:
+
+- On AKS it is published at `https://docs.demo.liasis.dev` through Envoy
+  Gateway, with a Let's Encrypt certificate from cert-manager (DNS-01) and an
+  A record written by external-dns.
+- On the local kiac cluster only the Deployment and Service are applied —
+  reach it with `kubectl port-forward -n documentation-site svc/docs-site
+  8080:80`.
+
+Pushing to `main` rebuilds the image in GitHub Actions and commits the new
+immutable tag back into
+[`apps/docs/deploy/base/deployment.yaml`](apps/docs/deploy/base/deployment.yaml),
+which Flux then applies. See [`apps/docs/README.md`](apps/docs/README.md).
+
+> [!IMPORTANT]
+> The GHCR package is created private even though this repository is public.
+> Make it public once in the package settings, or the pod cannot pull it.

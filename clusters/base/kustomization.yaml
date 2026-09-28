@@ -10,6 +10,7 @@ kind: Kustomization
 # batch.
 resources:
   - crossplane
+  - docs-site-kustomization.yaml
   - external-secrets-kustomization.yaml
   - observability-kustomization.yaml
   - teams-kustomization.yaml

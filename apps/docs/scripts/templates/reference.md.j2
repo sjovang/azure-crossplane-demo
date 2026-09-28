@@ -1,0 +1,90 @@
+{% macro field_table(rows) -%}
+<div class="field-table" markdown>
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+{% for row in rows -%}
+| {{ indent(row.depth) }}`{{ row.path }}`{{ badges(row) }} | `{{ row.type_name }}` | {{ '**yes**' if row.required else 'no' }} | {{ default_cell(row) }} | {{ describe(row) }} |
+{% endfor %}
+</div>
+{%- endmacro %}
+# {{ doc.kind }}
+
+{% if sidecar.stability -%}
+!!! warning "{{ sidecar.stability | capitalize }}"
+
+    This API is {{ sidecar.stability }} and may change without notice.
+
+{% endif -%}
+{% if sidecar.summary -%}
+{{ sidecar.summary }}
+{% endif %}
+
+## API
+
+| | |
+| --- | --- |
+| **Group** | `{{ doc.group }}` |
+| **Kind** | `{{ doc.kind }}` |
+| **Plural** | `{{ doc.plural }}` |
+| **Scope** | `{{ doc.scope }}` |
+| **Versions** | {{ version_list }} |
+| **Source** | [`{{ doc.xrd_path }}`]({{ source_url(doc.xrd_path) }}) |
+
+## Spec
+
+{% if spec_rows -%}
+{{ field_table(spec_rows) }}
+{% if has_immutable %}
+Fields marked <span class="field-flag field-flag--immutable">immutable</span>
+are fixed once the resource is created; changing one is rejected by the API
+server. An immutable object pins the fields nested under it too. To change
+one, delete the resource and create it again.
+{% endif %}
+{%- else -%}
+This composite takes no spec fields.
+{%- endif %}
+
+{% if sidecar.snippet %}
+## Example
+
+{% if sidecar.example_notes -%}
+{{ sidecar.example_notes }}
+{% endif %}
+
+```yaml
+--8<-- "{{ sidecar.snippet }}"
+```
+
+Taken from [`{{ sidecar.example_ref }}`]({{ source_url(sidecar.example_ref) }}),
+which is applied to the cluster by Flux, so it cannot drift from a working
+manifest.
+{% endif %}
+
+{% if status_rows %}
+## Status
+
+Populated by Crossplane once the underlying Azure resources exist. Every
+composite in this repository exposes the provisioned Azure resource ID as
+`status.id`.
+
+{{ field_table(status_rows) }}
+{% endif %}
+
+{% if sidecar.common_errors %}
+## Common problems
+
+{% for error in sidecar.common_errors -%}
+??? failure "{{ error.symptom }}"
+
+    **Cause.** {{ error.cause or 'Unknown.' }}
+
+    **Fix.** {{ error.fix or 'See the troubleshooting guide.' }}
+
+{% endfor %}
+{% endif %}
+
+## Reference
+
+* XRD: [`{{ doc.xrd_path }}`]({{ source_url(doc.xrd_path) }})
+* Composition: [`{{ doc.composition_path }}`]({{ source_url(doc.composition_path) }})

@@ -1,0 +1,24 @@
+---
+summary: >-
+  An Azure resource group: the container every other resource in this
+  platform is created inside.
+stability: experimental
+exampleRef: teams/mvpdagen/resourcegroup.yaml
+exampleNotes: >-
+  Most teams create one resource group per environment and then reference it
+  by its logical name from the other compositions. The Azure resource is
+  named `rg-<spec.name>`.
+commonErrors:
+  - symptom: >-
+      The XR stays `SYNCED=False` with an authorization or subscription
+      error.
+    cause: >-
+      The `azure-secret` credentials do not have permission to create
+      resource groups in the target subscription.
+    fix: >-
+      Re-run the bootstrap script so the service principal is recreated with
+      the Contributor role, then delete and recreate the XR.
+  - symptom: A second XR reports that the resource group already exists.
+    cause: >-
+      `spec.name` collides with a resource group created by another team.
+    fix: Pick a unique `spec.name`; names are global within a subscription.

@@ -15,6 +15,26 @@ credentials_file="$script_dir/azure-credentials-aks.json"
 echo "==> Cleaning up Azure service principal"
 delete_service_principal "$credentials_file"
 
+echo "==> Removing documentation site DNS records"
+# The DNS zone lives in its own resource group, which the group deletion
+# below never touches, so external-dns's records have to be removed here.
+if ! command -v az >/dev/null 2>&1; then
+  echo "az CLI not found; skipping DNS record cleanup." >&2
+elif [[ ! -f "$config_file" ]]; then
+  echo "No $config_file found; skipping DNS record cleanup." >&2
+elif ! az account show >/dev/null 2>&1; then
+  echo "Not logged in to Azure ('az login'); skipping DNS record cleanup." >&2
+else
+  dns_zone=$(read_yaml_value "$config_file" dnsZone)
+  dns_zone_resource_group=$(read_yaml_value "$config_file" dnsZoneResourceGroup)
+  docs_hostname=$(read_yaml_value "$config_file" hostname)
+  if [[ -n "$dns_zone" && -n "$dns_zone_resource_group" && -n "$docs_hostname" ]]; then
+    delete_dns_records "$dns_zone" "$dns_zone_resource_group" "$docs_hostname"
+  else
+    echo "No docs DNS configuration in $config_file; nothing to clean up."
+  fi
+fi
+
 echo "==> Deleting AKS resource group"
 if ! command -v az >/dev/null 2>&1; then
   echo "az CLI not found; skipping AKS resource group deletion." >&2

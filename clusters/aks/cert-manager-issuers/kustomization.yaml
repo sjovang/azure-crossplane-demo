@@ -1,0 +1,9 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Deliberately a directory of its own: the ClusterIssuer CRD only exists once
+# the cert-manager HelmRelease in ../cert-manager has installed, so these
+# manifests must never be applied in the same batch. Same shape as
+# crossplane/provider-configs/azure/.
+resources:
+  - cluster-issuers.yaml

@@ -1,0 +1,82 @@
+/*
+ * The theme caps content at 61rem, which leaves most of a wide display empty
+ * and squeezes the five-column Spec tables into a narrow scrolling box. Give
+ * the content area more room on large viewports, and let tables use it.
+ *
+ * Note: Zensical emits bare <table> elements, without the .md-typeset__table
+ * wrapper Material for MkDocs used, so these rules target the table itself.
+ */
+
+/*
+ * 76.25em is the theme's own breakpoint for showing the table of contents;
+ * widening below it would crowd the navigation.
+ */
+@media screen and (min-width: 76.25em) {
+  .md-grid {
+    max-width: 86rem;
+  }
+}
+
+@media screen and (min-width: 100em) {
+  .md-grid {
+    max-width: 100rem;
+  }
+}
+
+/*
+ * Tables default to display:inline-block, so they shrink to fit their content
+ * and scroll horizontally instead of filling the available width.
+ */
+.md-typeset table:not([class]) {
+  display: table;
+  width: 100%;
+}
+
+/*
+ * Field tables (Spec and Status) have four narrow columns and one prose
+ * column. Keep the narrow ones at their content width so Description takes
+ * the remaining space instead of being the first thing to wrap.
+ *
+ * Only above the breakpoint: on a phone the columns need to stay narrow and
+ * the table needs to keep scrolling.
+ */
+@media screen and (min-width: 76.25em) {
+  .field-table table:not([class]) th:nth-child(-n + 4),
+  .field-table table:not([class]) td:nth-child(-n + 4) {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .field-table table:not([class]) th:last-child,
+  .field-table table:not([class]) td:last-child {
+    width: auto;
+    white-space: normal;
+  }
+}
+
+/*
+ * Immutable-field badge in the Spec table. Getting an immutable field wrong
+ * means deleting and recreating the resource, so it is called out visually
+ * rather than hidden in the description text.
+ *
+ * Colours come from the theme's own palette variables so the badge follows
+ * the light/dark toggle.
+ */
+.field-flag {
+  display: inline-block;
+  padding: 0 0.4em;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1.6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: middle;
+  border-radius: 0.1rem;
+}
+
+.field-flag--immutable {
+  color: var(--md-warning-fg-color, #000);
+  background-color: var(--md-warning-bg-color, #ffd);
+  border: 0.05rem solid currentcolor;
+}
