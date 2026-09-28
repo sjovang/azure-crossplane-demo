@@ -178,7 +178,8 @@ script — add/extend the shared function instead.
 - **`bootstrap-aks.sh`** / **`teardown-aks.sh`**: real AKS cluster, configured
   to meet https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md
   (`--enable-aad --enable-azure-rbac` always; `--network-plugin azure
-  --network-policy cilium`, Azure Monitor Metrics, and Managed Grafana when
+  --network-dataplane cilium --network-policy cilium`, Azure Monitor
+  Metrics, and Managed Grafana when
   toggled on in `infrastructure/config-aks.yaml`). Also preflight-checks
   `kubelogin` (needed for Entra ID-authenticated kubeconfigs on AAD+RBAC
   clusters). Registers `Microsoft.ContainerService` (plus the shared

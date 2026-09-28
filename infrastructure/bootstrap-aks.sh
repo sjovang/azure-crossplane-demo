@@ -81,8 +81,10 @@ else
   [[ -n "$k8s_version" ]] && create_args+=(--kubernetes-version "$k8s_version")
   if [[ "$addon_network_policy" == "true" ]]; then
     # Recommended: a network policy engine. Immutable after creation, so it
-    # must be set here. Azure CNI is required for the cilium dataplane.
-    create_args+=(--network-plugin azure --network-policy cilium)
+    # must be set here. --network-policy cilium requires --network-dataplane
+    # cilium to be set explicitly (it does not default to cilium just
+    # because --network-policy is cilium).
+    create_args+=(--network-plugin azure --network-dataplane cilium --network-policy cilium)
   fi
   if [[ "$addon_azure_monitor_metrics" == "true" ]]; then
     # Recommended: Azure Monitor Metrics (Managed Prometheus).
