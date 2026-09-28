@@ -47,7 +47,20 @@ network policy, Azure Monitor Metrics, Managed Grafana, KEDA, and VPA
 ## Steps
 
 Follow steps 1, 2, and 6 from the [kiac walkthrough](kiac.md) (fork/clone the
-repo, `gh auth login`, `az login`), then:
+repo, `gh auth login`, `az login`), then set the documentation site's DNS
+values in `infrastructure/config-aks.yaml`:
+
+```yaml
+docs:
+  dnsZone: demo.liasis.dev
+  dnsZoneResourceGroup: rg-public-dns
+  hostname: docs.demo.liasis.dev
+  acmeEmail: you@example.com
+```
+
+The zone must **already exist** in Azure — the script only manages the single
+record inside it, and refuses to run if the zone is missing or `acmeEmail` is
+empty. Then:
 
 ```sh
 export GITHUB_TOKEN=$(gh auth token)
@@ -67,12 +80,58 @@ After Flux converges, verify Flux and Crossplane:
 ./infrastructure/verify-crossplane.sh --context aks-azure-crossplane-demo-admin
 ```
 
-Tear it down (deletes the service principal and the whole AKS resource
-group, including the cluster and Managed Grafana):
+## What else this cluster runs
+
+Unlike the local kiac cluster, `clusters/aks/` installs four extra components,
+all of them there to publish the [documentation site](../apps/docs/README.md)
+at `https://docs.demo.liasis.dev`:
+
+| Component | Why |
+| --- | --- |
+| Gateway API CRDs | Installed from Envoy Gateway's CRDs-only chart, **standard** channel, so the main chart does not silently install the experimental one |
+| Envoy Gateway | Terminates TLS and routes traffic. `ingress-nginx` was retired in March 2026 and no longer receives CVE patches |
+| cert-manager | Issues the Let's Encrypt certificate via a DNS-01 challenge against the Azure DNS zone |
+| external-dns | Writes the `docs.demo.liasis.dev` A record, taking the address from the Gateway's status |
+
+cert-manager and external-dns authenticate with the same service principal as
+Crossplane, which is Contributor at subscription scope and so can write to
+`rg-public-dns`. The bootstrap script creates both secrets and an
+`azure-dns-config` ConfigMap (subscription, tenant, zone, hostname) that Flux
+substitutes into the manifests, so no subscription-specific value is
+committed to git.
+
+Check the site once Flux has settled:
+
+```sh
+kubectl get certificate -n documentation-site
+kubectl get gateway -n documentation-site
+curl -sI https://docs.demo.liasis.dev | head -1
+```
+
+> [!NOTE]
+> The first certificate takes a few minutes: DNS-01 has to create a TXT
+> record and wait for it to propagate. A `Certificate` that is not `Ready`
+> for the first two or three minutes is expected. If you are rebuilding the
+> cluster repeatedly, switch the Gateway's
+> `cert-manager.io/cluster-issuer` annotation to `letsencrypt-staging` to
+> avoid Let's Encrypt's production rate limits.
+
+> [!IMPORTANT]
+> The site's container image is published to GHCR by
+> `.github/workflows/docs-site.yaml`, and the package is created **private**
+> even though the repository is public. Make it public once in the package
+> settings or the pod will sit in `ImagePullBackOff`.
+
+Tear it down (deletes the service principal, the documentation site's DNS
+records, and the whole AKS resource group, including the cluster and Managed
+Grafana):
 
 ```sh
 ./infrastructure/teardown-aks.sh
 ```
+
+The `demo.liasis.dev` zone itself and its resource group are **not** touched —
+only the `docs` record the cluster created.
 
 ## Accessing the cluster
 

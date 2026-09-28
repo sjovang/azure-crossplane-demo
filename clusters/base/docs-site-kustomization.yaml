@@ -1,0 +1,20 @@
+---
+# The site itself runs on every cluster. Only clusters/aks additionally
+# applies apps/docs/deploy/aks, which publishes it at docs.demo.liasis.dev.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: docs-site
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 3m
+  prune: true
+  wait: true
+  path: ./apps/docs/deploy/base
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: flux-system

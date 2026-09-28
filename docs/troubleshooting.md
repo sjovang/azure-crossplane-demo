@@ -44,3 +44,43 @@ After changing a team manifest, trigger reconciliation with:
 ```sh
 flux reconcile kustomization teams -n flux-system --with-source
 ```
+
+## Documentation site
+
+Only on AKS — the local kiac cluster runs the site without a Gateway,
+certificate or DNS record.
+
+**The pod is in `ImagePullBackOff`.** The GHCR package is private by default
+even though the repository is public. Make it public once under
+*Packages → docs → Package settings → Change visibility*.
+
+**The `Certificate` is not `Ready`.** Expect this for the first two or three
+minutes: DNS-01 has to write a TXT record into `demo.liasis.dev` and wait for
+it to propagate. If it persists:
+
+```sh
+kubectl describe certificate -n documentation-site docs-site-tls
+kubectl get challenge -A
+kubectl logs -n cert-manager deploy/cert-manager
+```
+
+A permission error means the service principal lost access to
+`rg-public-dns`. Rate-limit errors from Let's Encrypt mean the cluster has
+been rebuilt too often — switch the Gateway's
+`cert-manager.io/cluster-issuer` annotation to `letsencrypt-staging`, which
+issues an untrusted certificate but has far higher limits.
+
+**The hostname does not resolve.** external-dns takes the address from the
+Gateway's status, not the Service, so an unprogrammed Gateway means no
+record:
+
+```sh
+kubectl get gateway -n documentation-site -o wide
+kubectl logs -n external-dns deploy/external-dns
+az network dns record-set a list -g rg-public-dns -z demo.liasis.dev -o table
+```
+
+**The site is stale after a push to `main`.** The image tag is committed back
+into the repository by `.github/workflows/docs-site.yaml`. Check that the
+workflow ran and that the resulting commit is on `main`; the tag in
+`apps/docs/deploy/base/deployment.yaml` should match the latest commit.

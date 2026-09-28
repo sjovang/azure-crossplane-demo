@@ -46,6 +46,10 @@ addon_azure_monitor_metrics=$(read_yaml_value "$config_file" azureMonitorMetrics
 addon_managed_grafana=$(read_yaml_value "$config_file" managedGrafana)
 addon_keda=$(read_yaml_value "$config_file" keda)
 addon_vpa=$(read_yaml_value "$config_file" vpa)
+dns_zone=$(read_yaml_value "$config_file" dnsZone)
+dns_zone_resource_group=$(read_yaml_value "$config_file" dnsZoneResourceGroup)
+docs_hostname=$(read_yaml_value "$config_file" hostname)
+acme_email=$(read_yaml_value "$config_file" acmeEmail)
 
 # kubectl/flux talk to a dedicated admin context for this cluster so this
 # script never depends on (or clobbers) whatever context is currently active,
@@ -61,6 +65,23 @@ if ! az account show >/dev/null 2>&1; then
   exit 1
 fi
 subscription_id=$(az account show --query id -o tsv)
+
+# Checked before the cluster is created: the documentation site's certificate
+# and DNS record are part of clusters/aks, so a missing contact address or
+# zone would only surface as a failing Flux reconcile ten minutes later.
+if [[ -z "$acme_email" ]]; then
+  echo "docs.acmeEmail is not set in $config_file." >&2
+  echo "Let's Encrypt requires a contact address to issue the certificate" >&2
+  echo "for $docs_hostname. Set it and re-run." >&2
+  exit 1
+fi
+if ! az network dns zone show --name "$dns_zone" \
+  --resource-group "$dns_zone_resource_group" >/dev/null 2>&1; then
+  echo "DNS zone '$dns_zone' not found in resource group" >&2
+  echo "'$dns_zone_resource_group'. The zone must already exist; this" >&2
+  echo "script only manages the '$docs_hostname' record inside it." >&2
+  exit 1
+fi
 
 echo "==> Registering Azure resource providers"
 # Microsoft.ContainerService must be registered before az aks create.
@@ -141,6 +162,12 @@ ensure_service_principal "$credentials_file" "$sp_name"
 
 echo "==> Applying azure-secret"
 apply_azure_secret "$kube_context" "$credentials_file"
+
+echo "==> Setting up Azure DNS credentials for cert-manager and external-dns"
+apply_dns_credentials "$kube_context" "$credentials_file" \
+  "$dns_zone_resource_group"
+apply_dns_config "$kube_context" "$credentials_file" "$dns_zone" \
+  "$dns_zone_resource_group" "$docs_hostname" "$acme_email" "$cluster_name"
 
 echo "==> Bootstrapping Flux"
 flux_bootstrap_github "$kube_context" "$FLUX_PATH"

@@ -1,0 +1,28 @@
+---
+# Publishes the docs site from clusters/base at a public hostname. Waits for
+# everything it needs: the Deployment and Service (docs-site), the Gateway
+# API implementation (envoy-gateway), the issuer that mints its certificate
+# (cert-manager-issuers) and the controller that names it (external-dns).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: docs-site-gateway
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  path: ./apps/docs/deploy/aks
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: azure-dns-config
+  dependsOn:
+    - name: docs-site
+    - name: envoy-gateway
+    - name: cert-manager-issuers
+    - name: external-dns

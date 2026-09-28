@@ -1,0 +1,9 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Applied on every cluster. The public hostname, certificate and DNS record
+# live in ../aks, which only clusters/aks references.
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml

@@ -4,6 +4,7 @@ site_name: Azure Crossplane Platform
 site_description: >-
   Reference documentation for the Crossplane compositions available in this
   cluster.
+site_url: https://docs.demo.liasis.dev/
 repo_url: https://github.com/sjovang/azure-crossplane-demo
 repo_name: sjovang/azure-crossplane-demo
 edit_uri: blob/main/

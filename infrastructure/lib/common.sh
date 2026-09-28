@@ -182,6 +182,117 @@ apply_azure_secret() {
     | run_kubectl "$ctx" apply -f -
 }
 
+# apply_dns_credentials <context> <credentials_file> <dns_zone_resource_group>
+# cert-manager and external-dns both authenticate to Azure DNS with the same
+# service principal Crossplane uses, in the two different shapes each
+# expects. Applied before `flux bootstrap` so neither controller ever starts
+# without credentials and sits erroring until a human intervenes.
+apply_dns_credentials() {
+  local ctx="$1" credentials_file="$2" dns_zone_resource_group="$3"
+  local client_id client_secret subscription_id tenant_id
+
+  client_id=$(jq -r .clientId "$credentials_file")
+  client_secret=$(jq -r .clientSecret "$credentials_file")
+  subscription_id=$(jq -r .subscriptionId "$credentials_file")
+  tenant_id=$(jq -r .tenantId "$credentials_file")
+
+  ensure_namespace "$ctx" cert-manager
+  ensure_namespace "$ctx" external-dns
+
+  # cert-manager's azureDNS solver takes the client secret on its own; the
+  # other values are non-secret and live in the ClusterIssuer manifest.
+  run_kubectl "$ctx" create secret generic azuredns-config \
+    --namespace cert-manager \
+    --from-literal=client-secret="$client_secret" \
+    --dry-run=client -o yaml \
+    | run_kubectl "$ctx" apply -f -
+
+  # external-dns wants a single azure.json, mounted at /etc/kubernetes.
+  local azure_json
+  azure_json=$(jq -n \
+    --arg tenantId "$tenant_id" \
+    --arg subscriptionId "$subscription_id" \
+    --arg resourceGroup "$dns_zone_resource_group" \
+    --arg aadClientId "$client_id" \
+    --arg aadClientSecret "$client_secret" \
+    '{
+      tenantId: $tenantId,
+      subscriptionId: $subscriptionId,
+      resourceGroup: $resourceGroup,
+      aadClientId: $aadClientId,
+      aadClientSecret: $aadClientSecret,
+      useManagedIdentityExtension: false
+    }')
+
+  run_kubectl "$ctx" create secret generic external-dns-azure-config \
+    --namespace external-dns \
+    --from-literal=azure.json="$azure_json" \
+    --dry-run=client -o yaml \
+    | run_kubectl "$ctx" apply -f -
+}
+
+# apply_dns_config <context> <credentials_file> <zone> <zone_rg> <hostname>
+#                  <acme_email> <cluster_name>
+# Non-secret, per-environment values that Flux substitutes into the
+# ClusterIssuer, external-dns HelmRelease and Gateway via
+# postBuild.substituteFrom. Subscription/tenant/client IDs differ for every
+# person who runs this workshop, so they are injected here rather than
+# committed to the manifests.
+apply_dns_config() {
+  local ctx="$1" credentials_file="$2" zone="$3" zone_rg="$4"
+  local hostname="$5" acme_email="$6" cluster_name="$7"
+
+  # flux bootstrap creates this namespace itself, but the ConfigMap has to
+  # exist before the first reconcile, so create it early and idempotently.
+  ensure_namespace "$ctx" flux-system
+
+  run_kubectl "$ctx" create configmap azure-dns-config \
+    --namespace flux-system \
+    --from-literal=AZURE_CLIENT_ID="$(jq -r .clientId "$credentials_file")" \
+    --from-literal=AZURE_SUBSCRIPTION_ID="$(jq -r .subscriptionId "$credentials_file")" \
+    --from-literal=AZURE_TENANT_ID="$(jq -r .tenantId "$credentials_file")" \
+    --from-literal=DNS_ZONE="$zone" \
+    --from-literal=DNS_ZONE_RESOURCE_GROUP="$zone_rg" \
+    --from-literal=DOCS_HOSTNAME="$hostname" \
+    --from-literal=ACME_EMAIL="$acme_email" \
+    --from-literal=CLUSTER_NAME="$cluster_name" \
+    --dry-run=client -o yaml \
+    | run_kubectl "$ctx" apply -f -
+}
+
+# delete_dns_records <zone> <zone_resource_group> <hostname>
+# external-dns never gets a chance to clean up when the cluster is deleted
+# wholesale, and the DNS zone lives in a resource group that teardown does
+# not touch. Removes both the A record and the TXT registry records
+# external-dns uses to track ownership, warning rather than failing when
+# they are already gone.
+delete_dns_records() {
+  local zone="$1" zone_resource_group="$2" hostname="$3"
+  local record_name="${hostname%".$zone"}"
+
+  if ! az network dns zone show --name "$zone" \
+    --resource-group "$zone_resource_group" >/dev/null 2>&1; then
+    echo "DNS zone $zone not found in $zone_resource_group, skipping record cleanup"
+    return 0
+  fi
+
+  # external-dns registers ownership as TXT records alongside the A record,
+  # both bare and prefixed with the record type.
+  local entry record_type name
+  for entry in "a:$record_name" "txt:$record_name" "txt:a-$record_name"; do
+    record_type="${entry%%:*}"
+    name="${entry#*:}"
+    if az network dns record-set "$record_type" show --name "$name" \
+      --zone-name "$zone" --resource-group "$zone_resource_group" \
+      >/dev/null 2>&1; then
+      echo "Deleting $record_type record $name.$zone"
+      az network dns record-set "$record_type" delete --name "$name" \
+        --zone-name "$zone" --resource-group "$zone_resource_group" \
+        --yes >/dev/null
+    fi
+  done
+}
+
 # flux_bootstrap_github <context> <path>
 # --token-auth: use the GitHub token over HTTPS instead of an SSH deploy key,
 # since outbound SSH (port 22) is often blocked on corporate/workshop networks.

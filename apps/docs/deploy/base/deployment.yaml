@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-site
+  namespace: documentation-site
+  labels:
+    app.kubernetes.io/name: docs-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: docs-site
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: docs-site
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # nginx-unprivileged runs as the "nginx" user.
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: site
+          # Rewritten on every push to main by .github/workflows/docs.yml,
+          # which commits the new immutable sha- tag back to this file.
+          image: ghcr.io/sjovang/azure-crossplane-demo/docs:sha-0000000
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          # nginx writes its pid and temp files at runtime, so these paths
+          # must stay writable even with a read-only root filesystem.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /var/run
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}

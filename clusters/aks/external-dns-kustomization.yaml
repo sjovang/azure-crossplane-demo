@@ -1,0 +1,31 @@
+---
+# Writes the A record for the docs site into the existing Azure DNS zone.
+# Reads its credentials from the external-dns-azure-config Secret, created by
+# infrastructure/bootstrap-aks.sh before Flux is bootstrapped.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: external-dns
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  wait: true
+  healthCheckExprs:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      current: >-
+        status.conditions.exists(c,
+        c.type == 'Ready' && c.status == 'True')
+  path: ./clusters/aks/external-dns
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: azure-dns-config
+  dependsOn:
+    - name: gateway-api-crds

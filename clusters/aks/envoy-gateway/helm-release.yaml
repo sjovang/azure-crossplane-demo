@@ -1,0 +1,28 @@
+---
+# crds.enabled=false: the Gateway API and Envoy Gateway CRDs are installed by
+# the gateway-api-crds Kustomization so that cert-manager and external-dns can
+# be ordered against them.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: envoy-gateway
+  namespace: envoy-gateway-system
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: gateway-helm
+      version: "1.9.x"
+      sourceRef:
+        kind: HelmRepository
+        name: envoy-gateway
+        namespace: envoy-gateway-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    crds:
+      enabled: false

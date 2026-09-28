@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs-site
+  namespace: documentation-site
+  labels:
+    app.kubernetes.io/name: docs-site
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: docs-site
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
