@@ -5,3 +5,8 @@
 infrastructure/azure-credentials-*.json
 .vscode
 .envrc
+
+# Documentation site build artefacts and local virtualenv (apps/docs).
+apps/docs/site/
+apps/docs/.venv/
+__pycache__/

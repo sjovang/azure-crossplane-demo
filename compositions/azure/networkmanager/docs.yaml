@@ -1,0 +1,27 @@
+---
+summary: >-
+  An Azure Virtual Network Manager, the subscription-scoped service that owns
+  IPAM pools and central network configuration.
+stability: experimental
+exampleRef: teams/crd-dev/network.yaml
+exampleLines: 12-20
+exampleNotes: >-
+  Create one network manager per subscription. It must exist before an
+  `XNetworkManagerIPAMPool` can allocate address space. The Azure resource is
+  named `vnm-<spec.name>`.
+commonErrors:
+  - symptom: >-
+      The XR never becomes Ready and the provider logs mention an unknown
+      subscription.
+    cause: >-
+      `spec.subscriptionId` points at a subscription the service principal
+      cannot see.
+    fix: >-
+      Use the subscription ID the bootstrap script registered providers
+      against; `spec.subscriptionId` is immutable, so recreate the XR.
+  - symptom: The `Manager` managed resource is never created.
+    cause: >-
+      The `managers.network.azure.m.upbound.io` MRD is not activated.
+    fix: >-
+      Add it to
+      `activation-policies/azure/managed-resource-activation-policy.yaml`.
