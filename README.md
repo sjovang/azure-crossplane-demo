@@ -8,15 +8,16 @@ Demo environment for managing Azure resources with Crossplane
 > and does not provide the security, reliability, or operational hardening
 > required for a production environment.
 
-Flux watches [`clusters/local/`](clusters/local/), which includes the
-shared [`clusters/base/`](clusters/base/) Kustomization. Other demo clusters can
-use their own overlay with `../base` while keeping their generated
-`flux-system/` manifests and bootstrap path separate. Crossplane is installed
-from [`clusters/base/crossplane/`](clusters/base/crossplane/):
+Flux watches [`clusters/local/`](clusters/local/) (a local [kiac](https://github.com/saiyam1814/kiac)
+cluster) and [`clusters/aks/`](clusters/aks/) (a real AKS cluster), both of
+which include the shared [`clusters/base/`](clusters/base/) Kustomization.
+Other demo clusters can use their own overlay with `../base` while keeping
+their generated `flux-system/` manifests and bootstrap path separate.
+Crossplane is installed from [`clusters/base/crossplane/`](clusters/base/crossplane/):
 
 ```mermaid
 flowchart LR
-   Bootstrap["bootstrap.sh"] --> Credentials["Azure credentials"]
+   Bootstrap["bootstrap-kiac.sh /<br/>bootstrap-aks.sh"] --> Credentials["Azure credentials"]
    Credentials --> Secret["azure-secret Secret"]
    Bootstrap --> Flux["Flux"]
    Flux --> Core["core/<br/>Crossplane Helm release"]
@@ -31,7 +32,11 @@ flowchart LR
 - [`provider-configs/azure/`](clusters/base/crossplane/provider-configs/azure/) configures the provider with Azure credentials.
 - [`functions/`](clusters/base/crossplane/functions/) installs the packages used by Compositions.
 - [`flux-kustomizations/`](clusters/base/crossplane/flux-kustomizations/) defines the dependency order, so each stage starts only after its required CRDs are ready.
-- [`infrastructure/bootstrap.sh`](infrastructure/bootstrap.sh) creates the Kubernetes `Secret` from a locally generated service principal before bootstrapping Flux.
+- [`infrastructure/bootstrap-kiac.sh`](infrastructure/bootstrap-kiac.sh) and
+  [`infrastructure/bootstrap-aks.sh`](infrastructure/bootstrap-aks.sh) share
+  their Azure/Flux logic via [`infrastructure/lib/common.sh`](infrastructure/lib/common.sh)
+  and each create the Kubernetes `Secret` from a locally generated service
+  principal before bootstrapping Flux.
 - Full convergence takes a minute or two after bootstrap. Watch it with `flux get kustomizations -A`.
 
 > [!NOTE]
@@ -45,7 +50,7 @@ flowchart LR
 
 ## Configuring the local Kubernetes cluster (kiac) + Azure access (for Crossplane)
 
-[kiac](https://github.com/saiyam1814/kiac) runs a local Kubernetes cluster on macOS, with every node as its own lightweight VM. [`infrastructure/config.yaml`](infrastructure/config.yaml) declares a 3-worker cluster with the observability (Prometheus + Grafana) and gateway (Traefik) addons enabled.
+[kiac](https://github.com/saiyam1814/kiac) runs a local Kubernetes cluster on macOS, with every node as its own lightweight VM. [`infrastructure/config-kiac.yaml`](infrastructure/config-kiac.yaml) declares a 3-worker cluster with the observability (Prometheus + Grafana) and gateway (Traefik) addons enabled.
 
 ### Prerequisites
 
@@ -101,7 +106,7 @@ flowchart LR
 
    ```sh
    export GITHUB_TOKEN=$(gh auth token)
-   ./infrastructure/bootstrap.sh
+   ./infrastructure/bootstrap-kiac.sh
    ```
 
    The script creates or reuses the Azure service principal, applies its
@@ -121,7 +126,7 @@ flowchart LR
    | `SP_NAME` | `azure-crossplane-demo` | Azure service principal name |
 
    Credentials are stored in the gitignored
-   `infrastructure/azure-credentials.json` and reused on later runs.
+   `infrastructure/azure-credentials-kiac.json` and reused on later runs.
 
 8. Allow a minute or two for Flux to converge, then verify the cluster and Crossplane:
 
@@ -135,8 +140,59 @@ flowchart LR
 9. When you're done, tear everything down — this deletes both the Azure service principal and the kiac cluster:
 
    ```sh
-   ./infrastructure/teardown.sh
+   ./infrastructure/teardown-kiac.sh
    ```
+
+## Configuring an AKS cluster + Azure access (for Crossplane)
+
+For a real Azure-hosted cluster instead of (or alongside) kiac, use
+[`infrastructure/bootstrap-aks.sh`](infrastructure/bootstrap-aks.sh) /
+[`infrastructure/teardown-aks.sh`](infrastructure/teardown-aks.sh). It shares
+its Azure/Flux logic with the kiac scripts via
+[`infrastructure/lib/common.sh`](infrastructure/lib/common.sh) but creates a
+real AKS cluster and resource group instead of a local one.
+
+The cluster is configured to meet the [AKS desktop cluster
+requirements](https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md):
+Entra ID authentication + Azure RBAC (hard requirements), and — toggleable in
+[`infrastructure/config-aks.yaml`](infrastructure/config-aks.yaml) — Cilium
+network policy, Azure Monitor Metrics, and Managed Grafana (recommended).
+
+> [!NOTE]
+> The script fetches an **admin** kubeconfig context (`az aks get-credentials
+> --admin`) for its own unattended `kubectl`/`flux bootstrap` calls, bypassing
+> interactive Entra ID login. The cluster still satisfies the hard AAD +
+> Azure RBAC requirement for aks-desktop and for interactive human users, who
+> should instead run `az aks get-credentials` (without `--admin`) plus
+> [`kubelogin`](https://azure.github.io/kubelogin/) to authenticate via Entra ID.
+
+### Additional prerequisites
+
+- Azure CLI `aks-preview`/`amg` extensions as prompted by `az`, or none if
+  the `azureMonitorMetrics`/`managedGrafana` addons are disabled
+- [`kubelogin`](https://azure.github.io/kubelogin/): `brew install Azure/kubelogin/kubelogin`
+
+### Steps
+
+Follow steps 1, 2, and 6 from the kiac walkthrough above (fork/clone the
+repo, `gh auth login`, `az login`), then:
+
+```sh
+export GITHUB_TOKEN=$(gh auth token)
+./infrastructure/bootstrap-aks.sh
+```
+
+Optional environment variables are the same as `bootstrap-kiac.sh`, except
+`FLUX_PATH` defaults to `clusters/aks` and `SP_NAME` defaults to
+`azure-crossplane-demo-aks`. Credentials are stored in the gitignored
+`infrastructure/azure-credentials-aks.json`.
+
+Tear it down (deletes the service principal and the whole AKS resource
+group, including the cluster and Managed Grafana):
+
+```sh
+./infrastructure/teardown-aks.sh
+```
 
 ## Working with Resources
 

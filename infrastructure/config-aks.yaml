@@ -1,0 +1,26 @@
+---
+# AKS cluster config, consumed by infrastructure/bootstrap-aks.sh /
+# teardown-aks.sh via `az aks create`/`az group` (not a schema owned by any
+# single CLI tool, unlike kiac's config-kiac.yaml).
+#
+# Meets the hard requirements from
+# https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md
+# (Entra ID auth + Azure RBAC) and, when the addons below are enabled, the
+# recommended configuration (Cilium network policy, Azure Monitor Metrics,
+# Managed Grafana).
+
+resourceGroup: azure-crossplane-demo  # created + deleted by this script
+name: azure-crossplane-demo  # cluster name: lowercase letters/digits/dashes
+location: westeurope  # Azure region
+k8sVersion: ""  # empty = az aks default, e.g. "1.31"
+
+nodeCount: 2  # worker node count
+vmSize: Standard_D2s_v5  # VM size per node
+
+# Addons are positive toggles; disable to reduce cost/setup time. Network
+# policy can only be set at cluster creation time (immutable afterwards);
+# the monitoring addons can be toggled on a running cluster too.
+addons:
+  networkPolicy: true  # --network-plugin azure --network-policy cilium
+  azureMonitorMetrics: true  # Managed Prometheus metrics
+  managedGrafana: true  # Managed Grafana workspace, linked to the cluster
