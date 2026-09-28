@@ -8,7 +8,11 @@ Demo environment for managing Azure resources with Crossplane
 > and does not provide the security, reliability, or operational hardening
 > required for a production environment.
 
-Crossplane is installed through Flux from [`clusters/dev/crossplane/`](clusters/dev/crossplane/):
+Flux watches [`clusters/local/`](clusters/local/), which includes the
+shared [`clusters/base/`](clusters/base/) Kustomization. Other demo clusters can
+use their own overlay with `../base` while keeping their generated
+`flux-system/` manifests and bootstrap path separate. Crossplane is installed
+from [`clusters/base/crossplane/`](clusters/base/crossplane/):
 
 ```mermaid
 flowchart LR
@@ -22,18 +26,18 @@ flowchart LR
    Compositions["compositions/<br/>Shared definitions"] --> Functions
 ```
 
-- [`core/`](clusters/dev/crossplane/core/) installs Crossplane through Helm.
-- [`providers/azure/`](clusters/dev/crossplane/providers/azure/) installs the Azure provider package.
-- [`provider-configs/azure/`](clusters/dev/crossplane/provider-configs/azure/) configures the provider with Azure credentials.
-- [`functions/`](clusters/dev/crossplane/functions/) installs the packages used by Compositions.
-- [`flux-kustomizations/`](clusters/dev/crossplane/flux-kustomizations/) defines the dependency order, so each stage starts only after its required CRDs are ready.
+- [`core/`](clusters/base/crossplane/core/) installs Crossplane through Helm.
+- [`providers/azure/`](clusters/base/crossplane/providers/azure/) installs the Azure provider package.
+- [`provider-configs/azure/`](clusters/base/crossplane/provider-configs/azure/) configures the provider with Azure credentials.
+- [`functions/`](clusters/base/crossplane/functions/) installs the packages used by Compositions.
+- [`flux-kustomizations/`](clusters/base/crossplane/flux-kustomizations/) defines the dependency order, so each stage starts only after its required CRDs are ready.
 - [`infrastructure/bootstrap.sh`](infrastructure/bootstrap.sh) creates the Kubernetes `Secret` from a locally generated service principal before bootstrapping Flux.
 - Full convergence takes a minute or two after bootstrap. Watch it with `flux get kustomizations -A`.
 
 > [!NOTE]
 > Crossplane `CompositeResourceDefinition`s and `Composition`s live in the
 > shared, top-level [`compositions/`](compositions/) directory, outside
-> `clusters/dev/`. They are grouped first by cloud provider and then by
+> `clusters/base/`. They are grouped first by cloud provider and then by
 > composition, allowing multiple clusters to use the same definitions.
 > [`compositions/azure/resourcegroup/`](compositions/azure/resourcegroup/) is a
 > working example: an `XResourceGroup` in the `azure.platform.example.org` API
@@ -112,7 +116,7 @@ flowchart LR
    | `FLUX_OWNER` | GitHub user from `gh` | Repository owner |
    | `FLUX_REPO` | `azure-crossplane-demo` | Repository name |
    | `FLUX_BRANCH` | `main` | Git branch |
-   | `FLUX_PATH` | `clusters/dev` | Flux path |
+   | `FLUX_PATH` | `clusters/local` | Flux overlay path |
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
    | `SP_NAME` | `azure-crossplane-demo` | Azure service principal name |
 

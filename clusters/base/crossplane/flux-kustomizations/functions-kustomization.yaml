@@ -4,7 +4,7 @@
 # (installed by the HelmRelease in ../core) has finished installing, so they
 # can't be applied in the same batch as the HelmRelease. dependsOn + its own
 # retry loop lets it converge once ready, without blocking everything else
-# in flux-system. Manages every Function in ./clusters/dev/crossplane/functions
+# in flux-system. Manages every Function in ./clusters/base/crossplane/functions
 # (currently: function-patch-and-transform, function-go-templating,
 # function-kro).
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -17,7 +17,7 @@ spec:
   retryInterval: 1m
   timeout: 2m
   prune: true
-  path: ./clusters/dev/crossplane/functions
+  path: ./clusters/base/crossplane/functions
   sourceRef:
     kind: GitRepository
     name: flux-system
