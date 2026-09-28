@@ -44,8 +44,12 @@ addon_managed_grafana=$(read_yaml_value "$config_file" managedGrafana)
 
 # kubectl/flux talk to a dedicated admin context for this cluster so this
 # script never depends on (or clobbers) whatever context is currently active,
-# e.g. from a kiac bootstrap run in the same shell.
-kube_context="aks-${cluster_name}-admin"
+# e.g. from a kiac bootstrap run in the same shell. `az aks get-credentials
+# --admin` always appends its own "-admin" suffix to whatever --context name
+# is given (it takes precedence over --context), so the base name passed to
+# get-credentials must NOT already end in "-admin" or it becomes "-admin-admin".
+kube_context_base="aks-${cluster_name}"
+kube_context="${kube_context_base}-admin"
 
 if ! az account show >/dev/null 2>&1; then
   echo "Not logged in to Azure. Run 'az login' first." >&2
@@ -114,7 +118,7 @@ echo "==> Fetching AKS credentials (admin, dedicated context)"
 # AAD+Azure RBAC requirement for aks-desktop and interactive human users
 # (who authenticate via 'az aks get-credentials' without --admin + kubelogin).
 az aks get-credentials --resource-group "$resource_group" --name "$cluster_name" \
-  --admin --overwrite-existing --context "$kube_context"
+  --admin --overwrite-existing --context "$kube_context_base"
 
 echo "==> Ensuring crossplane-system namespace exists"
 ensure_namespace "$kube_context" crossplane-system
