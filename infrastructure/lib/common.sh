@@ -189,7 +189,9 @@ flux_bootstrap_github() {
   local ctx="$1" path="$2"
   local ctx_args=()
   [[ -n "$ctx" ]] && ctx_args=(--context="$ctx")
-  flux bootstrap github "${ctx_args[@]}" \
+  # ${ctx_args[@]+"${ctx_args[@]}"} (not "${ctx_args[@]}") avoids "unbound
+  # variable" under set -u with bash 3.2 (macOS default) when ctx_args is empty.
+  flux bootstrap github ${ctx_args[@]+"${ctx_args[@]}"} \
     --owner="$FLUX_OWNER" \
     --repository="$FLUX_REPO" \
     --branch="$FLUX_BRANCH" \
