@@ -1,7 +1,6 @@
 ---
-# Gateway API + Envoy Gateway CRDs, installed before anything that watches
-# them. cert-manager in particular only enables its Gateway support if the
-# CRDs exist when it starts.
+# Gateway API + Envoy Gateway CRDs, applied directly so the large CRD chart
+# does not exceed the 1 MiB limit on Helm release Secrets.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -13,12 +12,6 @@ spec:
   timeout: 5m
   prune: true
   wait: true
-  healthCheckExprs:
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      current: >-
-        status.conditions.exists(c,
-        c.type == 'Ready' && c.status == 'True')
   path: ./clusters/aks/gateway-api-crds
   sourceRef:
     kind: GitRepository

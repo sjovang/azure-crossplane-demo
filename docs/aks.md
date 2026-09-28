@@ -88,10 +88,18 @@ at `https://docs.demo.liasis.dev`:
 
 | Component | Why |
 | --- | --- |
-| Gateway API CRDs | Installed from Envoy Gateway's CRDs-only chart, **standard** channel, so the main chart does not silently install the experimental one |
+| Gateway API CRDs | Rendered from Envoy Gateway's v1.9.2 CRDs-only chart, **standard** channel, then applied by Flux without a Helm release Secret (the chart exceeds its 1 MiB limit) |
 | Envoy Gateway | Terminates TLS and routes traffic. `ingress-nginx` was retired in March 2026 and no longer receives CVE patches |
 | cert-manager | Issues the Let's Encrypt certificate via a DNS-01 challenge against the Azure DNS zone |
 | external-dns | Writes the `docs.demo.liasis.dev` A record, taking the address from the Gateway's status |
+
+The CRD bundle in `clusters/aks/gateway-api-crds/crds.yaml` is generated from
+the pinned Envoy Gateway chart with `crds.gatewayAPI.enabled=true`,
+`crds.gatewayAPI.channel=standard` and `crds.envoyGateway.enabled=true`.
+Regenerate it with `helm template gateway-api-crds
+oci://docker.io/envoyproxy/gateway-crds-helm --version 1.9.2 --namespace
+envoy-gateway-system` and those three `--set` values when upgrading the
+pinned Envoy Gateway chart version.
 
 cert-manager and external-dns authenticate with the same service principal as
 Crossplane, which is Contributor at subscription scope and so can write to

@@ -34,4 +34,5 @@ docs:
   dnsZone: demo.liasis.dev  # existing Azure public DNS zone
   dnsZoneResourceGroup: rg-public-dns  # resource group holding that zone
   hostname: docs.demo.liasis.dev  # must be inside dnsZone
-  acmeEmail: ""  # Let's Encrypt contact; empty disables the docs site
+  # yamllint disable rule:line-length
+  acmeEmail: "trond.sjovang@gmail.com"  # Let's Encrypt contact; empty disables the docs site

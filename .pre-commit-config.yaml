@@ -38,7 +38,12 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
-        exclude: ^clusters/(local|aks)/flux-system/
+        # Upstream-rendered CRDs retain their generated formatting.
+        exclude: >-
+          (?x)^(
+            clusters/(local|aks)/flux-system/
+            |clusters/aks/gateway-api-crds/crds\.yaml$
+          )
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.26.1

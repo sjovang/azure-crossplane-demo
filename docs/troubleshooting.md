@@ -75,10 +75,18 @@ Gateway's status, not the Service, so an unprogrammed Gateway means no
 record:
 
 ```sh
+kubectl get kustomization -n flux-system gateway-api-crds external-dns docs-site-gateway
+kubectl get configmap -n flux-system azure-dns-config
 kubectl get gateway -n documentation-site -o wide
 kubectl logs -n external-dns deploy/external-dns
 az network dns record-set a list -g rg-public-dns -z demo.liasis.dev -o table
 ```
+
+If `gateway-api-crds` is blocked by a Helm release Secret exceeding 1 MiB,
+sync the latest manifests: Flux now applies the rendered CRDs directly.
+If `azure-dns-config` is missing, set `docs.acmeEmail` in
+`infrastructure/config-aks.yaml` and rerun `infrastructure/bootstrap-aks.sh`
+to create the DNS credentials and configuration before Flux reconciles.
 
 **The site is stale after a push to `main`.** The image tag is committed back
 into the repository by `.github/workflows/docs-site.yaml`. Check that the
