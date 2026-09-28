@@ -169,3 +169,20 @@ from `compositions/` and the examples are included from `teams/`:
 docker build -f apps/docs/Dockerfile -t docs-site:dev .
 docker run --rm -p 8080:8080 docs-site:dev
 ```
+
+### Serving on a different hostname
+
+Everything the cluster applies takes the zone and hostname from
+`infrastructure/config-aks.yaml`, so a fork only edits that one file — see
+[DNS and certificates](../../docs/aks.md). The one exception is `site_url`,
+which Zensical bakes into every canonical link and into `sitemap.xml` at build
+time, long before Flux could substitute anything. It is a build argument
+instead:
+
+```sh
+docker build -f apps/docs/Dockerfile \
+  --build-arg DOCS_SITE_URL=https://docs.example.org/ -t docs-site:dev .
+```
+
+In CI the same value comes from the optional `DOCS_SITE_URL` repository
+variable. Leave it unset to keep the default.

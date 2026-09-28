@@ -17,6 +17,12 @@ COPY compositions compositions
 COPY teams teams
 
 WORKDIR /repo/apps/docs
+
+# Canonical links and sitemap.xml are fixed at build time, so the public
+# hostname cannot come from Flux substitution the way the manifests do.
+ARG DOCS_SITE_URL=https://docs.demo.liasis.dev/
+ENV DOCS_SITE_URL=${DOCS_SITE_URL}
+
 # Zensical has no equivalent of mkdocs-gen-files, so the reference pages are
 # generated as real files first. SUMMARY.md is the literate-nav source rather
 # than a page, but it still renders as one, so drop it from the output.

@@ -71,6 +71,10 @@ jobs:
           context: .
           file: apps/docs/Dockerfile
           push: true
+          # Empty when the repository variable is unset, which falls back to
+          # the Dockerfile default. Only forks serving another hostname set it.
+          build-args: |
+            DOCS_SITE_URL=${{ vars.DOCS_SITE_URL || 'https://docs.demo.liasis.dev/' }}
           tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
