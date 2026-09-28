@@ -10,4 +10,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: crossplane-state-metrics
-    namespace: kiac-observability
+    namespace: observability
