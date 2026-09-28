@@ -78,13 +78,10 @@
    Credentials are stored in the gitignored
    `infrastructure/azure-credentials-kiac.json` and reused on later runs.
 
-8. Allow a minute or two for Flux to converge, then verify the cluster and Crossplane:
+8. Allow a few minutes for Flux to converge (`flux get kustomizations -A --watch`), then verify Flux and Crossplane:
 
    ```sh
-      kubectl get nodes
-      kubectl get providers.pkg.crossplane.io
-      kubectl get providerconfigs.azure.upbound.io
-      flux get kustomizations -A
+   ./infrastructure/verify-crossplane.sh
    ```
 
 9. When you're done, tear everything down — this deletes both the Azure service principal and the kiac cluster:

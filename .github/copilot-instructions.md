@@ -63,10 +63,13 @@ following the chain across several files:
   deliberately not referenced by the parent Kustomization.
 3. `clusters/base/crossplane/providers/azure/provider.yaml` — the `Provider`
    package CR. Applied by the dependent `crossplane-azure-provider`
-   Kustomization (`dependsOn: flux-system`, its own `retryInterval`/`timeout`)
-   because `providers.pkg.crossplane.io` only exists once Crossplane core
+   Kustomization (`dependsOn: flux-system`, its own `retryInterval`/`timeout`,
+   `wait` + `healthCheckExprs` so it's only Ready once every `Provider` is
+   `Installed` and `Healthy`) because `providers.pkg.crossplane.io` only exists once Crossplane core
    (installed by the `HelmRelease` above) has finished installing — it can't
-   be applied in the same batch as the `HelmRelease`.
+   be applied in the same batch as the `HelmRelease`. All Azure Providers
+   reference the shared `DeploymentRuntimeConfig` `azure-provider`
+   (`deployment-runtime-config.yaml`, resource requests/limits).
 4. `clusters/base/crossplane/provider-configs/azure/provider-config.yaml` — the
    `ProviderConfig`, applied by the dependent `crossplane-azure-config`
    Kustomization (`dependsOn: crossplane-azure-provider`) because its CRD
@@ -77,8 +80,9 @@ following the chain across several files:
    `infrastructure/bootstrap-aks.sh` (see below).
 5. `clusters/base/crossplane/functions/` — Composition `Function` packages
    (`function-patch-and-transform`, `function-go-templating`,
-   `function-kro`), applied by the dependent `crossplane-functions`
-   Kustomization (`dependsOn: flux-system`) because
+   `function-kro`, `function-auto-ready`), applied by the dependent
+   `crossplane-functions` Kustomization (`dependsOn: flux-system`, same
+   `wait` + `healthCheckExprs` pattern as the providers) because
    `functions.pkg.crossplane.io` only exists once Crossplane core has
    installed.
 6. `compositions/` — shared Crossplane `CompositeResourceDefinition`s and
@@ -87,10 +91,10 @@ following the chain across several files:
    directory, not under `clusters/base/`, so other clusters can add their own
    pointer Kustomization at `path: ./compositions` and share the exact same
    compositions. Applied by the dependent `crossplane-compositions`
-   Kustomization (`dependsOn: flux-system` only — applying a
-   Composition/XRD doesn't require its `functionRef` target to already
-   exist; Crossplane only resolves that at XR-reconcile time, not apply
-   time).
+   Kustomization (`dependsOn: flux-system` and `crossplane-functions`;
+   applying a Composition doesn't strictly need its functions, but waiting
+   avoids `missing required capabilities` warnings. A health check keeps it
+   not-Ready until every XRD is `Established`).
    `teams/` — team resources, one subfolder per team (e.g.
    `teams/mvpdagen/`), with no prefix or suffix on the team name. Each team
    folder owns a `kustomization.yaml` and may contain any layout it needs;
@@ -138,6 +142,17 @@ composite resource`). `scope` is also immutable once the XRD is established
 restarting the `crossplane` core deployment so its controller picks up the
 new scope).
 
+### Managed resource activation
+
+The Crossplane chart's default `'*'` `ManagedResourceActivationPolicy` is
+disabled (`provider.defaultActivations: []` in `core/helm-release.yaml`).
+Activating all ~300 MRDs made `provider-azure-network` time out syncing
+informers and crash (`Deployment does not have minimum availability`).
+`activation-policies/azure/managed-resource-activation-policy.yaml` is the
+**only** activation source: when a composition composes a new managed
+resource kind, add its MRD name (`<plural>.<group>`) there, or its CRD is
+never created.
+
 ### CRD-dependency deadlock (real bug, already fixed once — don't reintroduce)
 
 Flux's kustomize-controller auto-generates an implicit `kustomization.yaml`
@@ -168,6 +183,10 @@ bootstrap, SP deletion, and a minimal `read_yaml_value` scalar reader for the
 config YAML files). Never duplicate one of these steps in a per-target
 script — add/extend the shared function instead.
 
+- **`verify-crossplane.sh [--context <ctx>]`**: read-only health check of
+  the Flux + Crossplane stack (Kustomizations/HelmReleases Ready, packages
+  Installed+Healthy, XRDs Established, package pods without restarts, only
+  `azure-resources` MRDs active). Exits non-zero on failure.
 - **`bootstrap-kiac.sh`** / **`teardown-kiac.sh`**: local kiac cluster.
   Preflight-checks `gh`, `kiac`, `flux`, `kubectl`, `az`, `jq` → `kiac create
   cluster --config infrastructure/config-kiac.yaml` → shared namespace/SP/secret/Flux
@@ -228,6 +247,8 @@ script — add/extend the shared function instead.
   `infrastructure/lib/common.sh`, not copy-pasted into a per-target script.
 - Flux `Kustomization`s that depend on CRDs from another package use
   `dependsOn` + a short `retryInterval`/`timeout` rather than manual
-  ordering, and their target directory must have its own scoped
+  ordering. Kustomizations that install Crossplane packages/XRDs use
+  `wait: true` + `healthCheckExprs` (packages have no `Ready` condition,
+  so plain `wait` passes immediately), and their target directory must have its own scoped
   `kustomization.yaml` — see the Azure templates in
   `crossplane/flux-kustomizations/`.

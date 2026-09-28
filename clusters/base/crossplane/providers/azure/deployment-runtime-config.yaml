@@ -1,0 +1,22 @@
+---
+# Shared runtime settings for the Azure provider Deployments. Requests make
+# scheduling predictable on small nodes (kiac); the limit guards the node
+# against runaway memory use.
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: azure-provider
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi

@@ -10,6 +10,7 @@ kind: Kustomization
 # which targets this directory directly and retries independently until the
 # CRD is ready.
 resources:
+  - deployment-runtime-config.yaml
   - provider.yaml
   - provider-network.yaml
   - provider-compute.yaml

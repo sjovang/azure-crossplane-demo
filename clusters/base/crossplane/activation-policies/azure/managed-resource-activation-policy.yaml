@@ -1,4 +1,7 @@
 ---
+# The only activation policy (the chart default is disabled in
+# ../../core/helm-release.yaml). Every managed resource kind composed under
+# compositions/ must be listed here, or its CRD is never created.
 apiVersion: apiextensions.crossplane.io/v1alpha1
 kind: ManagedResourceActivationPolicy
 metadata:

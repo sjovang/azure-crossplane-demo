@@ -1,5 +1,20 @@
 # Troubleshooting
 
+Start with the stack health check. It reports every Flux, Crossplane package,
+XRD, pod, and activation problem it finds:
+
+```sh
+./infrastructure/verify-crossplane.sh [--context <kube-context>]
+```
+
+Warning events from bootstrap (for example `no matches for kind` or
+`post establish runtime hook failed`) stay visible in tools like AKS desktop
+for about an hour. They're harmless if the script passes.
+
+A composed resource kind needs its managed resource definition (MRD) listed in
+[`managed-resource-activation-policy.yaml`](../clusters/base/crossplane/activation-policies/azure/managed-resource-activation-policy.yaml).
+Otherwise its CRD is never created.
+
 For a resource that does not appear in Azure, check the deployment chain from Flux to Crossplane:
 
 1. Check Flux reconciliation:

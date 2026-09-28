@@ -7,3 +7,5 @@ metadata:
   name: provider-azure-resources
 spec:
   package: xpkg.upbound.io/upbound/provider-azure-resources:v2.7.2
+  runtimeConfigRef:
+    name: azure-provider
