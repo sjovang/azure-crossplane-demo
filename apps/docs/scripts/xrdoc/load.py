@@ -49,7 +49,6 @@ class Sidecar:
     example_ref: str = ""
     example_lines: str = ""
     example_notes: str = ""
-    composed_resources: List[Dict[str, Any]] = field(default_factory=list)
     common_errors: List[CommonError] = field(default_factory=list)
 
     @property
@@ -81,7 +80,6 @@ class Sidecar:
             example_ref=str(data.get("exampleRef", "")).strip(),
             example_lines=str(data.get("exampleLines", "")).strip(),
             example_notes=str(data.get("exampleNotes", "")).strip(),
-            composed_resources=list(data.get("composedResources") or []),
             common_errors=errors,
         )
 

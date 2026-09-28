@@ -14,21 +14,6 @@ exampleNotes: >-
 # This composition renders its resources from an inline Go template
 # (function-go-templating), emitting subnets and NSGs with a range loop, so
 # they cannot be derived from the manifest and are declared here instead.
-composedResources:
-  - kind: VirtualNetwork
-    apiVersion: network.azure.m.upbound.io/v1beta1
-    note: One per composite, with address space allocated from the IPAM pool.
-  - kind: Subnet
-    apiVersion: network.azure.m.upbound.io/v1beta1
-    note: One per entry in `spec.subnets`.
-  - kind: SecurityGroup
-    apiVersion: network.azure.m.upbound.io/v1beta1
-    note: One per entry in `spec.subnets`, holding that subnet's rules.
-  - kind: SubnetNetworkSecurityGroupAssociation
-    apiVersion: network.azure.m.upbound.io/v1beta1
-    condition: only for subnets that declare securityRules
-    note: Binds a subnet to its network security group.
-
 commonErrors:
   - symptom: >-
       The virtual network stays not-Ready and the provider reports an

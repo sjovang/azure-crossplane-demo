@@ -1,20 +1,12 @@
 """Render a CompositionDoc into a Markdown reference page."""
 
 import json
-import re
 from pathlib import Path
 from typing import Any, List
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from .composed import (
-    ComposedResource,
-    created_resources,
-    referenced_resources,
-)
-from .composed import analyse as analyse_pipeline
 from .load import CompositionDoc
-from .mermaid import render as render_mermaid
 from .schema import FieldRow, walk_fields
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
@@ -77,32 +69,6 @@ def _escape_cell(text: str) -> str:
     return (text or "").replace("|", "\\|").replace("\n", " ").strip()
 
 
-def _humanise_condition(condition: str) -> str:
-    """Turn a kro includeWhen expression into readable prose."""
-    if not condition:
-        return ""
-    match = re.search(
-        r"schema\.spec\.([A-Za-z0-9_.]+)\s*==\s*\"([^\"]+)\"", condition
-    )
-    if match:
-        return "only when `spec.{0}` is `{1}`".format(
-            match.group(1), match.group(2)
-        )
-    return condition.strip()
-
-
-def _resource_note(resource: ComposedResource) -> str:
-    parts = []
-    if resource.note:
-        parts.append(resource.note)
-    condition = _humanise_condition(resource.condition)
-    if condition:
-        parts.append("Created {0}.".format(condition))
-    if not parts and resource.api_version:
-        parts.append("`{0}`".format(resource.api_version))
-    return _escape_cell(" ".join(parts)) or "—"
-
-
 def _source_url(path: str) -> str:
     """Link from a generated page back to the manifest in the repository."""
     return "{0}/{1}".format(SOURCE_BASE, path)
@@ -137,31 +103,21 @@ def _version_list(doc: CompositionDoc) -> str:
 
 def render_page(doc: CompositionDoc) -> str:
     """Render the full Markdown reference page for one composition."""
-    spec_rows, spec_rules = walk_fields(doc.spec_schema, "spec")
+    spec_rows, _ = walk_fields(doc.spec_schema, "spec")
     status_rows, _ = walk_fields(doc.status_schema, "status")
-
-    steps = analyse_pipeline(doc.composition, doc.sidecar.composed_resources)
-    created = created_resources(steps)
-    referenced = referenced_resources(steps)
 
     template = _environment().get_template("reference.md.j2")
     return template.render(
         doc=doc,
         sidecar=doc.sidecar,
         spec_rows=spec_rows,
-        spec_rules=spec_rules,
         status_rows=status_rows,
-        created=created,
-        referenced=referenced,
-        diagram=render_mermaid(doc.kind, steps),
         version_list=_version_list(doc),
         indent=_indent,
         badges=_badges,
         describe=_describe,
         default_cell=_default_cell,
-        resource_note=_resource_note,
         source_url=_source_url,
-        escape_cell=_escape_cell,
     )
 
 
