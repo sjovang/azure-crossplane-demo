@@ -14,6 +14,9 @@ use_directory_urls: true
 
 theme:
   name: material
+  # Zensical defaults to the "modern" variant; "classic" keeps the
+  # Material for MkDocs appearance this site was built against.
+  variant: classic
   features:
     - navigation.sections
     - navigation.top
@@ -37,11 +40,13 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
 
+extra_css:
+  - stylesheets/extra.css
+
 plugins:
   - search
-  - gen-files:
-      scripts:
-        - scripts/gen_pages.py
+  # gen-files is not supported by Zensical. scripts/gen_pages.py runs as a
+  # separate step before the build instead; see README.md.
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index

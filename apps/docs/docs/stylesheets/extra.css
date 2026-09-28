@@ -1,0 +1,55 @@
+/*
+ * The theme caps content at 61rem, which leaves most of a wide display empty
+ * and squeezes the five-column Spec tables into a narrow scrolling box. Give
+ * the content area more room on large viewports, and let tables use it.
+ *
+ * Note: Zensical emits bare <table> elements, without the .md-typeset__table
+ * wrapper Material for MkDocs used, so these rules target the table itself.
+ */
+
+/*
+ * 76.25em is the theme's own breakpoint for showing the table of contents;
+ * widening below it would crowd the navigation.
+ */
+@media screen and (min-width: 76.25em) {
+  .md-grid {
+    max-width: 86rem;
+  }
+}
+
+@media screen and (min-width: 100em) {
+  .md-grid {
+    max-width: 100rem;
+  }
+}
+
+/*
+ * Tables default to display:inline-block, so they shrink to fit their content
+ * and scroll horizontally instead of filling the available width.
+ */
+.md-typeset table:not([class]) {
+  display: table;
+  width: 100%;
+}
+
+/*
+ * Field tables (Spec and Status) have four narrow columns and one prose
+ * column. Keep the narrow ones at their content width so Description takes
+ * the remaining space instead of being the first thing to wrap.
+ *
+ * Only above the breakpoint: on a phone the columns need to stay narrow and
+ * the table needs to keep scrolling.
+ */
+@media screen and (min-width: 76.25em) {
+  .field-table table:not([class]) th:nth-child(-n + 4),
+  .field-table table:not([class]) td:nth-child(-n + 4) {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .field-table table:not([class]) th:last-child,
+  .field-table table:not([class]) td:last-child {
+    width: auto;
+    white-space: normal;
+  }
+}

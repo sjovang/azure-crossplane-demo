@@ -1,9 +1,12 @@
 {% macro field_table(rows) -%}
+<div class="field-table" markdown>
+
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 {% for row in rows -%}
 | {{ indent(row.depth) }}`{{ row.path }}`{{ badges(row) }} | `{{ row.type_name }}` | {{ '**yes**' if row.required else 'no' }} | {{ default_cell(row) }} | {{ describe(row) }} |
 {% endfor %}
+</div>
 {%- endmacro %}
 # {{ doc.kind }}
 

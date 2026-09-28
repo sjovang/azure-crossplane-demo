@@ -5,7 +5,7 @@
 # The reference pages are generated from compositions/**/xrd.yaml and the
 # examples are snippet-included from teams/, so both must be in the context.
 
-FROM python:3.13-slim AS build
+FROM python:3.14-slim AS build
 
 WORKDIR /repo
 
@@ -17,15 +17,16 @@ COPY compositions compositions
 COPY teams teams
 
 WORKDIR /repo/apps/docs
-# SUMMARY.md is the literate-nav source. mkdocs-gen-files writes it after
-# mkdocs' own exclude_docs pass, so it renders as a stray page and has to be
-# dropped here instead.
-RUN mkdocs build --strict --site-dir /site \
-  && rm -rf /site/SUMMARY
+# Zensical has no equivalent of mkdocs-gen-files, so the reference pages are
+# generated as real files first. SUMMARY.md is the literate-nav source rather
+# than a page, but it still renders as one, so drop it from the output.
+RUN python scripts/gen_pages.py \
+  && zensical build --strict \
+  && rm -rf site/SUMMARY
 
 FROM nginxinc/nginx-unprivileged:1.29-alpine
 
 COPY apps/docs/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /site /usr/share/nginx/html
+COPY --from=build /repo/apps/docs/site /usr/share/nginx/html
 
 EXPOSE 8080

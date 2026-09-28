@@ -1,7 +1,11 @@
 # Composition documentation site
 
-A [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) site that
-documents the Crossplane compositions in `compositions/`.
+A [Zensical](https://zensical.org/) site that documents the Crossplane
+compositions in `compositions/`.
+
+Zensical is the successor to Material for MkDocs, by the same authors. It
+reads the same `mkdocs.yml` and keeps the Material look through its `classic`
+theme variant.
 
 Reference pages are **generated at build time** from the XRD and Composition
 manifests, so they cannot drift from what the cluster actually serves. Nothing
@@ -16,30 +20,39 @@ On an AKS cluster the site runs in the cluster itself, published at
 cd apps/docs
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/mkdocs serve
+./.venv/bin/python scripts/gen_pages.py
+./.venv/bin/zensical serve
 ```
 
 Then open <http://127.0.0.1:8000>.
 
+Re-run `gen_pages.py` after changing an XRD, a `docs.yaml` or the page
+template -- unlike the old `mkdocs-gen-files` setup, generation is a separate
+step and `serve` will not redo it for you.
+
 To check the build the way CI would:
 
 ```sh
-./.venv/bin/mkdocs build --strict
+./.venv/bin/python scripts/gen_pages.py
+./.venv/bin/zensical build --strict
 ```
 
 ## How pages are generated
 
-`scripts/gen_pages.py` runs inside the MkDocs build via `mkdocs-gen-files`:
+`scripts/gen_pages.py` is run **before** the build and writes real Markdown
+files into `docs/reference/`:
 
 | Module | Responsibility |
 | --- | --- |
 | `xrdoc/load.py` | Discover `compositions/**/xrd.yaml`, `composition.yaml`, `docs.yaml` |
 | `xrdoc/schema.py` | Walk `openAPIV3Schema` into flat field rows and CEL rules |
-| `xrdoc/composed.py` | Work out which Azure resources a composition creates |
-| `xrdoc/mermaid.py` | Build the pipeline diagram |
 | `xrdoc/render.py` | Render `templates/reference.md.j2` |
 
-The sidebar comes from a generated `SUMMARY.md` via `mkdocs-literate-nav`.
+The sidebar comes from a generated `SUMMARY.md` via `literate-nav`.
+
+`docs/reference/` and `docs/SUMMARY.md` are build output, regenerated on every
+build and gitignored. Zensical does not support `mkdocs-gen-files`, which is
+why generation is a separate step rather than a plugin.
 
 ## Adding a new composition
 
