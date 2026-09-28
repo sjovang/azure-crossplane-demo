@@ -95,7 +95,10 @@ fi
 
 if [[ "$addon_managed_grafana" == "true" ]]; then
   echo "==> Ensuring Managed Grafana workspace"
-  grafana_name="${cluster_name}-grafana"
+  # Managed Grafana workspace names must be 2-23 characters, so truncate
+  # the cluster name to leave room for the "-graf" suffix rather than
+  # hardcoding a name unrelated to config-aks.yaml.
+  grafana_name="${cluster_name:0:18}-graf"
   if ! az grafana show --resource-group "$resource_group" --name "$grafana_name" >/dev/null 2>&1; then
     az grafana create --resource-group "$resource_group" --name "$grafana_name" --location "$location"
   fi
