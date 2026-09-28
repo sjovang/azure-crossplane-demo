@@ -15,7 +15,7 @@ location: swedencentral  # Azure region
 k8sVersion: ""  # empty = az aks default, e.g. "1.31"
 
 nodeCount: 2  # worker node count
-vmSize: Standard_D2s_v5  # VM size per node
+vmSize: Standard_D2as_v7  # VM size per node
 
 # Addons are positive toggles; disable to reduce cost/setup time. Network
 # policy can only be set at cluster creation time (immutable afterwards);
