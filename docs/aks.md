@@ -28,6 +28,21 @@ network policy, Azure Monitor Metrics, and Managed Grafana (recommended).
   the `azureMonitorMetrics`/`managedGrafana` addons are disabled
 - [`kubelogin`](https://azure.github.io/kubelogin/): `brew install Azure/kubelogin/kubelogin`
 
+  > [!WARNING]
+  > Homebrew has two unrelated formulae named `kubelogin`: plain
+  > `brew install kubelogin` (Homebrew core) installs
+  > [int128/kubelogin](https://github.com/int128/kubelogin), a generic OIDC
+  > plugin that only provides a `kubectl-oidc_login` binary — **not** the
+  > `kubelogin` binary this script needs. You must install the
+  > `Azure/kubelogin/kubelogin` tap formula specifically. If you already have
+  > the wrong one, Homebrew won't let both coexist (same formula name):
+  > uninstall it first, then install the correct one:
+  > ```sh
+  > brew uninstall kubelogin
+  > brew tap azure/kubelogin
+  > brew install azure/kubelogin/kubelogin
+  > ```
+
 ## Steps
 
 Follow steps 1, 2, and 6 from the [kiac walkthrough](kiac.md) (fork/clone the

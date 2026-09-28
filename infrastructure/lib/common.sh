@@ -55,7 +55,27 @@ require_tools() {
   if (( ${#missing_tools[@]} > 0 )); then
     echo "Missing required tool(s): ${missing_tools[*]}." >&2
     echo "See README.md prerequisites for install instructions." >&2
+    for tool in "${missing_tools[@]}"; do
+      [[ "$tool" == "kubelogin" ]] && warn_if_wrong_kubelogin
+    done
     exit 1
+  fi
+}
+
+# warn_if_wrong_kubelogin
+# Homebrew has two unrelated formulae named "kubelogin": Homebrew core's
+# int128/kubelogin (an OIDC plugin providing only kubectl-oidc_login, no
+# `kubelogin` binary) and azure/kubelogin's Azure/kubelogin (the one we
+# need). Detects the common mix-up and prints a targeted fix.
+warn_if_wrong_kubelogin() {
+  if command -v kubectl-oidc_login >/dev/null 2>&1 && command -v brew >/dev/null 2>&1 \
+    && brew list --formula 2>/dev/null | grep -qx kubelogin; then
+    echo >&2
+    echo "Detected Homebrew core's 'kubelogin' (int128/kubelogin, OIDC plugin)" >&2
+    echo "installed instead of azure/kubelogin/kubelogin. Fix with:" >&2
+    echo "  brew uninstall kubelogin" >&2
+    echo "  brew tap azure/kubelogin" >&2
+    echo "  brew install azure/kubelogin/kubelogin" >&2
   fi
 }
 
