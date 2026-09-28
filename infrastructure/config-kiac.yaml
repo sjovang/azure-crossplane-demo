@@ -1,5 +1,5 @@
 ---
-# kiac cluster config, used with: kiac create cluster --config config.yaml
+# kiac cluster config, used with: kiac create cluster --config config-kiac.yaml
 #
 # Local Kubernetes cluster (kiac - Kubernetes in Apple Containers) for
 # macOS with 3 worker nodes, no GPU nodes, and the observability and
