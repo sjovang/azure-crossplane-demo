@@ -37,7 +37,7 @@ flowchart LR
   their Azure/Flux logic via [`infrastructure/lib/common.sh`](infrastructure/lib/common.sh)
   and each create the Kubernetes `Secret` from a locally generated service
   principal before bootstrapping Flux.
-- Full convergence takes a minute or two after bootstrap. Watch it with `flux get kustomizations -A`.
+- Full convergence takes a few minutes after bootstrap. Watch it with `flux get kustomizations -A`, then run `./infrastructure/verify-crossplane.sh`.
 
 > [!NOTE]
 > Crossplane `CompositeResourceDefinition`s and `Composition`s live in the

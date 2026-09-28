@@ -5,6 +5,9 @@
 # be applied in the same batch as the HelmRelease. dependsOn + its own retry
 # loop lets it converge once ready, without blocking everything else in
 # flux-system.
+# wait + healthCheckExprs: Ready only once every package is Installed and
+# Healthy (packages have no Ready condition, so plain kstatus would pass
+# immediately), so dependents never start against half-installed packages.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -13,7 +16,16 @@ metadata:
 spec:
   interval: 5m
   retryInterval: 1m
-  timeout: 2m
+  timeout: 10m
+  wait: true
+  healthCheckExprs:
+    - apiVersion: pkg.crossplane.io/v1
+      kind: Provider
+      current: >-
+        status.conditions.exists(c,
+        c.type == 'Installed' && c.status == 'True')
+        && status.conditions.exists(c,
+        c.type == 'Healthy' && c.status == 'True')
   prune: true
   path: ./clusters/base/crossplane/providers/azure
   sourceRef:

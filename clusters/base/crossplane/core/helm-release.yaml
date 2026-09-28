@@ -22,3 +22,10 @@ spec:
   upgrade:
     remediation:
       retries: 3
+  values:
+    provider:
+      # Disable the chart's default "*" ManagedResourceActivationPolicy.
+      # Otherwise every MRD of every provider is activated, and the providers
+      # time out syncing informers for kinds we never use. The azure-resources
+      # policy in ../activation-policies/azure is the only activation source.
+      defaultActivations: []

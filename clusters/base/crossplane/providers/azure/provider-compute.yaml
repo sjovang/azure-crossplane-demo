@@ -5,3 +5,5 @@ metadata:
   name: provider-azure-compute
 spec:
   package: xpkg.upbound.io/upbound/provider-azure-compute:v2.7.2
+  runtimeConfigRef:
+    name: azure-provider

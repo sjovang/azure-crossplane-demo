@@ -61,6 +61,12 @@ name with a `-aks` suffix always appended instead of `-kiac` (default:
 principal. Credentials are stored in the gitignored
 `infrastructure/azure-credentials-aks.json`.
 
+After Flux converges, verify Flux and Crossplane:
+
+```sh
+./infrastructure/verify-crossplane.sh --context aks-azure-crossplane-demo-admin
+```
+
 Tear it down (deletes the service principal and the whole AKS resource
 group, including the cluster and Managed Grafana):
 
