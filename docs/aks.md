@@ -54,8 +54,10 @@ export GITHUB_TOKEN=$(gh auth token)
 ```
 
 Optional environment variables are the same as `bootstrap-kiac.sh`, except
-`FLUX_PATH` defaults to `clusters/aks` and `SP_NAME` defaults to
-`azure-crossplane-demo-aks`. Credentials are stored in the gitignored
+`FLUX_PATH` defaults to `clusters/aks` and `SP_NAME` is used as the same base
+name with a `-aks` suffix always appended instead of `-kiac` (default:
+`azure-crossplane-demo-aks`), so the two clusters never share a service
+principal. Credentials are stored in the gitignored
 `infrastructure/azure-credentials-aks.json`.
 
 Tear it down (deletes the service principal and the whole AKS resource

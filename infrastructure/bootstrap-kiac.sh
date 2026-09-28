@@ -10,7 +10,10 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib/common.sh"
 
 credentials_file="$script_dir/azure-credentials-kiac.json"
-sp_name="${SP_NAME:-azure-crossplane-demo}"
+# Suffix is always appended (even when SP_NAME is overridden) so kiac and aks
+# never share the same service principal/clientId across both credential
+# files -- see bootstrap-aks.sh for the matching "-aks" suffix.
+sp_name="${SP_NAME:-azure-crossplane-demo}-kiac"
 
 # Defaults to your own GitHub user (the fork owner), resolved via the
 # authenticated gh CLI. Override if you pushed the fork elsewhere.

@@ -73,7 +73,7 @@
    | `FLUX_BRANCH` | `main` | Git branch |
    | `FLUX_PATH` | `clusters/local` | Flux overlay path |
    | `FLUX_PRIVATE` | `true` | Keep the repository private |
-   | `SP_NAME` | `azure-crossplane-demo` | Azure service principal name |
+   | `SP_NAME` | `azure-crossplane-demo` | Azure service principal base name (a `-kiac` suffix is always appended, so it never collides with the AKS service principal) |
 
    Credentials are stored in the gitignored
    `infrastructure/azure-credentials-kiac.json` and reused on later runs.

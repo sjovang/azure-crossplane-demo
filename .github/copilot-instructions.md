@@ -215,10 +215,12 @@ script — add/extend the shared function instead.
 - Always use conventional commits. In both commits and pull request titles.
 - Text must be brief and to the point. Avoid overly verbose prose.
 - Fixed, reused names: kiac cluster `dev`, AKS cluster/resource group
-  `azure-crossplane-demo`, service principals `azure-crossplane-demo`
-  (kiac, overridable via `SP_NAME`) and `azure-crossplane-demo-aks` (AKS),
-  secret `azure-secret`/key `creds`. Changing one requires updating every
-  reference (scripts, `provider-config.yaml`, README).
+  `azure-crossplane-demo`, service principals `azure-crossplane-demo-kiac`
+  and `azure-crossplane-demo-aks` (base name overridable via `SP_NAME`, but
+  the `-kiac`/`-aks` suffix is always appended so the two clusters never
+  share a service principal), secret `azure-secret`/key `creds`. Changing
+  one requires updating every reference (scripts, `provider-config.yaml`,
+  README).
 - `bootstrap-*.sh`/`teardown-*.sh` use `set -euo pipefail` and idempotent
   `kubectl ... --dry-run=client -o yaml | kubectl apply -f -` for anything
   that may already exist — follow this pattern for new imperative steps
