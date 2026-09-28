@@ -108,7 +108,7 @@ missing=$(comm -23 <(echo "$expected") <(echo "$active"))
 if [[ -n "$unexpected" ]]; then
   fail "$(wc -l <<<"$unexpected" | tr -d ' ') active MRD(s) not in azure-resources policy, e.g. $(head -1 <<<"$unexpected")"
 else
-  pass "only azure-resources MRDs are active ($(wc -l <<<"$active" | tr -d ' '))"
+  pass "only azure-resources MRDs are active ($(grep -c . <<<"$active" || true))"
 fi
 if [[ -n "$missing" ]]; then
   fail "MRD(s) in policy but not active: $(tr '\n' ' ' <<<"$missing")"
