@@ -11,7 +11,8 @@ The cluster is configured to meet the [AKS desktop cluster
 requirements](https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md):
 Entra ID authentication + Azure RBAC (hard requirements), and — toggleable in
 [`infrastructure/config-aks.yaml`](../infrastructure/config-aks.yaml) — Cilium
-network policy, Azure Monitor Metrics, and Managed Grafana (recommended).
+network policy, Azure Monitor Metrics, Managed Grafana, KEDA, and VPA
+(recommended).
 
 > [!NOTE]
 > The script fetches an **admin** kubeconfig context (`az aks get-credentials
@@ -114,3 +115,16 @@ kubectl config use-context aks-azure-crossplane-demo
 `teardown-aks.sh` removes the admin context (`aks-<cluster>-admin`) it
 created, but not any personal context you fetched yourself — clean those up
 with `kubectl config delete-context <name>` if you no longer need them.
+
+## Connecting via AKS desktop
+
+[AKS desktop](https://aka.ms/aks/aks-desktop) is a local client app (not a
+Kubernetes workload — nothing to deploy here) for managing AKS clusters. It
+discovers clusters through your local kubeconfig, so use the same
+non-admin, `kubelogin`-converted context from
+[Accessing the cluster](#accessing-the-cluster) above rather than the
+`-admin` one: Entra ID authentication and Azure RBAC are already enabled by
+`bootstrap-aks.sh`, satisfying AKS desktop's hard cluster requirements, and
+your access inside the app is governed by whatever Azure RBAC role you hold
+on the cluster. See the [official AKS desktop
+documentation](https://aka.ms/aks/aks-desktop) for installation and usage.

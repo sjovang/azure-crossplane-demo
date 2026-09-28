@@ -7,7 +7,7 @@
 # https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md
 # (Entra ID auth + Azure RBAC) and, when the addons below are enabled, the
 # recommended configuration (Cilium network policy, Azure Monitor Metrics,
-# Managed Grafana).
+# Managed Grafana, KEDA, VPA).
 
 resourceGroup: azure-crossplane-demo  # created + deleted by this script
 name: azure-crossplane-demo  # cluster name: lowercase letters/digits/dashes
@@ -24,3 +24,5 @@ addons:
   networkPolicy: true  # --network-plugin azure --network-policy cilium
   azureMonitorMetrics: true  # Managed Prometheus metrics
   managedGrafana: true  # Managed Grafana workspace, linked to the cluster
+  keda: true  # --enable-keda, KEDA event-driven autoscaling (may incur cost)
+  vpa: true  # --enable-vpa, Vertical Pod Autoscaler (may incur cost)

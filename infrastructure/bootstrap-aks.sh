@@ -44,6 +44,8 @@ vm_size=$(read_yaml_value "$config_file" vmSize)
 addon_network_policy=$(read_yaml_value "$config_file" networkPolicy)
 addon_azure_monitor_metrics=$(read_yaml_value "$config_file" azureMonitorMetrics)
 addon_managed_grafana=$(read_yaml_value "$config_file" managedGrafana)
+addon_keda=$(read_yaml_value "$config_file" keda)
+addon_vpa=$(read_yaml_value "$config_file" vpa)
 
 # kubectl/flux talk to a dedicated admin context for this cluster so this
 # script never depends on (or clobbers) whatever context is currently active,
@@ -96,6 +98,14 @@ else
   if [[ "$addon_azure_monitor_metrics" == "true" ]]; then
     # Recommended: Azure Monitor Metrics (Managed Prometheus).
     create_args+=(--enable-azure-monitor-metrics)
+  fi
+  if [[ "$addon_keda" == "true" ]]; then
+    # Recommended: KEDA event-driven autoscaling.
+    create_args+=(--enable-keda)
+  fi
+  if [[ "$addon_vpa" == "true" ]]; then
+    # Recommended: Vertical Pod Autoscaler.
+    create_args+=(--enable-vpa)
   fi
   az aks create "${create_args[@]}"
 fi
