@@ -83,7 +83,8 @@ the Azure name are related but not identical:
 ## Immutability
 
 Many fields are immutable, enforced by a CEL rule (`self == oldSelf`). Each
-reference page lists them under **Validation rules**. Changing one is
+reference page marks them in the **Spec** table with an `immutable` badge,
+and an immutable object pins the fields nested under it. Changing one is
 rejected on apply — delete and recreate the composite instead.
 
 ## Managed resource activation

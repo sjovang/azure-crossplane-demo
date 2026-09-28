@@ -47,6 +47,7 @@ class FieldRow:
     constraints: List[str] = field(default_factory=list)
     nullable: bool = False
     preserve_unknown: bool = False
+    immutable: bool = False
 
     @property
     def is_nested(self) -> bool:
@@ -107,6 +108,28 @@ def _cel_rules(schema: Dict[str, Any], path: str, root_label: str) -> List[CelRu
     return rules
 
 
+def _is_immutable(schema: Dict[str, Any]) -> bool:
+    """Detect the CEL transition rule that pins a field after creation.
+
+    Immutability has no dedicated OpenAPI keyword: it is expressed as a
+    ``self == oldSelf`` transition rule. The rule attaches to the field's own
+    node, whether that is a scalar or an object, so a whole object can be
+    immutable while its properties carry no rule of their own.
+
+    The "immutable once set" variant, ``self == oldSelf || oldSelf == null``,
+    counts too -- the field cannot be changed once it has a value.
+    """
+    for entry in schema.get("x-kubernetes-validations") or []:
+        if not isinstance(entry, dict) or "rule" not in entry:
+            continue
+        for clause in str(entry["rule"]).split("||"):
+            tokens = clause.replace("(", " ").replace(")", " ").split()
+            if len(tokens) == 3 and tokens[1] == "==":
+                if {tokens[0], tokens[2]} == {"self", "oldSelf"}:
+                    return True
+    return False
+
+
 def walk(
     schema: Dict[str, Any],
     path: Tuple[str, ...] = (),
@@ -152,6 +175,7 @@ def walk(
                 preserve_unknown=bool(
                     schema.get("x-kubernetes-preserve-unknown-fields")
                 ),
+                immutable=_is_immutable(schema),
             )
         )
 

@@ -35,6 +35,12 @@
 
 {% if spec_rows -%}
 {{ field_table(spec_rows) }}
+{% if has_immutable %}
+Fields marked <span class="field-flag field-flag--immutable">immutable</span>
+are fixed once the resource is created; changing one is rejected by the API
+server. An immutable object pins the fields nested under it too. To change
+one, delete the resource and create it again.
+{% endif %}
 {%- else -%}
 This composite takes no spec fields.
 {%- endif %}

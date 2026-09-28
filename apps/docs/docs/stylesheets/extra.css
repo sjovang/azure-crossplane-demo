@@ -53,3 +53,30 @@
     white-space: normal;
   }
 }
+
+/*
+ * Immutable-field badge in the Spec table. Getting an immutable field wrong
+ * means deleting and recreating the resource, so it is called out visually
+ * rather than hidden in the description text.
+ *
+ * Colours come from the theme's own palette variables so the badge follows
+ * the light/dark toggle.
+ */
+.field-flag {
+  display: inline-block;
+  padding: 0 0.4em;
+  font-size: 0.72em;
+  font-weight: 700;
+  line-height: 1.6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: middle;
+  border-radius: 0.1rem;
+}
+
+.field-flag--immutable {
+  color: var(--md-warning-fg-color, #000);
+  background-color: var(--md-warning-bg-color, #ffd);
+  border: 0.05rem solid currentcolor;
+}

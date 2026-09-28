@@ -38,14 +38,24 @@ def _default_cell(row: FieldRow) -> str:
 
 
 def _badges(row: FieldRow) -> str:
+    """Flags shown next to the field name.
+
+    ``immutable`` gets its own styled badge rather than joining the
+    parenthetical list: setting it wrong means deleting and recreating the
+    resource, so it needs to be visible when skimming the table.
+    """
+    out = ""
+    if row.immutable:
+        out += ' <span class="field-flag field-flag--immutable">immutable</span>'
+
     marks = []
     if row.nullable:
         marks.append("nullable")
     if row.preserve_unknown:
         marks.append("unvalidated")
-    if not marks:
-        return ""
-    return " <small>({0})</small>".format(", ".join(marks))
+    if marks:
+        out += " <small>({0})</small>".format(", ".join(marks))
+    return out
 
 
 def _describe(row: FieldRow) -> str:
@@ -112,6 +122,7 @@ def render_page(doc: CompositionDoc) -> str:
         sidecar=doc.sidecar,
         spec_rows=spec_rows,
         status_rows=status_rows,
+        has_immutable=any(row.immutable for row in spec_rows),
         version_list=_version_list(doc),
         indent=_indent,
         badges=_badges,

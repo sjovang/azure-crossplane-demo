@@ -59,6 +59,18 @@ why generation is a separate step rather than a plugin.
 Nothing is needed — a new directory under `compositions/` containing an
 `xrd.yaml` and a `composition.yaml` is picked up automatically.
 
+Field flags are derived from the schema, so there is nothing to keep in sync:
+
+| Flag | Comes from |
+| --- | --- |
+| **yes** in *Required* | the enclosing object's `required` list |
+| `immutable` | an `x-kubernetes-validations` rule of `self == oldSelf` on the field |
+| `nullable` | `nullable: true` |
+| `unvalidated` | `x-kubernetes-preserve-unknown-fields: true` |
+
+Marking a field immutable in an XRD is therefore all that is needed for the
+badge to appear.
+
 To add the prose the schema cannot supply, drop an optional `docs.yaml` next to
 them:
 
