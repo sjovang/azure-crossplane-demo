@@ -1,0 +1,7 @@
+---
+apiVersion: karpenter.azure.com/v1beta1
+kind: AKSNodeClass
+metadata:
+  name: workshop
+spec:
+  imageFamily: Ubuntu

@@ -95,6 +95,30 @@ az group create --name "$resource_group" --location "$location" --output none
 echo "==> Creating AKS cluster $cluster_name"
 if az aks show --resource-group "$resource_group" --name "$cluster_name" >/dev/null 2>&1; then
   echo "AKS cluster $cluster_name already exists in $resource_group; skipping creation."
+  provisioning_mode=$(az aks show --resource-group "$resource_group" \
+    --name "$cluster_name" --query nodeProvisioningProfile.mode -o tsv)
+  case "$provisioning_mode" in
+    Auto)
+      default_pools=$(az aks show --resource-group "$resource_group" \
+        --name "$cluster_name" --query nodeProvisioningProfile.defaultNodePools -o tsv)
+      if [[ "$default_pools" != "None" ]]; then
+        echo "NAP default pools are '$default_pools', not None." >&2
+        echo "Remove any uncapped default pools before using the workshop NodePool." >&2
+        exit 1
+      fi
+      echo "Node auto-provisioning is already enabled."
+      ;;
+    Manual)
+      echo "==> Enabling node auto-provisioning on $cluster_name"
+      az aks update --resource-group "$resource_group" --name "$cluster_name" \
+        --node-provisioning-mode Auto --node-provisioning-default-pools None \
+        --output none
+      ;;
+    *)
+      echo "Unexpected node provisioning mode: $provisioning_mode" >&2
+      exit 1
+      ;;
+  esac
 else
   create_args=(
     --resource-group "$resource_group"
@@ -115,6 +139,10 @@ else
     # cilium to be set explicitly (it does not default to cilium just
     # because --network-policy is cilium).
     create_args+=(--network-plugin azure --network-dataplane cilium --network-policy cilium)
+  fi
+  create_args+=(--node-provisioning-mode Auto --node-provisioning-default-pools None)
+  if [[ "$addon_network_policy" != "true" ]]; then
+    create_args+=(--network-plugin azure)
   fi
   if [[ "$addon_azure_monitor_metrics" == "true" ]]; then
     # Recommended: Azure Monitor Metrics (Managed Prometheus).

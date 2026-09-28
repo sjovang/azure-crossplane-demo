@@ -14,7 +14,7 @@ name: azure-crossplane-demo  # cluster name: lowercase letters/digits/dashes
 location: swedencentral  # Azure region
 k8sVersion: ""  # empty = az aks default, e.g. "1.31"
 
-nodeCount: 2  # worker node count
+nodeCount: 3  # worker node count
 vmSize: Standard_D2as_v7  # VM size per node
 
 # Addons are positive toggles; disable to reduce cost/setup time. Network

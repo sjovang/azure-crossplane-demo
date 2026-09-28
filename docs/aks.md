@@ -108,6 +108,32 @@ Crossplane, which is Contributor at subscription scope and so can write to
 substitutes into the manifests, so no subscription-specific value is
 committed to git.
 
+## Node capacity
+
+The existing `nodepool1` keeps three fixed system nodes active (30 pods per
+node). `bootstrap-aks.sh` enables AKS node auto-provisioning (NAP) on new and
+existing clusters.
+The NAP `workshop` NodePool is separate from that system pool: it provisions
+on-demand Linux D-series nodes when pods cannot fit on available nodes and
+can scale back to **zero**. Workloads are not restricted to one pool; local
+kiac scheduling is unchanged. The workload pool's aggregate limits are
+**16 vCPU and 64 GiB** in
+[`clusters/aks/nap-workloads/node-pool.yaml`](../clusters/aks/nap-workloads/node-pool.yaml).
+Azure quota and VM availability may impose lower practical limits.
+
+The bootstrap disables AKS's uncapped default NAP NodePools; the dedicated
+Flux `nap-workloads` Kustomization applies the custom NodePool only after
+NAP has installed its CRDs. If changing an existing cluster, rerun the
+bootstrap script (it reuses the existing Azure credentials) and sync the
+repository so Flux can create the NodePool. Check provisioning with:
+
+```sh
+az aks show -g azure-crossplane-demo -n azure-crossplane-demo \
+  --query nodeProvisioningProfile
+kubectl get nodepool,aksnodeclass,nodeclaim
+kubectl get nodes -L karpenter.sh/nodepool
+```
+
 Check the site once Flux has settled:
 
 ```sh
