@@ -66,6 +66,16 @@
   word-break: normal;
 }
 
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary {
+    width: 16rem;
+  }
+
+  .md-sidebar--primary .md-sidebar__inner {
+    padding-right: 0;
+  }
+}
+
 /*
  * Immutable-field badge in the Spec table. Getting an immutable field wrong
  * means deleting and recreating the resource, so it is called out visually

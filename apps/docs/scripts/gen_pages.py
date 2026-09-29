@@ -50,10 +50,15 @@ def main():
 
     write("{0}/index.md".format(REFERENCE_DIR), render_index(docs))
 
+    current_vendor = None
     for doc in docs:
+        if doc.cloud != current_vendor:
+            current_vendor = doc.cloud
+            nav_lines.append("    * {0}".format(current_vendor.capitalize()))
+
         page_path = "{0}/{1}.md".format(REFERENCE_DIR, doc.slug)
         write(page_path, render_page(doc))
-        nav_lines.append("    * [{0}]({1})".format(doc.kind, page_path))
+        nav_lines.append("        * [{0}]({1})".format(doc.kind, page_path))
 
     write("SUMMARY.md", "\n".join(nav_lines) + "\n")
 
