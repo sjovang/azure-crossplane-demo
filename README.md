@@ -50,10 +50,10 @@ flowchart LR
 
 ## Documentation
 
-- [Configuring the local kiac cluster](docs/kiac.md) — a local cluster on macOS, fastest to set up.
-- [Configuring an AKS cluster](docs/aks.md) — a real Azure-hosted cluster meeting the [aks-desktop cluster requirements](https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md).
-- [Working with Resources](docs/working-with-resources.md)
-- [Troubleshooting](docs/troubleshooting.md)
+- [Local cluster setup](apps/docs/docs/kiac.md) — a local cluster on macOS, fastest to set up.
+- [AKS cluster setup](apps/docs/docs/aks.md) — a real Azure-hosted cluster meeting the [aks-desktop cluster requirements](https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md).
+- [Working with resources](apps/docs/docs/working-with-resources.md)
+- [Troubleshooting](apps/docs/docs/troubleshooting.md)
 
 ## Documentation site
 

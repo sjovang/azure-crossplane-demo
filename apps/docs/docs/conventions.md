@@ -1,3 +1,9 @@
+---
+icon: lucide/book-open-check
+hide:
+  - toc
+---
+
 # Crossplane conventions
 
 A few things are true of **every** composite resource in this repository.

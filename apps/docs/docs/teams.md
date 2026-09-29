@@ -1,3 +1,9 @@
+---
+icon: lucide/users-round
+hide:
+  - toc
+---
+
 # Team namespaces
 
 Every team gets its own folder under [`teams/`](https://github.com/sjovang/azure-crossplane-demo/blob/main/teams) and its own
@@ -108,4 +114,4 @@ kubectl get composite -n my-team
 
 If a composite is stuck, the `Common problems` section of its reference page
 lists the failures we have actually hit, and
-[troubleshooting](https://github.com/sjovang/azure-crossplane-demo/blob/main/docs/troubleshooting.md) covers the rest.
+[troubleshooting](troubleshooting.md) covers the rest.

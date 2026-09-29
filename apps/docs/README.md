@@ -174,7 +174,7 @@ docker run --rm -p 8080:8080 docs-site:dev
 
 Everything the cluster applies takes the zone and hostname from
 `infrastructure/config-aks.yaml`, so a fork only edits that one file — see
-[DNS and certificates](../../docs/aks.md). The one exception is `site_url`,
+[DNS and certificates](docs/aks.md). The one exception is `site_url`,
 which Zensical bakes into every canonical link and into `sitemap.xml` at build
 time, long before Flux could substitute anything. It is a build argument
 instead:

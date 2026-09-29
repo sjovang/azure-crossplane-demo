@@ -135,20 +135,26 @@ def render_page(doc: CompositionDoc) -> str:
 def render_index(docs: List[CompositionDoc]) -> str:
     """Render the reference section landing page."""
     lines = [
+        "---",
+        "icon: lucide/boxes",
+        "hide:",
+        "  - toc",
+        "---",
+        "",
         "# Composition reference",
         "",
         "Every platform API available in this cluster. These are generated",
         "directly from the `CompositeResourceDefinition` manifests in",
         "`compositions/`, so they always match what is deployed.",
         "",
-        "| Composition | Scope | Summary |",
-        "| --- | --- | --- |",
+        "| Composition | Summary |",
+        "| --- | --- |",
     ]
     for doc in docs:
         summary = doc.sidecar.summary.replace("\n", " ").strip() or "—"
         lines.append(
-            "| [{0}]({1}.md) | `{2}` | {3} |".format(
-                doc.kind, doc.slug, doc.scope, summary
+            "| [{0}]({1}.md) | {2} |".format(
+                doc.kind, doc.slug, summary
             )
         )
     lines.append("")

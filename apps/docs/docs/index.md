@@ -1,4 +1,10 @@
-# Azure Crossplane Platform
+---
+icon: lucide/house
+hide:
+    - toc
+---
+
+# Platform Overview
 
 Welcome. This cluster offers a small set of **self-service Azure APIs**. You
 describe what you want in a few lines of YAML, commit it, and Crossplane
