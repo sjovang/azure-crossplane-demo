@@ -1,0 +1,36 @@
+---
+summary: >-
+  An Entra ID security group, with optional members and owners given as user
+  principal names (UPNs). UPNs are looked up in Microsoft Graph and applied
+  on the next reconcile, so membership changes take about one poll interval.
+stability: experimental
+commonErrors:
+  - symptom: >-
+      The XR is not synced and events mention `Authorization_RequestDenied`
+      or failing to validate a user.
+    cause: >-
+      The service principal lacks the Microsoft Graph application permissions
+      `Group.ReadWrite.All` and `User.Read.All`, or admin consent is missing.
+    fix: >-
+      Re-run the bootstrap script as a Global Administrator or Privileged Role
+      Administrator, or grant the permissions manually (see the cluster
+      setup guides).
+  - symptom: >-
+      A UPN is listed in `status.unresolvedMembers` or
+      `status.unresolvedOwners`.
+    cause: >-
+      The user does not exist in the tenant, or the lookup has not run yet
+      for a newly added UPN.
+    fix: >-
+      Wait one reconcile; if the UPN stays listed, fix the spelling. Unknown
+      UPNs are skipped, never applied.
+  - symptom: The Crossplane service principal is an owner of the group.
+    cause: >-
+      `spec.owners` is empty, so Entra ID assigns the creating principal as
+      owner.
+    fix: Set at least one owner in `spec.owners`.
+  - symptom: The `Group` managed resource is never created.
+    cause: The `groups.groups.azuread.m.upbound.io` MRD is not activated.
+    fix: >-
+      Add it to
+      `activation-policies/azure/managed-resource-activation-policy.yaml`.

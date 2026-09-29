@@ -1,0 +1,88 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: securitygroups.entraid.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: entraid.platform.example.org/v1alpha1
+    kind: XSecurityGroup
+  mode: Pipeline
+  pipeline:
+    # function-kro can't read pipeline context or schema.status, so it reads
+    # the UPN -> object ID lookups that function-msgraph persisted to this
+    # XR's status on the previous reconcile (via externalRef to itself).
+    # kro replaces the desired XR with only its own status fields, so the
+    # msgraph steps must run after it.
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        # kro status expressions can't reference schema; read the spec from
+        # the compositeResource externalRef instead.
+        status:
+          id: ${securityGroup.status.atProvider.id}
+          objectId: ${securityGroup.status.atProvider.objectId}
+          unresolvedMembers: ${compositeResource.spec.?members.orValue([]).filter(m, !compositeResource.?status.?resolvedMembers.orValue([]).exists(u, u.userPrincipalName.lowerAscii() == m.lowerAscii()))}
+          unresolvedOwners: ${compositeResource.spec.?owners.orValue([]).filter(m, !compositeResource.?status.?resolvedOwners.orValue([]).exists(u, u.userPrincipalName.lowerAscii() == m.lowerAscii()))}
+        resources:
+          - id: compositeResource
+            externalRef:
+              apiVersion: entraid.platform.example.org/v1alpha1
+              kind: XSecurityGroup
+              metadata:
+                name: ${schema.metadata.name}
+          # Only users still listed in spec are applied, so removals take
+          # effect immediately; unknown UPNs are skipped (see status).
+          - id: securityGroup
+            template:
+              apiVersion: groups.azuread.m.upbound.io/v1beta1
+              kind: Group
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  displayName: ${schema.spec.name}
+                  securityEnabled: true
+                  mailEnabled: false
+                  preventDuplicateNames: true
+                  members: ${compositeResource.?status.?resolvedMembers.orValue([]).filter(u, schema.spec.members.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}
+                  owners: ${compositeResource.?status.?resolvedOwners.orValue([]).filter(u, schema.spec.owners.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}
+    - step: resolve-members
+      functionRef:
+        name: function-msgraph
+      input:
+        apiVersion: msgraph.fn.crossplane.io/v1alpha1
+        kind: Input
+        queryType: UserValidation
+        usersRef: spec.members
+        target: status.resolvedMembers
+      credentials:
+        - name: azure-creds
+          source: Secret
+          secretRef:
+            namespace: crossplane-system
+            name: azure-secret
+    - step: resolve-owners
+      functionRef:
+        name: function-msgraph
+      input:
+        apiVersion: msgraph.fn.crossplane.io/v1alpha1
+        kind: Input
+        queryType: UserValidation
+        usersRef: spec.owners
+        target: status.resolvedOwners
+      credentials:
+        - name: azure-creds
+          source: Secret
+          secretRef:
+            namespace: crossplane-system
+            name: azure-secret
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

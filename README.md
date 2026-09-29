@@ -4,7 +4,8 @@ Demo environment for managing Azure resources with Crossplane
 
 > [!CAUTION]
 > This repository is for demonstrations and workshops only. Do not use it in
-> production. It grants broad Azure permissions, stores credentials locally,
+> production. It grants broad Azure and Entra ID (Microsoft Graph)
+> permissions, stores credentials locally,
 > and does not provide the security, reliability, or operational hardening
 > required for a production environment.
 
@@ -28,7 +29,7 @@ flowchart LR
 ```
 
 - [`core/`](clusters/base/crossplane/core/) installs Crossplane through Helm.
-- [`providers/azure/`](clusters/base/crossplane/providers/azure/) installs the Azure provider package.
+- [`providers/azure/`](clusters/base/crossplane/providers/azure/) installs the Azure provider packages, including `provider-azuread` for Entra ID.
 - [`provider-configs/azure/`](clusters/base/crossplane/provider-configs/azure/) configures the provider with Azure credentials.
 - [`functions/`](clusters/base/crossplane/functions/) installs the packages used by Compositions.
 - [`flux-kustomizations/`](clusters/base/crossplane/flux-kustomizations/) defines the dependency order, so each stage starts only after its required CRDs are ready.
@@ -36,13 +37,16 @@ flowchart LR
   [`infrastructure/bootstrap-aks.sh`](infrastructure/bootstrap-aks.sh) share
   their Azure/Flux logic via [`infrastructure/lib/common.sh`](infrastructure/lib/common.sh)
   and each create the Kubernetes `Secret` from a locally generated service
-  principal before bootstrapping Flux.
+  principal before bootstrapping Flux. The service principal is Contributor
+  on the subscription and gets the Microsoft Graph application permissions
+  `Group.ReadWrite.All` and `User.Read.All` (admin consent required; the
+  bootstrap warns and continues if it cannot grant them).
 - Full convergence takes a few minutes after bootstrap. Watch it with `flux get kustomizations -A`, then run `./infrastructure/verify-crossplane.sh`.
 
 > [!NOTE]
 > Crossplane `CompositeResourceDefinition`s and `Composition`s live in the
 > shared, top-level [`compositions/`](compositions/) directory, outside
-> `clusters/base/`. They are grouped first by cloud provider and then by
+> `clusters/base/`. They are grouped first by provider (`azure/`, `entraid/`) and then by
 > composition, allowing multiple clusters to use the same definitions.
 > [`compositions/azure/resourcegroup/`](compositions/azure/resourcegroup/) is a
 > working example: an `XResourceGroup` in the `azure.platform.example.org` API

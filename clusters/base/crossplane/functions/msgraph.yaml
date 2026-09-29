@@ -1,0 +1,9 @@
+---
+# Read-only Microsoft Graph lookups (e.g. user principal name -> object ID).
+# Compositions pass it the azure-secret `credentials` key as `azure-creds`.
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: function-msgraph
+spec:
+  package: xpkg.upbound.io/upbound/function-msgraph:v0.8.0

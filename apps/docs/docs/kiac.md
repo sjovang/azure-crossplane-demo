@@ -17,6 +17,9 @@ three workers plus Prometheus, Grafana, and Traefik; see
 - Homebrew
 - A GitHub account and an Azure subscription where you can create a service
   principal and assign it a role
+- Optional: Global Administrator or Privileged Role Administrator in the
+  Entra ID tenant, to grant the Microsoft Graph permissions used for Entra ID
+  groups
 
 Install the command-line tools:
 
@@ -72,6 +75,16 @@ The script creates the cluster, stores Azure credentials in the gitignored
 then bootstraps Flux. The credentials file is reused on later runs, so a
 rebootstrap does not mint a new service principal. The `-kiac` suffix keeps
 this identity separate from the AKS service principal.
+
+!!! note "Service principal permissions"
+
+    The service principal is Contributor on the subscription and has the
+    Microsoft Graph application permissions `Group.ReadWrite.All` and
+    `User.Read.All`, used for Entra ID groups. Granting the Graph permissions
+    needs a Global Administrator or Privileged Role Administrator. If you are
+    neither, the bootstrap prints a warning and the commands to run, and
+    continues without them. Only the Entra ID compositions need them.
+    Re-running the bootstrap grants them to an existing service principal.
 
 Optional environment variables:
 

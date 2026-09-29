@@ -14,3 +14,4 @@ resources:
   - provider.yaml
   - provider-network.yaml
   - provider-compute.yaml
+  - provider-azuread.yaml

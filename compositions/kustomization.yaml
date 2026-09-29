@@ -8,3 +8,4 @@ kind: Kustomization
 # entry per cloud provider subfolder.
 resources:
   - azure
+  - entraid

@@ -24,6 +24,9 @@ Install and authenticate these tools:
 - [`kubelogin`](https://azure.github.io/kubelogin/)
 - An Azure subscription where you can create a resource group and service
   principal
+- Optional: Global Administrator or Privileged Role Administrator in the
+  Entra ID tenant, to grant the Microsoft Graph permissions used for Entra ID
+  groups
 
 The bootstrap requires the Azure kubelogin binary. Install the Azure tap
 formula specifically:
@@ -144,6 +147,16 @@ The bootstrap creates the secrets and `azure-dns-config` ConfigMap used by
 these components. The service principal is Contributor at subscription scope
 so it can write the site record in `rg-public-dns`; subscription-specific
 values are not committed to the repository.
+
+!!! note "Service principal permissions"
+
+    The service principal is Contributor on the subscription and has the
+    Microsoft Graph application permissions `Group.ReadWrite.All` and
+    `User.Read.All`, used for Entra ID groups. Granting the Graph permissions
+    needs a Global Administrator or Privileged Role Administrator. If you are
+    neither, the bootstrap prints a warning and the commands to run, and
+    continues without them. Only the Entra ID compositions need them.
+    Re-running the bootstrap grants them to an existing service principal.
 
 ### Node capacity
 
