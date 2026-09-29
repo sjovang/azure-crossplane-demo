@@ -36,11 +36,16 @@ def main():
     shutil.rmtree(DOCS_DIR / REFERENCE_DIR, ignore_errors=True)
 
     nav_lines = [
-        "* [Home](index.md)",
-        "* [Team namespaces](teams.md)",
-        "* [Crossplane conventions](conventions.md)",
-        "* Reference",
-        "    * [Overview]({0}/index.md)".format(REFERENCE_DIR),
+        "* Platform",
+        "    * [Overview](index.md)",
+        "    * [Crossplane conventions](conventions.md)",
+        "    * [Team namespaces](teams.md)",
+        "    * [Working with resources](working-with-resources.md)",
+        "    * Guides",
+        "        * [Local cluster setup](kiac.md)",
+        "        * [AKS cluster setup](aks.md)",
+        "        * [Troubleshooting](troubleshooting.md)",
+        "* [Composition reference]({0}/index.md)".format(REFERENCE_DIR),
     ]
 
     write("{0}/index.md".format(REFERENCE_DIR), render_index(docs))

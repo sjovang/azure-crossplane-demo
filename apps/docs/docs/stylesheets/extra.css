@@ -11,7 +11,7 @@
  * 76.25em is the theme's own breakpoint for showing the table of contents;
  * widening below it would crowd the navigation.
  */
-@media screen and (min-width: 76.25em) {
+/* @media screen and (min-width: 76.25em) {
   .md-grid {
     max-width: 86rem;
   }
@@ -21,16 +21,16 @@
   .md-grid {
     max-width: 100rem;
   }
-}
+} */
 
 /*
  * Tables default to display:inline-block, so they shrink to fit their content
  * and scroll horizontally instead of filling the available width.
  */
-.md-typeset table:not([class]) {
+/* .md-typeset table:not([class]) {
   display: table;
   width: 100%;
-}
+} */
 
 /*
  * Field tables (Spec and Status) have four narrow columns and one prose
@@ -40,7 +40,7 @@
  * Only above the breakpoint: on a phone the columns need to stay narrow and
  * the table needs to keep scrolling.
  */
-@media screen and (min-width: 76.25em) {
+@media screen and (min-width: 48em) {
   .field-table table:not([class]) th:nth-child(-n + 4),
   .field-table table:not([class]) td:nth-child(-n + 4) {
     width: 1%;
@@ -54,6 +54,18 @@
   }
 }
 
+.field-table td:first-child code {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  font-size: inherit;
+  overflow-wrap: normal;
+  padding: 0;
+  white-space: nowrap;
+  word-break: normal;
+}
+
 /*
  * Immutable-field badge in the Spec table. Getting an immutable field wrong
  * means deleting and recreating the resource, so it is called out visually
@@ -63,20 +75,34 @@
  * the light/dark toggle.
  */
 .field-flag {
-  display: inline-block;
-  padding: 0 0.4em;
-  font-size: 0.72em;
-  font-weight: 700;
-  line-height: 1.6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.08em 0.48em;
+  font-size: 0.7em;
+  font-weight: 650;
+  line-height: 1.5;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   white-space: nowrap;
   vertical-align: middle;
-  border-radius: 0.1rem;
+  border-radius: 999px;
 }
 
 .field-flag--immutable {
   color: var(--md-warning-fg-color, #000);
-  background-color: var(--md-warning-bg-color, #ffd);
-  border: 0.05rem solid currentcolor;
+  background-color: color-mix(
+    in srgb,
+    var(--md-warning-bg-color, #ffd) 28%,
+    var(--md-default-bg-color, #fff)
+  );
+  border: 1px solid color-mix(in srgb, currentcolor 24%, transparent);
+}
+
+.field-flag--immutable::before {
+  width: 0.42em;
+  height: 0.42em;
+  border-radius: 50%;
+  background: currentcolor;
+  content: "";
 }
