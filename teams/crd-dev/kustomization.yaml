@@ -6,7 +6,7 @@ resources:
   - ../_base
   #- network.yaml
   #- virtualmachines.yaml
-  - entraid.yaml
+  #- entraid.yaml
 patches:
   - target:
       group: azure.platform.example.org
