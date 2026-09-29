@@ -188,6 +188,9 @@ ensure_namespace "$kube_context" crossplane-system
 echo "==> Setting up Azure credentials for Crossplane"
 ensure_service_principal "$credentials_file" "$sp_name"
 
+echo "==> Granting Microsoft Graph permissions for Entra ID"
+ensure_graph_permissions "$credentials_file"
+
 echo "==> Applying azure-secret"
 apply_azure_secret "$kube_context" "$credentials_file"
 

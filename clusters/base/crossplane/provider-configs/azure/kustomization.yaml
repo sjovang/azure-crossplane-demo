@@ -10,3 +10,4 @@ kind: Kustomization
 # ready.
 resources:
   - provider-config.yaml
+  - provider-config-azuread.yaml

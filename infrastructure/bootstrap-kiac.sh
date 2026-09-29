@@ -43,6 +43,9 @@ ensure_namespace "" crossplane-system
 echo "==> Setting up Azure credentials for Crossplane"
 ensure_service_principal "$credentials_file" "$sp_name"
 
+echo "==> Granting Microsoft Graph permissions for Entra ID"
+ensure_graph_permissions "$credentials_file"
+
 subscription_id=$(jq -r .subscriptionId "$credentials_file")
 for provider_namespace in Microsoft.Network Microsoft.Compute; do
   register_azure_provider "$subscription_id" "$provider_namespace"

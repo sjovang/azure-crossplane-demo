@@ -1,0 +1,89 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xsecuritygroups.entraid.platform.example.org
+spec:
+  # The composed groups.azuread.m.upbound.io Group is namespaced.
+  scope: Namespaced
+  group: entraid.platform.example.org
+  names:
+    kind: XSecurityGroup
+    plural: xsecuritygroups
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: Display name of the Entra ID security group.
+                members:
+                  type: array
+                  # function-msgraph fails if the referenced field is absent.
+                  default: []
+                  items:
+                    type: string
+                  description: >-
+                    Optional user principal names (UPNs) to add as members.
+                owners:
+                  type: array
+                  default: []
+                  items:
+                    type: string
+                  description: >-
+                    Optional user principal names (UPNs) to add as owners.
+                    When empty, the Crossplane service principal owns the
+                    group.
+              required:
+                - name
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Provider ID of the Entra ID group.
+                objectId:
+                  type: string
+                  description: Object ID of the Entra ID group.
+                resolvedMembers:
+                  type: array
+                  description: >-
+                    Members found in Entra ID (set by function-msgraph).
+                  items: &resolvedUser
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      displayName:
+                        type: string
+                      userPrincipalName:
+                        type: string
+                      mail:
+                        type: string
+                      accountEnabled:
+                        type: boolean
+                resolvedOwners:
+                  type: array
+                  description: >-
+                    Owners found in Entra ID (set by function-msgraph).
+                  items: *resolvedUser
+                unresolvedMembers:
+                  type: array
+                  description: Member UPNs not (yet) found in Entra ID.
+                  items:
+                    type: string
+                unresolvedOwners:
+                  type: array
+                  description: Owner UPNs not (yet) found in Entra ID.
+                  items:
+                    type: string
+          required:
+            - spec

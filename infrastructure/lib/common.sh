@@ -130,6 +130,8 @@ ensure_service_principal() {
   subscription_id=$(az account show --query id -o tsv)
   tenant_id=$(az account show --query tenantId -o tsv)
 
+  # Microsoft Graph permissions are granted separately by
+  # ensure_graph_permissions so reused service principals get them too.
   echo "Creating service principal '$sp_name' (Contributor on subscription $subscription_id)"
   # --sdk-auth is deprecated, so the credentials JSON below is built manually
   # from plain `az` output instead.
@@ -172,14 +174,81 @@ register_azure_provider() {
 # apply_azure_secret <context> <credentials_file>
 # Kept at <credentials_file> (gitignored, never deleted) so re-running
 # bootstrap after a cluster recreate reuses the same service principal
-# instead of minting a new one every time.
+# instead of minting a new one every time. The same JSON is stored twice:
+# `creds` for the Crossplane providers and `credentials` for function-msgraph,
+# which only reads that key.
 apply_azure_secret() {
   local ctx="$1" credentials_file="$2"
   run_kubectl "$ctx" create secret generic azure-secret \
     --namespace crossplane-system \
     --from-file=creds="$credentials_file" \
+    --from-file=credentials="$credentials_file" \
     --dry-run=client -o yaml \
     | run_kubectl "$ctx" apply -f -
+}
+
+# Microsoft Graph application permissions (app role IDs) needed to manage
+# Entra ID groups (provider-azuread) and look up users (function-msgraph).
+GRAPH_APP_ID="00000003-0000-0000-c000-000000000000"
+GRAPH_APP_ROLES=(
+  "Group.ReadWrite.All=62a82d76-70ea-41e2-9197-370581804d09"
+  "User.Read.All=df021288-bdef-4463-88db-98f22de89214"
+)
+
+# ensure_graph_permissions <credentials_file>
+# Idempotently grants the service principal the GRAPH_APP_ROLES, with admin
+# consent. Runs on every bootstrap so reused service principals get upgraded
+# too. Consent needs a Global Administrator or Privileged Role Administrator;
+# without it this warns and prints the manual commands instead of failing.
+ensure_graph_permissions() {
+  local credentials_file="$1"
+  local client_id sp_id graph_sp_id entry name role_id assigned declared
+  local failed=0
+  client_id=$(jq -r .clientId "$credentials_file")
+
+  sp_id=$(az ad sp show --id "$client_id" --query id -o tsv 2>/dev/null) || sp_id=""
+  graph_sp_id=$(az ad sp show --id "$GRAPH_APP_ID" --query id -o tsv 2>/dev/null) || graph_sp_id=""
+  if [[ -z "$sp_id" || -z "$graph_sp_id" ]]; then
+    failed=1
+  fi
+
+  for entry in "${GRAPH_APP_ROLES[@]}"; do
+    [[ "$failed" -eq 0 ]] || break
+    name="${entry%%=*}" role_id="${entry#*=}"
+
+    # Declared on the app registration so the portal lists it as configured.
+    declared=$(az ad app show --id "$client_id" \
+      --query "requiredResourceAccess[?resourceAppId=='$GRAPH_APP_ID'].resourceAccess[] | [?id=='$role_id'] | [0].id" \
+      -o tsv 2>/dev/null) || declared=""
+    if [[ -z "$declared" ]]; then
+      az ad app permission add --id "$client_id" --api "$GRAPH_APP_ID" \
+        --api-permissions "$role_id=Role" --only-show-errors || failed=1
+    fi
+
+    # The app role assignment is the admin consent.
+    assigned=$(az rest --method GET \
+      --url "https://graph.microsoft.com/v1.0/servicePrincipals/$sp_id/appRoleAssignments" \
+      --query "value[?appRoleId=='$role_id'] | [0].id" -o tsv 2>/dev/null) || assigned=""
+    if [[ -z "$assigned" ]]; then
+      echo "Granting Microsoft Graph $name to service principal $client_id"
+      az rest --method POST \
+        --url "https://graph.microsoft.com/v1.0/servicePrincipals/$graph_sp_id/appRoleAssignedTo" \
+        --headers "Content-Type=application/json" \
+        --body "{\"principalId\":\"$sp_id\",\"resourceId\":\"$graph_sp_id\",\"appRoleId\":\"$role_id\"}" \
+        --output none || failed=1
+    fi
+  done
+
+  if [[ "$failed" -ne 0 ]]; then
+    local permissions=""
+    for entry in "${GRAPH_APP_ROLES[@]}"; do
+      permissions+=" ${entry#*=}=Role"
+    done
+    echo "WARNING: could not grant Microsoft Graph permissions; Entra ID compositions will fail." >&2
+    echo "Ask a Global Administrator or Privileged Role Administrator to run:" >&2
+    echo "  az ad app permission add --id $client_id --api $GRAPH_APP_ID --api-permissions$permissions" >&2
+    echo "  az ad app permission admin-consent --id $client_id" >&2
+  fi
 }
 
 # apply_dns_credentials <context> <credentials_file> <dns_zone_resource_group>

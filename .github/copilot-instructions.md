@@ -80,14 +80,14 @@ following the chain across several files:
    `infrastructure/bootstrap-aks.sh` (see below).
 5. `clusters/base/crossplane/functions/` — Composition `Function` packages
    (`function-patch-and-transform`, `function-go-templating`,
-   `function-kro`, `function-auto-ready`), applied by the dependent
+   `function-kro`, `function-auto-ready`, `function-msgraph`), applied by the dependent
    `crossplane-functions` Kustomization (`dependsOn: flux-system`, same
    `wait` + `healthCheckExprs` pattern as the providers) because
    `functions.pkg.crossplane.io` only exists once Crossplane core has
    installed.
 6. `compositions/` — shared Crossplane `CompositeResourceDefinition`s and
   `Composition`s, grouped first by cloud provider and then by composition
-  (e.g. `compositions/azure/resourcegroup/`). Deliberately a **top-level**
+  (e.g. `compositions/azure/resourcegroup/`, `compositions/entraid/securitygroup/`). Deliberately a **top-level**
    directory, not under `clusters/base/`, so other clusters can add their own
    pointer Kustomization at `path: ./compositions` and share the exact same
    compositions. Applied by the dependent `crossplane-compositions`
@@ -142,6 +142,21 @@ composite resource`). `scope` is also immutable once the XRD is established
 restarting the `crossplane` core deployment so its controller picks up the
 new scope).
 
+### Entra ID compositions
+
+`provider-azuread` (in `providers/azure/`, with its own
+`azuread.m.upbound.io` `ClusterProviderConfig` in `provider-configs/azure/`)
+manages Entra ID objects with the same `azure-secret`. It takes object IDs, so
+`XSecurityGroup` resolves UPNs with `function-msgraph`. That function reads
+the Secret key `credentials` (bootstrap writes the JSON to both `creds` and
+`credentials`), and the credential must be named `azure-creds`.
+`function-kro` can't read pipeline context or `schema.status`, so the kro
+step reads the msgraph results persisted in the XR's own status via an
+`externalRef` to itself. kro replaces the desired XR, so msgraph steps run
+after it. kro `status` expressions can't reference `schema`, and optional
+fields need `.?x.orValue(...)`. Prefer `function-kro` over `function-go-templating` whenever
+`function-patch-and-transform` is insufficient.
+
 ### Managed resource activation
 
 The Crossplane chart's default `'*'` `ManagedResourceActivationPolicy` is
@@ -182,6 +197,11 @@ reuse-if-present, `azure-secret` apply, Azure provider registration, Flux
 bootstrap, SP deletion, and a minimal `read_yaml_value` scalar reader for the
 config YAML files). Never duplicate one of these steps in a per-target
 script — add/extend the shared function instead.
+
+The SP is Contributor on the subscription plus the Microsoft Graph application
+permissions `Group.ReadWrite.All` and `User.Read.All`, granted with admin
+consent by `ensure_graph_permissions` on every bootstrap (so reused SPs are
+upgraded). It warns and continues when the user can't grant consent.
 
 - **`verify-crossplane.sh [--context <ctx>]`**: read-only health check of
   the Flux + Crossplane stack (Kustomizations/HelmReleases Ready, packages

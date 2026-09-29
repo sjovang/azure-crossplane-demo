@@ -18,3 +18,4 @@ spec:
     - networkinterfaces.network.azure.m.upbound.io
     - linuxvirtualmachines.compute.azure.m.upbound.io
     - windowsvirtualmachines.compute.azure.m.upbound.io
+    - groups.groups.azuread.m.upbound.io

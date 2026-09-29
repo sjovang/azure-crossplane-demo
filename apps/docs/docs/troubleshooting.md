@@ -63,6 +63,31 @@ the
 Otherwise Crossplane never creates the CRD for that kind. Add the MRD name in
 `<plural>.<group>` form, then wait for Flux to reconcile the activation policy.
 
+## An Entra ID group is not created or updated
+
+`XSecurityGroup` needs Microsoft Graph permissions on the service principal.
+`Authorization_RequestDenied` or `failed to validate user` in the XR events
+means `Group.ReadWrite.All` or `User.Read.All` is missing or lacks admin
+consent. Re-run the bootstrap as an administrator, or ask one to run:
+
+```sh
+client_id=$(jq -r .clientId infrastructure/azure-credentials-aks.json)
+az ad app permission add --id "$client_id" \
+  --api 00000003-0000-0000-c000-000000000000 \
+  --api-permissions 62a82d76-70ea-41e2-9197-370581804d09=Role \
+  df021288-bdef-4463-88db-98f22de89214=Role
+az ad app permission admin-consent --id "$client_id"
+```
+
+Use `azure-credentials-kiac.json` for the local cluster. UPNs that do not
+exist in the tenant are skipped and listed in `status.unresolvedMembers` or
+`status.unresolvedOwners`:
+
+```sh
+kubectl get xsecuritygroups.entraid.platform.example.org -A \
+  -o custom-columns=NAME:.metadata.name,MEMBERS:.status.unresolvedMembers,OWNERS:.status.unresolvedOwners
+```
+
 ## The documentation site is unavailable
 
 The site is public only on AKS. The local kiac cluster has no Gateway,
