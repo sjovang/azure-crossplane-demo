@@ -52,6 +52,10 @@ spec:
                 resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
                 servicePlanIdSelector:
                   matchControllerRef: true
+                # Explicit authSettings avoids a Read panic in the provider:
+                # https://github.com/crossplane-contrib/provider-upjet-azure/issues/1202
+                authSettings:
+                  enabled: false
                 siteConfig:
                   applicationStack:
                     dockerImageName: {{ $xr.spec.image }}

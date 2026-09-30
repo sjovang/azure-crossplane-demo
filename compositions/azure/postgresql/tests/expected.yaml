@@ -24,7 +24,8 @@ apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
 kind: FlexibleServerDatabase
 metadata:
   annotations:
-    gotemplating.fn.crossplane.io/composition-resource-name: flexibleServerDatabase
+    gotemplating.fn.crossplane.io/composition-resource-name:
+      flexibleServerDatabase
     crossplane.io/external-name: dbdemo01
 spec:
   providerConfigRef:

@@ -30,6 +30,8 @@ spec:
     resourceGroupName: rg-crd-dev-apps
     servicePlanIdSelector:
       matchControllerRef: true
+    authSettings:
+      enabled: false
     siteConfig:
       applicationStack:
         dockerImageName: docker.io/library/nginx:latest
