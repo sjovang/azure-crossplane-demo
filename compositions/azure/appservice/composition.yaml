@@ -58,7 +58,7 @@ spec:
                 appSettings:
                   WEBSITES_PORT: "{{ $xr.spec.port }}"
             {{- if $xr.spec.envVars }}
-            {{ toYaml $xr.spec.envVars | nindent 18 }}
+            {{ toYaml $xr.spec.envVars | nindent 6 }}
             {{- end }}
             {{- $linuxWebApp := getComposedResource . "linuxWebApp" }}
             {{- $servicePlan := getComposedResource . "servicePlan" }}

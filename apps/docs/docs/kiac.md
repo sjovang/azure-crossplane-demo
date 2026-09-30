@@ -71,8 +71,10 @@ export GITHUB_TOKEN="$(gh auth token)"
 ```
 
 The script creates the cluster, stores Azure credentials in the gitignored
-`infrastructure/azure-credentials-kiac.json`, applies them to Kubernetes, and
-then bootstraps Flux. The credentials file is reused on later runs, so a
+`infrastructure/azure-credentials-kiac.json`, registers the Azure resource
+providers needed by the examples (Network, Compute, Web, App, and
+DBforPostgreSQL), applies the credentials to Kubernetes, and then bootstraps
+Flux. The credentials file is reused on later runs, so a
 rebootstrap does not mint a new service principal. The `-kiac` suffix keeps
 this identity separate from the AKS service principal.
 

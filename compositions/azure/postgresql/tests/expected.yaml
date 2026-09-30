@@ -1,0 +1,35 @@
+---
+apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+kind: FlexibleServer
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: flexibleServer
+    crossplane.io/external-name: psql-dbdemo01
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    location: swedencentral
+    resourceGroupName: rg-crd-dev-apps
+    skuName: B_Standard_B1ms
+    storageMb: 32768
+    version: "16"
+    administratorLogin: pgadmin
+    administratorPasswordSecretRef:
+      name: dbdemo01-admin
+      key: password
+---
+apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+kind: FlexibleServerDatabase
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: flexibleServerDatabase
+    crossplane.io/external-name: dbdemo01
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    serverIdSelector:
+      matchControllerRef: true

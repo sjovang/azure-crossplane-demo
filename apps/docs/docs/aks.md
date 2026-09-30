@@ -81,7 +81,9 @@ export GITHUB_TOKEN="$(gh auth token)"
 ```
 
 The script creates the `azure-crossplane-demo` resource group and AKS cluster,
-registers the required Azure resource providers, and bootstraps Flux against
+registers the Azure resource providers needed by the cluster and examples
+(ContainerService, Network, Compute, Web, App, and DBforPostgreSQL), and
+bootstraps Flux against
 your fork. It stores Crossplane credentials in the gitignored
 `infrastructure/azure-credentials-aks.json` and reuses that file on later
 runs. The service principal always receives an `-aks` suffix, separate from

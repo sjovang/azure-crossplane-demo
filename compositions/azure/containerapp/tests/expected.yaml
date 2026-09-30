@@ -1,0 +1,42 @@
+---
+apiVersion: containerapp.azure.m.upbound.io/v1beta1
+kind: Environment
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: containerAppEnvironment
+    crossplane.io/external-name: cae-containerappdemo01
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    location: swedencentral
+    resourceGroupName: rg-crd-dev-apps
+---
+apiVersion: containerapp.azure.m.upbound.io/v1beta1
+kind: ContainerApp
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: containerApp
+    crossplane.io/external-name: ca-containerappdemo01
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    resourceGroupName: rg-crd-dev-apps
+    containerAppEnvironmentIdSelector:
+      matchControllerRef: true
+    revisionMode: Single
+    ingress:
+      externalEnabled: true
+      targetPort: 80
+      transport: auto
+    template:
+      minReplicas: 1
+      maxReplicas: 3
+      container:
+        - name: containerappdemo01
+          image: docker.io/library/nginx:latest
+          cpu: 0.25
+          memory: 0.5Gi
