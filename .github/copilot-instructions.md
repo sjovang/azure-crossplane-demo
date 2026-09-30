@@ -278,4 +278,8 @@ upgraded). It warns and continues when the user can't grant consent.
   `wait: true` + `healthCheckExprs` (packages have no `Ready` condition,
   so plain `wait` passes immediately), and their target directory must have its own scoped
   `kustomization.yaml` — see the Azure templates in
-  `crossplane/flux-kustomizations/`.
+  `crossplane/flux-kustomizations/`. Package health expressions must also
+  reject `reason=AwaitingActivation`: Crossplane reports `Healthy=True` with
+  that reason for a package whose runtime is scaled to zero because none of
+  its MRDs are activated, so a bare `status == 'True'` check treats an
+  installed-but-idle package as healthy.
