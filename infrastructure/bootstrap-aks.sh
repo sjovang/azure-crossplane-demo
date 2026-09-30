@@ -41,6 +41,7 @@ location=$(read_yaml_value "$config_file" location)
 k8s_version=$(read_yaml_value "$config_file" k8sVersion)
 node_count=$(read_yaml_value "$config_file" nodeCount)
 vm_size=$(read_yaml_value "$config_file" vmSize)
+max_pods=$(read_yaml_value "$config_file" maxPods)
 addon_network_policy=$(read_yaml_value "$config_file" networkPolicy)
 addon_azure_monitor_metrics=$(read_yaml_value "$config_file" azureMonitorMetrics)
 addon_managed_grafana=$(read_yaml_value "$config_file" managedGrafana)
@@ -126,6 +127,7 @@ else
     --location "$location"
     --node-count "$node_count"
     --node-vm-size "$vm_size"
+    --max-pods "$max_pods"
     --generate-ssh-keys
     # Hard requirements from cluster-requirements.md: Entra ID authentication
     # + Azure RBAC for Kubernetes authorization.
@@ -191,7 +193,13 @@ ensure_service_principal "$credentials_file" "$sp_name"
 echo "==> Granting Microsoft Graph permissions for Entra ID"
 ensure_graph_permissions "$credentials_file"
 
-echo "==> Applying azure-secret"
+echo "==> Granting Azure role-assignment permissions"
+ensure_role_assignment_permissions "$credentials_file"
+
+subscription_id=$(jq -r .subscriptionId "$credentials_file")
+register_azure_provider "$subscription_id" Microsoft.KeyVault
+
+echo "==> Applying Azure platform credentials and configuration"
 apply_azure_secret "$kube_context" "$credentials_file"
 
 echo "==> Setting up Azure DNS credentials for cert-manager and external-dns"

@@ -8,4 +8,5 @@ exampleLines: 66-79
 exampleNotes: >-
   Create the referenced XResourceGroup and password Secret before creating
   the database. The team example is disabled by default in its
-  kustomization.yaml.
+  kustomization.yaml. Set allowAzureServices only when workloads outside a
+  private network need access; it permits connections from Azure service IPs.

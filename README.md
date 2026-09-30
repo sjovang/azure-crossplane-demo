@@ -36,8 +36,9 @@ flowchart LR
 - [`infrastructure/bootstrap-kiac.sh`](infrastructure/bootstrap-kiac.sh) and
   [`infrastructure/bootstrap-aks.sh`](infrastructure/bootstrap-aks.sh) share
   their Azure/Flux logic via [`infrastructure/lib/common.sh`](infrastructure/lib/common.sh)
-  and each create the Kubernetes `Secret` from a locally generated service
-  principal before bootstrapping Flux. The service principal is Contributor
+  and each create the Kubernetes `Secret` and non-secret platform ConfigMap
+  from a locally generated service principal before bootstrapping Flux. The
+  service principal is Contributor and Role Based Access Control Administrator
   on the subscription and gets the Microsoft Graph application permissions
   `Group.ReadWrite.All` and `User.Read.All` (admin consent required; the
   bootstrap warns and continues if it cannot grant them).
@@ -46,8 +47,9 @@ flowchart LR
 > [!NOTE]
 > Crossplane `CompositeResourceDefinition`s and `Composition`s live in the
 > shared, top-level [`compositions/`](compositions/) directory, outside
-> `clusters/base/`. They are grouped first by provider (`azure/`, `entraid/`) and then by
-> composition, allowing multiple clusters to use the same definitions.
+> `clusters/base/`. Provider-specific APIs are grouped by provider (`azure/`,
+> `entraid/`), while higher-level platform APIs live under `environments/`.
+> This allows multiple clusters to use the same definitions.
 > [`compositions/azure/resourcegroup/`](compositions/azure/resourcegroup/) is a
 > working example: an `XResourceGroup` in the `azure.platform.example.org` API
 > group composing an Azure `ResourceGroup`.

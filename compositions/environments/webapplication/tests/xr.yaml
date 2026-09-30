@@ -1,0 +1,14 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+metadata:
+  name: webdemo01
+  namespace: crd-dev
+spec:
+  name: webdemo01
+  image: docker.io/library/nginx:latest
+  location: swedencentral
+  appSize: small
+  databaseSize: small
+  port: 8080
+  databaseAdminUsername: pgadmin

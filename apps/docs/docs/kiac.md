@@ -72,21 +72,27 @@ export GITHUB_TOKEN="$(gh auth token)"
 
 The script creates the cluster, stores Azure credentials in the gitignored
 `infrastructure/azure-credentials-kiac.json`, registers the Azure resource
-providers needed by the examples (Network, Compute, Web, App, and
-DBforPostgreSQL), applies the credentials to Kubernetes, and then bootstraps
-Flux. The credentials file is reused on later runs, so a
+providers needed by the examples (Network, Compute, Web, App, Key Vault, and
+DBforPostgreSQL), applies the credentials and non-secret platform configuration
+to Kubernetes, and then bootstraps Flux. The credentials file is reused on
+later runs, so a
 rebootstrap does not mint a new service principal. The `-kiac` suffix keeps
 this identity separate from the AKS service principal.
 
 !!! note "Service principal permissions"
 
-    The service principal is Contributor on the subscription and has the
-    Microsoft Graph application permissions `Group.ReadWrite.All` and
+    The service principal is Contributor and Role Based Access Control
+    Administrator on the subscription. The latter lets Crossplane grant
+    composed managed identities access to their Key Vault secrets. It also has
+    the Microsoft Graph application permissions `Group.ReadWrite.All` and
     `User.Read.All`, used for Entra ID groups. Granting the Graph permissions
     needs a Global Administrator or Privileged Role Administrator. If you are
     neither, the bootstrap prints a warning and the commands to run, and
     continues without them. Only the Entra ID compositions need them.
-    Re-running the bootstrap grants them to an existing service principal.
+    Re-running the bootstrap upgrades an existing service principal with any
+    missing permissions. If Azure RBAC administration cannot be granted, the
+    bootstrap prints the manual command and XWebApplication resources will not
+    converge until an administrator runs it.
 
 Optional environment variables:
 

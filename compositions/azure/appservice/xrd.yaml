@@ -62,6 +62,15 @@ spec:
                   description: >-
                     Plain (non-secret) application settings exposed to the
                     container as environment variables.
+                systemAssignedIdentity:
+                  type: boolean
+                  default: false
+                  description: >-
+                    Enable a system-assigned managed identity for the App
+                    Service.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: systemAssignedIdentity is immutable
                 location:
                   type: string
                   default: swedencentral
@@ -82,5 +91,10 @@ spec:
                 defaultHostname:
                   type: string
                   description: Default public hostname of the App Service.
+                identityPrincipalId:
+                  type: string
+                  description: >-
+                    Microsoft Entra principal ID of the system-assigned
+                    managed identity.
           required:
             - spec
