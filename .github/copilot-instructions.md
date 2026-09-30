@@ -205,8 +205,15 @@ upgraded). It warns and continues when the user can't grant consent.
 
 - **`verify-crossplane.sh [--context <ctx>]`**: read-only health check of
   the Flux + Crossplane stack (Kustomizations/HelmReleases Ready, packages
-  Installed+Healthy, XRDs Established, package pods without restarts, only
-  `azure-resources` MRDs active). Exits non-zero on failure.
+  Installed+Healthy, package runtime Deployments with at least one ready
+  replica, XRDs Established, package pods without restarts, only the MRDs
+  listed in the in-cluster `azure-resources` MRAP active). Exits non-zero on
+  failure. A package whose runtime is scaled to zero reports `Healthy=True`
+  with `reason: AwaitingActivation`, so the script treats that reason as a
+  failure and checks Deployment replicas separately — a condition status of
+  `True` alone does not prove a controller is running. The trailing Warning
+  events block is informational and bounded to the last 5 minutes so
+  already-resolved events can't read as live failures.
 - **`bootstrap-kiac.sh`** / **`teardown-kiac.sh`**: local kiac cluster.
   Preflight-checks `gh`, `kiac`, `flux`, `kubectl`, `az`, `jq` → `kiac create
   cluster --config infrastructure/config-kiac.yaml` → shared namespace/SP/secret/Flux

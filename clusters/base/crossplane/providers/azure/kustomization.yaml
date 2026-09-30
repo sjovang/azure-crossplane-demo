@@ -11,7 +11,6 @@ kind: Kustomization
 # CRD is ready.
 resources:
   - deployment-runtime-config.yaml
-  - provider.yaml
   - provider-network.yaml
   - provider-compute.yaml
   - provider-web.yaml

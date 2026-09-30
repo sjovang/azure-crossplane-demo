@@ -14,6 +14,13 @@ name: azure-crossplane-demo  # cluster name: lowercase letters/digits/dashes
 location: swedencentral  # Azure region
 k8sVersion: ""  # empty = az aks default, e.g. "1.31"
 
+# Sizing note: allocatable CPU is ~1900m per D2as_v7 node, and the cluster's
+# own baseline requests ~4080m (kube-system ~2510m, inflated by the
+# azureMonitorMetrics/keda/vpa addons below; crossplane-system ~1000m, being
+# 100m per provider/function via the azure-provider DeploymentRuntimeConfig;
+# flux-system ~350m). Two nodes give 3800m, which cannot fit that baseline and
+# leaves pods Pending on FailedScheduling: Insufficient cpu. Re-check this sum
+# when toggling addons or adding Crossplane providers.
 nodeCount: 3  # worker node count
 vmSize: Standard_D2as_v7  # VM size per node
 maxPods: 50  # maximum pods per node in the bootstrap-created system pool
