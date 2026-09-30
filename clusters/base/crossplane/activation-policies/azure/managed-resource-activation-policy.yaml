@@ -19,3 +19,9 @@ spec:
     - linuxvirtualmachines.compute.azure.m.upbound.io
     - windowsvirtualmachines.compute.azure.m.upbound.io
     - groups.groups.azuread.m.upbound.io
+    - serviceplans.web.azure.m.upbound.io
+    - linuxwebapps.web.azure.m.upbound.io
+    - environments.containerapp.azure.m.upbound.io
+    - containerapps.containerapp.azure.m.upbound.io
+    - flexibleservers.dbforpostgresql.azure.m.upbound.io
+    - flexibleserverdatabases.dbforpostgresql.azure.m.upbound.io

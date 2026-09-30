@@ -47,7 +47,7 @@ echo "==> Granting Microsoft Graph permissions for Entra ID"
 ensure_graph_permissions "$credentials_file"
 
 subscription_id=$(jq -r .subscriptionId "$credentials_file")
-for provider_namespace in Microsoft.Network Microsoft.Compute; do
+for provider_namespace in Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL; do
   register_azure_provider "$subscription_id" "$provider_namespace"
 done
 

@@ -5,7 +5,9 @@
 # The reference pages are generated from compositions/**/xrd.yaml and the
 # examples are snippet-included from teams/, so both must be in the context.
 
-FROM python:3.14-slim AS build
+# The site is static and architecture-independent, so build it natively once
+# and copy it into every target platform's image without emulation.
+FROM --platform=$BUILDPLATFORM python:3.14-slim AS build
 
 WORKDIR /repo
 

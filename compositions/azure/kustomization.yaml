@@ -7,3 +7,6 @@ resources:
   - networkmanager-ipam-pool
   - virtualnetwork
   - virtualmachine
+  - appservice
+  - containerapp
+  - postgresql

@@ -6,6 +6,7 @@ resources:
   - ../_base
   #- network.yaml
   #- virtualmachines.yaml
+  # - apps.yaml
   #- entraid.yaml
 patches:
   - target:
@@ -14,3 +15,10 @@ patches:
       - op: add
         path: /spec/location
         value: swedencentral
+  # Sweden Central has no Container Apps environment capacity.
+  - target:
+      kind: XContainerApp
+    patch: |-
+      - op: add
+        path: /spec/location
+        value: northeurope

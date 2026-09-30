@@ -1,0 +1,11 @@
+---
+summary: >-
+  An Azure PostgreSQL Flexible Server and database with a password supplied
+  by a Kubernetes Secret.
+stability: experimental
+exampleRef: teams/crd-dev/apps.yaml
+exampleLines: 66-79
+exampleNotes: >-
+  Create the referenced XResourceGroup and password Secret before creating
+  the database. The team example is disabled by default in its
+  kustomization.yaml.
