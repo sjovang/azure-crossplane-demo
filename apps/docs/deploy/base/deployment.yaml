@@ -27,7 +27,7 @@ spec:
         - name: site
           # Rewritten on every push to main by .github/workflows/docs.yml,
           # which commits the new immutable sha- tag back to this file.
-          image: ghcr.io/sjovang/azure-crossplane-demo/docs:sha-6f1f4e2
+          image: ghcr.io/sjovang/azure-crossplane-demo/docs:sha-f351ef2
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
