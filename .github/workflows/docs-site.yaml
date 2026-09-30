@@ -71,6 +71,8 @@ jobs:
           context: .
           file: apps/docs/Dockerfile
           push: true
+          # arm64 lets the site run on local clusters on Apple silicon.
+          platforms: linux/amd64,linux/arm64
           # Empty when the repository variable is unset, which falls back to
           # the Dockerfile default. Only forks serving another hostname set it.
           build-args: |
