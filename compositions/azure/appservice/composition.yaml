@@ -52,6 +52,10 @@ spec:
                 resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
                 servicePlanIdSelector:
                   matchControllerRef: true
+            {{- if $xr.spec.systemAssignedIdentity }}
+                identity:
+                  type: SystemAssigned
+            {{- end }}
                 # Explicit authSettings avoids a Read panic in the provider:
                 # https://github.com/crossplane-contrib/provider-upjet-azure/issues/1202
                 authSettings:
@@ -74,6 +78,9 @@ spec:
               id: {{ $linuxWebApp.status.atProvider.id }}
               servicePlanId: {{ $servicePlan.status.atProvider.id }}
               defaultHostname: {{ $linuxWebApp.status.atProvider.defaultHostname }}
+            {{- if and $xr.spec.systemAssignedIdentity $linuxWebApp.status.atProvider.identity }}
+              identityPrincipalId: {{ $linuxWebApp.status.atProvider.identity.principalId }}
+            {{- end }}
             {{- end }}
     - step: auto-ready
       functionRef:

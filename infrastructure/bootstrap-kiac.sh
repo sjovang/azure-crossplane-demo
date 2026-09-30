@@ -46,12 +46,15 @@ ensure_service_principal "$credentials_file" "$sp_name"
 echo "==> Granting Microsoft Graph permissions for Entra ID"
 ensure_graph_permissions "$credentials_file"
 
+echo "==> Granting Azure role-assignment permissions"
+ensure_role_assignment_permissions "$credentials_file"
+
 subscription_id=$(jq -r .subscriptionId "$credentials_file")
-for provider_namespace in Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL; do
+for provider_namespace in Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL Microsoft.KeyVault; do
   register_azure_provider "$subscription_id" "$provider_namespace"
 done
 
-echo "==> Applying azure-secret"
+echo "==> Applying Azure platform credentials and configuration"
 apply_azure_secret "" "$credentials_file"
 
 echo "==> Bootstrapping Flux"

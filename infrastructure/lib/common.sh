@@ -157,6 +157,41 @@ EOF
   chmod 600 "$credentials_file"
 }
 
+# ensure_role_assignment_permissions <credentials_file>
+# Grants Crossplane the least-privilege Azure RBAC administration role needed
+# to assign Key Vault access to composed managed identities. Runs on every
+# bootstrap so reused service principals are upgraded.
+ensure_role_assignment_permissions() {
+  local credentials_file="$1"
+  local client_id subscription_id scope assignment_id
+
+  client_id=$(jq -r .clientId "$credentials_file")
+  subscription_id=$(jq -r .subscriptionId "$credentials_file")
+  scope="/subscriptions/$subscription_id"
+
+  assignment_id=$(az role assignment list \
+    --assignee "$client_id" \
+    --role "Role Based Access Control Administrator" \
+    --scope "$scope" \
+    --query '[0].id' -o tsv 2>/dev/null) || assignment_id=""
+
+  if [[ -n "$assignment_id" ]]; then
+    return 0
+  fi
+
+  echo "Granting Role Based Access Control Administrator to service principal $client_id"
+  if ! az role assignment create \
+    --assignee "$client_id" \
+    --role "Role Based Access Control Administrator" \
+    --scope "$scope" \
+    --output none; then
+    echo "WARNING: could not grant Azure role-assignment permissions." >&2
+    echo "XWebApplication Key Vault access will not converge until an administrator runs:" >&2
+    echo "  az role assignment create --assignee $client_id \\" >&2
+    echo "    --role \"Role Based Access Control Administrator\" --scope $scope" >&2
+  fi
+}
+
 # register_azure_provider <subscription_id> <provider_namespace>
 # Idempotently registers an Azure resource provider on a subscription.
 register_azure_provider() {
@@ -176,13 +211,26 @@ register_azure_provider() {
 # bootstrap after a cluster recreate reuses the same service principal
 # instead of minting a new one every time. The same JSON is stored twice:
 # `creds` for the Crossplane providers and `credentials` for function-msgraph,
-# which only reads that key.
+# which only reads that key. Non-secret Azure identifiers are also exposed in
+# azure-platform-config for Compositions that need them.
 apply_azure_secret() {
   local ctx="$1" credentials_file="$2"
+  local client_id principal_id
+  client_id=$(jq -r .clientId "$credentials_file")
+  principal_id=$(az ad sp show --id "$client_id" --query id -o tsv)
+
   run_kubectl "$ctx" create secret generic azure-secret \
     --namespace crossplane-system \
     --from-file=creds="$credentials_file" \
     --from-file=credentials="$credentials_file" \
+    --dry-run=client -o yaml \
+    | run_kubectl "$ctx" apply -f -
+
+  run_kubectl "$ctx" create configmap azure-platform-config \
+    --namespace crossplane-system \
+    --from-literal=tenantId="$(jq -r .tenantId "$credentials_file")" \
+    --from-literal=subscriptionId="$(jq -r .subscriptionId "$credentials_file")" \
+    --from-literal=principalId="$principal_id" \
     --dry-run=client -o yaml \
     | run_kubectl "$ctx" apply -f -
 }

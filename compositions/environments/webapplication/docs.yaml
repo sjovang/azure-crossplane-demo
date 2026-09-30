@@ -1,0 +1,12 @@
+---
+summary: >-
+  A complete Azure web application environment with a resource group,
+  PostgreSQL database, Linux App Service, and Key Vault-backed database
+  credential.
+stability: experimental
+exampleRef: teams/crd-dev/webapplication.yaml
+exampleLines: 1-12
+exampleNotes: >-
+  The platform generates the database password and exposes it to App Service
+  through an Azure Key Vault reference. PostgreSQL permits Azure service IPs
+  so the public App Service can connect.

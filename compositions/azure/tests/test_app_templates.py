@@ -48,7 +48,11 @@ class AppTemplateTests(unittest.TestCase):
                 alternate_expected = copy.deepcopy(expected)
                 if kind == "XAppService":
                     alternate["spec"]["envVars"] = {"DEMO": "enabled"}
+                    alternate["spec"]["systemAssignedIdentity"] = True
                     alternate_expected[0]["spec"]["forProvider"]["skuName"] = "P1v3"
+                    alternate_expected[1]["spec"]["forProvider"]["identity"] = {
+                        "type": "SystemAssigned"
+                    }
                     alternate_expected[1]["spec"]["forProvider"]["appSettings"]["DEMO"] = "enabled"
                 elif kind == "XContainerApp":
                     alternate["spec"]["envVars"] = {"DEMO": "enabled"}
@@ -59,9 +63,35 @@ class AppTemplateTests(unittest.TestCase):
                     ]
                 else:
                     alternate["spec"]["databaseName"] = "alternate"
+                    alternate["spec"]["allowAzureServices"] = True
                     alternate_expected[0]["spec"]["forProvider"]["skuName"] = "GP_Standard_D2s_v3"
                     alternate_expected[0]["spec"]["forProvider"]["storageMb"] = 131072
                     alternate_expected[1]["metadata"]["annotations"]["crossplane.io/external-name"] = "alternate"
+                    alternate_expected.append(
+                        {
+                            "apiVersion": "dbforpostgresql.azure.m.upbound.io/v1beta1",
+                            "kind": "FlexibleServerFirewallRule",
+                            "metadata": {
+                                "annotations": {
+                                    "gotemplating.fn.crossplane.io/composition-resource-name": "allowAzureServices",
+                                    "crossplane.io/external-name": "AllowAzureServices",
+                                }
+                            },
+                            "spec": {
+                                "providerConfigRef": {
+                                    "kind": "ClusterProviderConfig",
+                                    "name": "default",
+                                },
+                                "forProvider": {
+                                    "serverIdSelector": {
+                                        "matchControllerRef": True
+                                    },
+                                    "startIpAddress": "0.0.0.0",
+                                    "endIpAddress": "0.0.0.0",
+                                },
+                            },
+                        }
+                    )
                 alternate_result = subprocess.run(
                     ["go", "run", str(AZURE / "tests/render.go")],
                     input=json.dumps({"template": template, "xr": alternate}),

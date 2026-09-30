@@ -145,26 +145,33 @@ and VPA. The cluster also installs these components to serve the docs site:
       --set crds.envoyGateway.enabled=true
     ```
 
-The bootstrap creates the secrets and `azure-dns-config` ConfigMap used by
-these components. The service principal is Contributor at subscription scope
-so it can write the site record in `rg-public-dns`; subscription-specific
-values are not committed to the repository.
+The bootstrap creates the secrets and ConfigMaps used by these components,
+including the non-secret `azure-platform-config` consumed by environment
+Compositions. Subscription-specific values are not committed to the
+repository.
 
 !!! note "Service principal permissions"
 
-    The service principal is Contributor on the subscription and has the
-    Microsoft Graph application permissions `Group.ReadWrite.All` and
+    The service principal is Contributor and Role Based Access Control
+    Administrator on the subscription. The latter lets Crossplane grant
+    composed managed identities access to their Key Vault secrets. It also has
+    the Microsoft Graph application permissions `Group.ReadWrite.All` and
     `User.Read.All`, used for Entra ID groups. Granting the Graph permissions
     needs a Global Administrator or Privileged Role Administrator. If you are
     neither, the bootstrap prints a warning and the commands to run, and
     continues without them. Only the Entra ID compositions need them.
-    Re-running the bootstrap grants them to an existing service principal.
+    Re-running the bootstrap upgrades an existing service principal with any
+    missing permissions. If Azure RBAC administration cannot be granted, the
+    bootstrap prints the manual command and XWebApplication resources will not
+    converge until an administrator runs it.
 
 ### Node capacity
 
-The system `nodepool1` keeps three nodes active, with 30 pods per node. AKS
-Node Auto-Provisioning (NAP) adds a separate `workshop` pool of Linux D-series
-nodes on demand. It can scale back to zero and has an aggregate limit of 16
+The system `nodepool1` uses the configured node count and allows 50 pods per
+node, set by `maxPods` in `infrastructure/config-aks.yaml` when the cluster is
+created. AKS Node Auto-Provisioning (NAP) adds a separate `workshop` pool of
+Linux D-series nodes on demand; its pod limit is configured independently in
+the `AKSNodeClass`. It can scale back to zero and has an aggregate limit of 16
 vCPU and 64 GiB; Azure quota and VM availability may lower the practical
 limit. Workloads are not restricted to a single pool.
 

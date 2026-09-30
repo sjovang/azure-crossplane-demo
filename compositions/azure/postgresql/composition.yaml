@@ -61,6 +61,24 @@ spec:
               forProvider:
                 serverIdSelector:
                   matchControllerRef: true
+            {{- if $xr.spec.allowAzureServices }}
+            ---
+            apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+            kind: FlexibleServerFirewallRule
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "allowAzureServices" }}
+                crossplane.io/external-name: AllowAzureServices
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                serverIdSelector:
+                  matchControllerRef: true
+                startIpAddress: 0.0.0.0
+                endIpAddress: 0.0.0.0
+            {{- end }}
             {{- $flexibleServer := getComposedResource . "flexibleServer" }}
             {{- $flexibleServerDatabase := getComposedResource . "flexibleServerDatabase" }}
             {{- if and $flexibleServer $flexibleServerDatabase }}

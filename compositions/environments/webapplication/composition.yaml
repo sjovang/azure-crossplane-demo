@@ -1,0 +1,185 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: webapplications.environments.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: environments.platform.example.org/v1alpha1
+    kind: XWebApplication
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${resourceGroup.status.id}
+          resourceGroupId: ${resourceGroup.status.id}
+          databaseId: ${database.status.id}
+          databaseFqdn: ${database.status.fqdn}
+          applicationId: ${appService.status.id}
+          applicationHostname: ${appService.status.defaultHostname}
+        resources:
+          - id: azurePlatformConfig
+            externalRef:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: azure-platform-config
+                namespace: crossplane-system
+          - id: passwordGenerator
+            template:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              metadata:
+                name: ${schema.spec.name}-database-admin
+              spec:
+                length: 24
+                digits: 5
+                symbols: 5
+                symbolCharacters: "-_$@"
+                noUpper: false
+                allowRepeat: true
+          - id: passwordExternalSecret
+            template:
+              apiVersion: external-secrets.io/v1
+              kind: ExternalSecret
+              metadata:
+                name: ${schema.spec.name}-database-admin
+              spec:
+                refreshInterval: "0"
+                target:
+                  name: ${schema.spec.name}-database-admin
+                dataFrom:
+                  - sourceRef:
+                      generatorRef:
+                        apiVersion: generators.external-secrets.io/v1alpha1
+                        kind: Password
+                        name: ${passwordGenerator.metadata.name}
+          - id: databaseCredentials
+            externalRef:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ${passwordExternalSecret.spec.target.name}
+          - id: resourceGroup
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XResourceGroup
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                location: ${schema.spec.location}
+                tags:
+                  environment: ${schema.spec.name}
+                  managed-by: crossplane
+          - id: database
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XDatabase
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                resourceGroupRef:
+                  name: ${resourceGroup.spec.name}
+                size: ${schema.spec.databaseSize}
+                adminUsername: ${schema.spec.databaseAdminUsername}
+                adminPasswordSecretRef:
+                  name: ${databaseCredentials.metadata.name}
+                  key: password
+                databaseName: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
+                allowAzureServices: true
+                location: ${schema.spec.location}
+          - id: keyVault
+            template:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Vault
+              metadata:
+                annotations:
+                  crossplane.io/external-name: kv-${schema.spec.name}-${schema.metadata.uid.split("-")[0]}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  location: ${schema.spec.location}
+                  resourceGroupName: ${resourceGroup.status.name}
+                  tenantId: ${azurePlatformConfig.data.tenantId}
+                  skuName: standard
+                  rbacAuthorizationEnabled: true
+                  purgeProtectionEnabled: false
+                  softDeleteRetentionDays: 7
+          - id: crossplaneKeyVaultRoleAssignment
+            template:
+              apiVersion: authorization.azure.m.upbound.io/v1beta1
+              kind: RoleAssignment
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  principalId: ${azurePlatformConfig.data.principalId}
+                  principalType: ServicePrincipal
+                  roleDefinitionId: /providers/Microsoft.Authorization/roleDefinitions/b86a8fe4-44ce-4948-aee5-eccb2c155cd7
+                  scope: ${keyVault.status.atProvider.id}
+                  skipServicePrincipalAadCheck: true
+          - id: keyVaultSecret
+            template:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Secret
+              metadata:
+                annotations:
+                  crossplane.io/external-name: database-password
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  name: database-password
+                  keyVaultId: ${crossplaneKeyVaultRoleAssignment.spec.forProvider.scope}
+                  valueSecretRef:
+                    name: ${databaseCredentials.metadata.name}
+                    key: password
+          - id: appService
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XAppService
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                resourceGroupRef:
+                  name: ${resourceGroup.spec.name}
+                size: ${schema.spec.appSize}
+                image: ${schema.spec.image}
+                port: ${schema.spec.port}
+                location: ${schema.spec.location}
+                systemAssignedIdentity: true
+                envVars:
+                  DATABASE_HOST: ${database.status.fqdn}
+                  DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
+                  DATABASE_USER: ${schema.spec.databaseAdminUsername}
+                  DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.resourceVersionlessId})'
+          - id: keyVaultRoleAssignment
+            template:
+              apiVersion: authorization.azure.m.upbound.io/v1beta1
+              kind: RoleAssignment
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  principalId: ${appService.status.identityPrincipalId}
+                  principalType: ServicePrincipal
+                  roleDefinitionId: /providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6
+                  scope: ${keyVault.status.atProvider.id}
+                  skipServicePrincipalAadCheck: true
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

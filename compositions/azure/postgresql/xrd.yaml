@@ -81,6 +81,12 @@ spec:
                   description: >-
                     Name of the default database created on the server.
                     Defaults to spec.name.
+                allowAzureServices:
+                  type: boolean
+                  default: false
+                  description: >-
+                    Add the 0.0.0.0 firewall rule that permits connections
+                    from Azure services.
                 location:
                   type: string
                   default: swedencentral

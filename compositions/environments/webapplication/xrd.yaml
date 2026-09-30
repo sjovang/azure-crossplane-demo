@@ -1,0 +1,99 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xwebapplications.environments.platform.example.org
+spec:
+  scope: Namespaced
+  group: environments.platform.example.org
+  names:
+    kind: XWebApplication
+    plural: xwebapplications
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 12
+                  pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  description: >-
+                    Short environment name used to derive Azure resource
+                    names.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                image:
+                  type: string
+                  description: Container image reference run by App Service.
+                location:
+                  type: string
+                  description: Azure region for every environment resource.
+                appSize:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  description: App Service t-shirt size.
+                databaseSize:
+                  type: string
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  description: PostgreSQL t-shirt size.
+                port:
+                  type: integer
+                  minimum: 1
+                  maximum: 65535
+                  default: 8080
+                  description: Port the application container listens on.
+                databaseName:
+                  type: string
+                  description: >-
+                    PostgreSQL database name. Defaults to spec.name.
+                databaseAdminUsername:
+                  type: string
+                  default: pgadmin
+                  description: PostgreSQL administrator login name.
+              required:
+                - name
+                - image
+                - location
+                - appSize
+                - databaseSize
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: >-
+                    Azure resource ID of the environment resource group.
+                resourceGroupId:
+                  type: string
+                  description: >-
+                    Azure resource ID of the environment resource group.
+                databaseId:
+                  type: string
+                  description: Azure resource ID of the PostgreSQL server.
+                databaseFqdn:
+                  type: string
+                  description: Fully qualified domain name of the PostgreSQL server.
+                applicationId:
+                  type: string
+                  description: Azure resource ID of the App Service.
+                applicationHostname:
+                  type: string
+                  description: >-
+                    Default public hostname of the App Service.
+          required:
+            - spec
