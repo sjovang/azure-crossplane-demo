@@ -47,7 +47,6 @@ spec:
                 administratorPasswordSecretRef:
                   name: {{ $xr.spec.adminPasswordSecretRef.name }}
                   key: {{ $xr.spec.adminPasswordSecretRef.key }}
-                  namespace: {{ $xr.metadata.namespace }}
             ---
             apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
             kind: FlexibleServerDatabase

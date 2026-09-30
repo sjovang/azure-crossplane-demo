@@ -25,8 +25,8 @@ spec:
             {{- if eq $xr.spec.size "medium" }}{{ $cpu = "0.5" }}{{ $memory = "1Gi" }}{{ end -}}
             {{- if eq $xr.spec.size "large" }}{{ $cpu = "1" }}{{ $memory = "2Gi" }}{{ end -}}
             ---
-            apiVersion: app.azure.m.upbound.io/v1beta1
-            kind: ContainerAppEnvironment
+            apiVersion: containerapp.azure.m.upbound.io/v1beta1
+            kind: Environment
             metadata:
               annotations:
                 {{ setResourceNameAnnotation "containerAppEnvironment" }}
@@ -39,7 +39,7 @@ spec:
                 location: {{ $xr.spec.location }}
                 resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
             ---
-            apiVersion: app.azure.m.upbound.io/v1beta1
+            apiVersion: containerapp.azure.m.upbound.io/v1beta1
             kind: ContainerApp
             metadata:
               annotations:
@@ -55,22 +55,22 @@ spec:
                   matchControllerRef: true
                 revisionMode: Single
                 ingress:
-                  - externalEnabled: true
-                    targetPort: {{ $xr.spec.port }}
-                    transport: auto
+                  externalEnabled: true
+                  targetPort: {{ $xr.spec.port }}
+                  transport: auto
                 template:
-                  - minReplicas: {{ $xr.spec.minReplicas }}
-                    maxReplicas: {{ $xr.spec.maxReplicas }}
-                    container:
-                      - name: {{ $xr.spec.name }}
-                        image: {{ $xr.spec.image }}
-                        cpu: {{ $cpu }}
-                        memory: {{ $memory }}
+                  minReplicas: {{ $xr.spec.minReplicas }}
+                  maxReplicas: {{ $xr.spec.maxReplicas }}
+                  container:
+                    - name: {{ $xr.spec.name }}
+                      image: {{ $xr.spec.image }}
+                      cpu: {{ $cpu }}
+                      memory: {{ $memory }}
             {{- if $xr.spec.envVars }}
-                        env:
+                      env:
             {{- range $key, $value := $xr.spec.envVars }}
-                          - name: {{ $key }}
-                            value: {{ $value | quote }}
+                        - name: {{ $key }}
+                          value: {{ $value | quote }}
             {{- end }}
             {{- end }}
             {{- $containerApp := getComposedResource . "containerApp" }}
