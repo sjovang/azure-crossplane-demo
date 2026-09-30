@@ -1,0 +1,11 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XSecurityGroup
+metadata:
+  name: crd-dev
+spec:
+  name: crd-dev
+  owners:
+    - a_tj@sjovang.no
+  members:
+    - trond@sjovang.no

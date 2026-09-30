@@ -11,7 +11,13 @@ repos:
         args: [
           '--allow-multiple-documents',
         ]
-        exclude: ^clusters/dev/flux-system/(gotk-components|gotk-sync)\.yaml$
+        # gotk-* are Flux-generated; mkdocs.yml uses a PyMdown !!python/name:
+        # tag that plain PyYAML cannot construct.
+        exclude: >-
+          (?x)^(
+            clusters/(local|aks)/flux-system/(gotk-components|gotk-sync)\.yaml
+            |apps/docs/mkdocs\.yml
+          )$
       - id: detect-private-key
       - id: mixed-line-ending
         args: [
@@ -32,7 +38,12 @@ repos:
     rev: v1.38.0
     hooks:
       - id: yamllint
-        exclude: ^clusters/dev/flux-system/
+        # Upstream-rendered CRDs retain their generated formatting.
+        exclude: >-
+          (?x)^(
+            clusters/(local|aks)/flux-system/
+            |clusters/aks/gateway-api-crds/crds\.yaml$
+          )
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.26.1

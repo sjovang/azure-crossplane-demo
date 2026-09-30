@@ -1,0 +1,29 @@
+---
+# Separate from cert-manager because the ClusterIssuer CRD only exists once
+# that HelmRelease has installed. Applying both in one batch fails the
+# dry-run and aborts the whole batch, which is the deadlock this repository
+# has already hit twice.
+#
+# substituteFrom injects the Azure subscription/tenant/client IDs and the DNS
+# zone, which differ for everyone running this workshop and so are not
+# committed. The ConfigMap is created by infrastructure/bootstrap-aks.sh.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cert-manager-issuers
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  path: ./clusters/aks/cert-manager-issuers
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: azure-dns-config
+  dependsOn:
+    - name: cert-manager

@@ -1,0 +1,38 @@
+---
+summary: >-
+  A virtual network with its subnets, network security groups and IPAM-driven
+  address space.
+stability: experimental
+exampleRef: teams/crd-dev/network.yaml
+exampleLines: 33-56
+exampleNotes: >-
+  Address space is drawn from an IPAM pool, so teams request a number of
+  addresses instead of a CIDR. Each entry in `spec.subnets` produces a
+  subnet, a network security group and the association between them. The
+  Azure resource is named `vnet-<spec.name>`.
+
+# This composition renders its resources from an inline Go template
+# (function-go-templating), emitting subnets and NSGs with a range loop, so
+# they cannot be derived from the manifest and are declared here instead.
+commonErrors:
+  - symptom: >-
+      The virtual network stays not-Ready and the provider reports an
+      invalid IPAM pool.
+    cause: >-
+      `spec.ipamAllocation.ipamPoolId` is empty or points at a pool in
+      another subscription.
+    fix: >-
+      Copy `status.id` from the `XNetworkManagerIPAMPool` into
+      `ipamPoolId`.
+  - symptom: Subnet creation fails with an overlapping address space error.
+    cause: >-
+      The sum of each subnet's `numberOfAllocatedIpAddresses` exceeds the
+      network's own allocation.
+    fix: >-
+      Raise `spec.ipamAllocation.numberOfAllocatedIpAddresses` or shrink the
+      subnets.
+  - symptom: A security rule is rejected by Azure.
+    cause: >-
+      Two rules in the same subnet share a `priority`, which must be unique
+      per direction.
+    fix: Give each rule a distinct priority between 100 and 4096.

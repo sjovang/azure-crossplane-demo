@@ -1,0 +1,20 @@
+---
+# Gateway API + Envoy Gateway CRDs, applied directly so the large CRD chart
+# does not exceed the 1 MiB limit on Helm release Secrets.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gateway-api-crds
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  wait: true
+  path: ./clusters/aks/gateway-api-crds
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: flux-system

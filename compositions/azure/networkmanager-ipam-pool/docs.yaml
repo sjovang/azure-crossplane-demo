@@ -1,0 +1,24 @@
+---
+summary: >-
+  An IPAM pool on a network manager, so virtual networks get address space
+  allocated automatically instead of teams picking CIDRs by hand.
+stability: experimental
+exampleRef: teams/crd-dev/network.yaml
+exampleLines: 22-31
+exampleNotes: >-
+  Allocate a generous prefix here; individual virtual networks draw from it
+  by requesting a number of addresses rather than a CIDR. The Azure resource
+  is named `ipam-<spec.name>`.
+commonErrors:
+  - symptom: The pool is created but virtual networks fail to allocate.
+    cause: >-
+      `spec.addressPrefixes` is too small for the requested
+      `numberOfAllocatedIpAddresses` across all networks.
+    fix: Add another prefix to the pool, or request fewer addresses.
+  - symptom: The XR reports that the parent network manager is missing.
+    cause: >-
+      `spec.networkManagerRef.name` does not match an `XNetworkManager` in
+      the same namespace.
+    fix: >-
+      Create the network manager first and wait for it to report
+      `status.id`.

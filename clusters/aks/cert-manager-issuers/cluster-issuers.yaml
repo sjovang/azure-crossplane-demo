@@ -1,0 +1,53 @@
+---
+# Values in ${...} are substituted by Flux from the azure-dns-config
+# ConfigMap, which infrastructure/bootstrap-aks.sh creates in flux-system.
+# Subscription, tenant and client IDs differ for everyone who runs this
+# workshop, so they are deliberately not committed.
+#
+# Staging is defined alongside production because Let's Encrypt's production
+# rate limits are strict and this cluster gets rebuilt often. To use it,
+# point the Gateway's cert-manager.io/cluster-issuer annotation at
+# letsencrypt-staging and delete the existing TLS Secret.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: ${ACME_EMAIL}
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          azureDNS:
+            clientID: ${AZURE_CLIENT_ID}
+            clientSecretSecretRef:
+              name: azuredns-config
+              key: client-secret
+            subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+            tenantID: ${AZURE_TENANT_ID}
+            resourceGroupName: ${DNS_ZONE_RESOURCE_GROUP}
+            hostedZoneName: ${DNS_ZONE}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ${ACME_EMAIL}
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          azureDNS:
+            clientID: ${AZURE_CLIENT_ID}
+            clientSecretSecretRef:
+              name: azuredns-config
+              key: client-secret
+            subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+            tenantID: ${AZURE_TENANT_ID}
+            resourceGroupName: ${DNS_ZONE_RESOURCE_GROUP}
+            hostedZoneName: ${DNS_ZONE}

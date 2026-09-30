@@ -1,0 +1,39 @@
+---
+summary: >-
+  A Linux or Windows virtual machine with its network interface, attached to
+  an existing virtual network subnet.
+stability: experimental
+exampleRef: teams/crd-dev/virtualmachines.yaml
+exampleLines: 19-34
+exampleNotes: >-
+  Pick the operating system with `spec.os` and the sizing with the
+  `spec.size` t-shirt size; the composition maps that to an Azure SKU. Linux
+  machines authenticate with an SSH public key, Windows machines with an
+  administrator password, each read from a Secret in the same namespace. The
+  Azure resource is named `vm-<spec.name>`.
+commonErrors:
+  - symptom: >-
+      The XR is rejected on apply with "linux virtual machines require
+      sshPublicKeySecretRef".
+    cause: >-
+      A CEL rule enforces that the credential reference matches
+      `spec.os`.
+    fix: >-
+      Supply `sshPublicKeySecretRef` for Linux or `adminPasswordSecretRef`
+      for Windows, and remove the other one.
+  - symptom: The machine never gets an IP and the NIC stays not-Ready.
+    cause: >-
+      `spec.virtualNetworkRef.subnet` does not match any subnet name on the
+      referenced `XVirtualNetwork`.
+    fix: >-
+      Check the subnet names in the virtual network's `status.subnets`.
+  - symptom: Provisioning fails while reading the credential Secret.
+    cause: >-
+      The Secret does not exist in the XR's namespace, or the `key` does not
+      match the key inside it.
+    fix: >-
+      Create the Secret first; the reference is immutable, so a wrong value
+      means recreating the XR.
+  - symptom: The XR is rejected because the name is too long.
+    cause: '`spec.name` is limited to 12 characters.'
+    fix: Shorten the name; it is immutable once set.

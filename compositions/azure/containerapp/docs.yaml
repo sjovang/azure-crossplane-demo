@@ -1,0 +1,9 @@
+---
+summary: >-
+  An Azure Container App and its managed Container App Environment.
+stability: experimental
+exampleRef: teams/crd-dev/apps.yaml
+exampleLines: 23-34
+exampleNotes: >-
+  Create the referenced XResourceGroup before creating the app. The team
+  example is disabled by default in its kustomization.yaml.

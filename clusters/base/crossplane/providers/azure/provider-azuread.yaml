@@ -1,0 +1,13 @@
+---
+# Entra ID (Azure AD) provider. Separate from the provider-family-azure
+# packages; it authenticates with the same azure-secret credentials but needs
+# Microsoft Graph application permissions (see infrastructure/lib/common.sh
+# ensure_graph_permissions).
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azuread
+spec:
+  package: xpkg.upbound.io/upbound/provider-azuread:v2.4.0
+  runtimeConfigRef:
+    name: azure-provider

@@ -1,0 +1,9 @@
+---
+summary: >-
+  An Azure Linux Web App and its Service Plan, using a container image.
+stability: experimental
+exampleRef: teams/crd-dev/apps.yaml
+exampleLines: 11-22
+exampleNotes: >-
+  Create the referenced XResourceGroup before creating the app. The team
+  example is disabled by default in its kustomization.yaml.

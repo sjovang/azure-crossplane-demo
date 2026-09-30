@@ -1,0 +1,21 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# ../base is shared with clusters/local. Everything else here is AKS-only:
+# publishing the documentation site at a public hostname needs a real load
+# balancer, a public DNS zone and a certificate authority that can reach it,
+# none of which a local cluster has.
+#
+# Each component directory has its own explicit kustomization.yaml and is
+# referenced only by its dedicated Kustomization below, never scanned
+# implicitly, so a not-yet-established CRD can never abort another batch.
+resources:
+  - ../base
+  - flux-system
+  - nap-workloads-kustomization.yaml
+  - gateway-api-crds-kustomization.yaml
+  - envoy-gateway-kustomization.yaml
+  - cert-manager-kustomization.yaml
+  - cert-manager-issuers-kustomization.yaml
+  - external-dns-kustomization.yaml
+  - docs-site-gateway-kustomization.yaml

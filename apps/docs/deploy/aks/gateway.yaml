@@ -1,0 +1,50 @@
+---
+# In the same namespace as the Service on purpose: cert-manager's gateway
+# shim can only create the TLS Secret in the Gateway's own namespace, and a
+# same-namespace backend needs no ReferenceGrant.
+#
+# The annotation is what makes cert-manager issue the certificate: it sees
+# the listener hostname and the certificateRefs Secret name and creates a
+# matching Certificate. Switch to letsencrypt-staging while iterating.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: docs-site
+  namespace: documentation-site
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  gatewayClassName: envoy-gateway
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: docs-site
+  listeners:
+    # Serves only the ACME HTTP challenge path and the redirect below.
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: ${DOCS_HOSTNAME}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: ${DOCS_HOSTNAME}
+      allowedRoutes:
+        namespaces:
+          from: Same
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: docs-site-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy-gateway
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller

@@ -1,0 +1,20 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Deliberately not referenced from clusters/base/kustomization.yaml or
+# clusters/base/crossplane/kustomization.yaml: this Provider CR's underlying
+# CRD (providers.pkg.crossplane.io) only exists once Crossplane core itself
+# (installed from ../../core) has been installed, so it
+# must only ever be applied by the dependent crossplane-azure-provider
+# Kustomization (../../flux-kustomizations/azure-provider-kustomization.yaml),
+# which targets this directory directly and retries independently until the
+# CRD is ready.
+resources:
+  - deployment-runtime-config.yaml
+  - provider.yaml
+  - provider-network.yaml
+  - provider-compute.yaml
+  - provider-web.yaml
+  - provider-containerapp.yaml
+  - provider-dbforpostgresql.yaml
+  - provider-azuread.yaml

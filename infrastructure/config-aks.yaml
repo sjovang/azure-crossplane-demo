@@ -1,0 +1,38 @@
+---
+# AKS cluster config, consumed by infrastructure/bootstrap-aks.sh /
+# teardown-aks.sh via `az aks create`/`az group` (not a schema owned by any
+# single CLI tool, unlike kiac's config-kiac.yaml).
+#
+# Meets the hard requirements from
+# https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md
+# (Entra ID auth + Azure RBAC) and, when the addons below are enabled, the
+# recommended configuration (Cilium network policy, Azure Monitor Metrics,
+# Managed Grafana, KEDA, VPA).
+
+resourceGroup: azure-crossplane-demo  # created + deleted by this script
+name: azure-crossplane-demo  # cluster name: lowercase letters/digits/dashes
+location: swedencentral  # Azure region
+k8sVersion: ""  # empty = az aks default, e.g. "1.31"
+
+nodeCount: 3  # worker node count
+vmSize: Standard_D2as_v7  # VM size per node
+
+# Addons are positive toggles; disable to reduce cost/setup time. Network
+# policy can only be set at cluster creation time (immutable afterwards);
+# the monitoring addons can be toggled on a running cluster too.
+addons:
+  networkPolicy: true  # --network-plugin azure --network-policy cilium
+  azureMonitorMetrics: true  # Managed Prometheus metrics
+  managedGrafana: true  # Managed Grafana workspace, linked to the cluster
+  keda: true  # --enable-keda, KEDA event-driven autoscaling (may incur cost)
+  vpa: true  # --enable-vpa, Vertical Pod Autoscaler (may incur cost)
+
+# Publishes the documentation site (apps/docs) at a public hostname. The DNS
+# zone must already exist; this script never creates or deletes the zone
+# itself, only the record for `hostname` inside it.
+docs:
+  dnsZone: demo.liasis.dev  # existing Azure public DNS zone
+  dnsZoneResourceGroup: rg-public-dns  # resource group holding that zone
+  hostname: docs.demo.liasis.dev  # must be inside dnsZone
+  # yamllint disable rule:line-length
+  acmeEmail: "trond.sjovang@gmail.com"  # Let's Encrypt contact; empty disables the docs site

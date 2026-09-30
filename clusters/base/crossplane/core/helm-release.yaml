@@ -1,0 +1,31 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: crossplane
+  namespace: crossplane-system
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: crossplane
+      # "*" tracks the latest stable chart release automatically.
+      version: "*"
+      sourceRef:
+        kind: HelmRepository
+        name: crossplane-stable
+        namespace: crossplane-system
+  targetNamespace: crossplane-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    provider:
+      # Disable the chart's default "*" ManagedResourceActivationPolicy.
+      # Otherwise every MRD of every provider is activated, and the providers
+      # time out syncing informers for kinds we never use. The azure-resources
+      # policy in ../activation-policies/azure is the only activation source.
+      defaultActivations: []

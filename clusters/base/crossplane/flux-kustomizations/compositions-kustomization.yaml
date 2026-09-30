@@ -1,0 +1,34 @@
+---
+# A separate Kustomization for shared Compositions/XRDs (compositions/,
+# outside clusters/base/ so other clusters can point at the same path).
+# CompositeResourceDefinition/Composition are core Crossplane CRDs
+# (established by the HelmRelease in ../core). Applying them doesn't require
+# the referenced functions to exist, but Crossplane then emits
+# "missing required capabilities" warnings until they're healthy, so this
+# also waits on crossplane-functions. The health check keeps this
+# Kustomization (and teams, which dependsOn it) not-Ready until every XRD is
+# Established.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: crossplane-compositions
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  wait: true
+  healthCheckExprs:
+    - apiVersion: apiextensions.crossplane.io/v2
+      kind: CompositeResourceDefinition
+      current: >-
+        status.conditions.exists(c,
+        c.type == 'Established' && c.status == 'True')
+  prune: true
+  path: ./compositions
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: flux-system
+    - name: crossplane-functions
