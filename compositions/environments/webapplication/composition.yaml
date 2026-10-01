@@ -122,6 +122,7 @@ spec:
             template:
               apiVersion: authorization.azure.m.upbound.io/v1beta1
               kind: RoleAssignment
+              metadata: {}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -221,6 +222,7 @@ spec:
             template:
               apiVersion: authorization.azure.m.upbound.io/v1beta1
               kind: RoleAssignment
+              metadata: {}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
