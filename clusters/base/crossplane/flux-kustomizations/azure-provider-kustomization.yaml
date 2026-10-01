@@ -8,6 +8,9 @@
 # wait + healthCheckExprs: Ready only once every package is Installed and
 # Healthy (packages have no Ready condition, so plain kstatus would pass
 # immediately), so dependents never start against half-installed packages.
+# The reason check matters because Crossplane reports Healthy=True with
+# reason=AwaitingActivation for a package whose runtime is scaled to zero
+# because none of its MRDs are activated: installed, but reconciling nothing.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -25,7 +28,8 @@ spec:
         status.conditions.exists(c,
         c.type == 'Installed' && c.status == 'True')
         && status.conditions.exists(c,
-        c.type == 'Healthy' && c.status == 'True')
+        c.type == 'Healthy' && c.status == 'True'
+        && (!has(c.reason) || c.reason != 'AwaitingActivation'))
   prune: true
   path: ./clusters/base/crossplane/providers/azure
   sourceRef:
