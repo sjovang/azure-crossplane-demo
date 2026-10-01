@@ -60,14 +60,25 @@ class WebApplicationCompositionTests(unittest.TestCase):
             "${databaseCredentials.metadata.name}",
         )
         self.assertEqual(
+            by_id["passwordExternalSecret"]["template"]["spec"]["target"][
+                "creationPolicy"
+            ],
+            "Merge",
+        )
+        self.assertEqual(
+            by_id["databaseCredentials"]["readyWhen"],
+            ["${databaseCredentials.?data.?password.hasValue()}"],
+        )
+        self.assertEqual(
             by_id["entraClientSecret"]["template"]["spec"]["forProvider"][
                 "valueSecretRef"
             ],
             {
-                "name": "${enterpriseAppConnectionSecret.metadata.name}",
+                "name": "${enterpriseApp.status.connectionSecretName}",
                 "key": "value",
             },
         )
+        self.assertNotIn("enterpriseAppConnectionSecret", by_id)
         self.assertEqual(
             by_id["enterpriseApp"]["includeWhen"],
             ["${schema.spec.?entraIdAuth.?enabled.orValue(false)}"],

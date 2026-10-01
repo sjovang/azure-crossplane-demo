@@ -50,6 +50,7 @@ spec:
                 refreshInterval: ${schema.spec.rotationInterval}
                 target:
                   name: ${schema.metadata.name}-entra-rotation
+                  creationPolicy: Merge
                 dataFrom:
                   - sourceRef:
                       generatorRef:
@@ -57,11 +58,13 @@ spec:
                         kind: Password
                         name: ${rotationGenerator.metadata.name}
           - id: rotationSecret
-            externalRef:
+            readyWhen:
+              - ${rotationSecret.?data.?password.hasValue()}
+            template:
               apiVersion: v1
               kind: Secret
               metadata:
-                name: ${rotationExternalSecret.spec.target.name}
+                name: ${schema.metadata.name}-entra-rotation
           - id: application
             template:
               apiVersion: applications.azuread.m.upbound.io/v1beta1

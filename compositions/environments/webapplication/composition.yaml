@@ -59,6 +59,7 @@ spec:
                 refreshInterval: "0"
                 target:
                   name: ${schema.spec.name}-database-admin
+                  creationPolicy: Merge
                 dataFrom:
                   - sourceRef:
                       generatorRef:
@@ -66,11 +67,13 @@ spec:
                         kind: Password
                         name: ${passwordGenerator.metadata.name}
           - id: databaseCredentials
-            externalRef:
+            readyWhen:
+              - ${databaseCredentials.?data.?password.hasValue()}
+            template:
               apiVersion: v1
               kind: Secret
               metadata:
-                name: ${passwordExternalSecret.spec.target.name}
+                name: ${schema.spec.name}-database-admin
           - id: resourceGroup
             template:
               apiVersion: azure.platform.example.org/v1alpha1
@@ -165,14 +168,6 @@ spec:
                 redirectUris: '${["https://" + schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net") + "/api/auth/microsoft/handler/frame"] + schema.spec.?entraIdAuth.?additionalRedirectUris.orValue([])}'
                 rotationInterval: 720h
                 credentialValidity: 1440h
-          - id: enterpriseAppConnectionSecret
-            includeWhen:
-              - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
-            externalRef:
-              apiVersion: v1
-              kind: Secret
-              metadata:
-                name: ${enterpriseApp.status.connectionSecretName}
           - id: entraClientSecret
             includeWhen:
               - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
@@ -190,7 +185,7 @@ spec:
                   name: entra-client-secret
                   keyVaultId: ${crossplaneKeyVaultRoleAssignment.spec.forProvider.scope}
                   valueSecretRef:
-                    name: ${enterpriseAppConnectionSecret.metadata.name}
+                    name: ${enterpriseApp.status.connectionSecretName}
                     key: value
           - id: appService
             template:

@@ -50,7 +50,17 @@ class EnterpriseAppCompositionTests(unittest.TestCase):
             by_id["rotationExternalSecret"]["template"]["spec"]["refreshInterval"],
             self.expected["rotation"]["interval"],
         )
+        self.assertEqual(
+            by_id["rotationExternalSecret"]["template"]["spec"]["target"][
+                "creationPolicy"
+            ],
+            "Merge",
+        )
         self.assertEqual(by_id["rotationGenerator"]["readyWhen"], ["${true}"])
+        self.assertEqual(
+            by_id["rotationSecret"]["readyWhen"],
+            ["${rotationSecret.?data.?password.hasValue()}"],
+        )
         self.assertEqual(
             by_id["applicationPassword"]["template"]["spec"]["forProvider"][
                 "endDateRelative"
