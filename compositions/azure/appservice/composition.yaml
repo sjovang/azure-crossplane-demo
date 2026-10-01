@@ -134,7 +134,7 @@ spec:
             {{- if and (getComposedResource . "dnsCnameRecord") (getComposedResource . "dnsTxtRecord") }}
             ---
             apiVersion: web.azure.m.upbound.io/v1beta1
-            kind: AppServiceCustomHostnameBinding
+            kind: AppServiceCustomHostNameBinding
             metadata:
               annotations:
                 {{ setResourceNameAnnotation "customHostnameBinding" }}

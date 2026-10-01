@@ -76,7 +76,7 @@ spec:
       - value: ABC123
 ---
 apiVersion: web.azure.m.upbound.io/v1beta1
-kind: AppServiceCustomHostnameBinding
+kind: AppServiceCustomHostNameBinding
 metadata:
   annotations:
     gotemplating.fn.crossplane.io/composition-resource-name: customHostnameBinding
