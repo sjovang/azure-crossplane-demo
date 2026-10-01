@@ -1,0 +1,23 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane-external-secrets
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+rules:
+  - apiGroups:
+      - generators.external-secrets.io
+    resources:
+      - passwords
+      - passwords/status
+    verbs:
+      - "*"
+  - apiGroups:
+      - external-secrets.io
+    resources:
+      - externalsecrets
+      - externalsecrets/status
+      - externalsecrets/finalizers
+    verbs:
+      - "*"
