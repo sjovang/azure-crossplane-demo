@@ -65,6 +65,51 @@ spec:
                   type: string
                   default: pgadmin
                   description: PostgreSQL administrator login name.
+                customDomain:
+                  type: object
+                  description: >-
+                    Optional custom hostname for the App Service, with DNS
+                    records in an existing Azure public DNS zone and a free
+                    managed certificate.
+                  properties:
+                    hostname:
+                      type: string
+                      description: >-
+                        Fully qualified hostname inside dnsZone, e.g.
+                        portal.example.com.
+                    dnsZone:
+                      type: string
+                      description: Existing Azure public DNS zone name.
+                    dnsZoneResourceGroup:
+                      type: string
+                      description: Resource group holding the DNS zone.
+                  required:
+                    - hostname
+                    - dnsZone
+                    - dnsZoneResourceGroup
+                  x-kubernetes-validations:
+                    - rule: self.hostname.endsWith('.' + self.dnsZone)
+                      message: hostname must be inside dnsZone
+                entraIdAuth:
+                  type: object
+                  description: >-
+                    Optional Microsoft Entra ID authentication for the
+                    application. When enabled, an XEnterpriseApp and rotating
+                    client credential are provisioned automatically.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: Enable Entra ID authentication.
+                    additionalRedirectUris:
+                      type: array
+                      default: []
+                      items:
+                        type: string
+                        pattern: "^https?://"
+                      description: >-
+                        Additional OAuth redirect URIs, such as the Backstage
+                        localhost callback used during development.
               required:
                 - name
                 - image
@@ -87,7 +132,8 @@ spec:
                   description: Azure resource ID of the PostgreSQL server.
                 databaseFqdn:
                   type: string
-                  description: Fully qualified domain name of the PostgreSQL server.
+                  description: >-
+                    Fully qualified domain name of the PostgreSQL server.
                 applicationId:
                   type: string
                   description: Azure resource ID of the App Service.
@@ -95,5 +141,16 @@ spec:
                   type: string
                   description: >-
                     Default public hostname of the App Service.
+                applicationUrl:
+                  type: string
+                  description: >-
+                    Public HTTPS URL of the application: the custom hostname
+                    when set, otherwise the default hostname.
+                enterpriseApplicationId:
+                  type: string
+                  description: Provider ID of the Entra application.
+                enterpriseApplicationClientId:
+                  type: string
+                  description: Application (client) ID used for OAuth.
           required:
             - spec

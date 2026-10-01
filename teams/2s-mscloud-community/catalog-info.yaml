@@ -1,0 +1,19 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: 2s-mscloud-community
+  description: >-
+    Workshop team for the 2S MS Cloud Community event, provisioning a demo
+    Azure resource group via Crossplane.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: 2s-mscloud-community
+  description: Azure resources provisioned by the 2s-mscloud-community team.
+spec:
+  owner: group:2s-mscloud-community

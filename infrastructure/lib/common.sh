@@ -236,9 +236,11 @@ apply_azure_secret() {
 }
 
 # Microsoft Graph application permissions (app role IDs) needed to manage
-# Entra ID groups (provider-azuread) and look up users (function-msgraph).
+# Entra ID applications/groups (provider-azuread) and look up users
+# (function-msgraph).
 GRAPH_APP_ID="00000003-0000-0000-c000-000000000000"
 GRAPH_APP_ROLES=(
+  "Application.ReadWrite.All=1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9"
   "Group.ReadWrite.All=62a82d76-70ea-41e2-9197-370581804d09"
   "User.Read.All=df021288-bdef-4463-88db-98f22de89214"
 )

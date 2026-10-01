@@ -1,0 +1,20 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: crd-dev
+  description: >-
+    Internal team exercising every composition (networking, virtual
+    machines, App Service, Entra ID, and the web application environment)
+    for development and demo purposes.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: crd-dev
+  description: Azure resources provisioned by the crd-dev team.
+spec:
+  owner: group:crd-dev

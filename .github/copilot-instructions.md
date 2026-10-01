@@ -142,6 +142,27 @@ composite resource`). `scope` is also immutable once the XRD is established
 restarting the `crossplane` core deployment so its controller picks up the
 new scope).
 
+### Developer portal (Backstage) and App Service custom domains
+
+`apps/backstage/` is a plain Backstage scaffold (Node 22/24, Yarn 4). It runs
+on App Service via the `XWebApplication` in `teams/developer-portal/`
+(`spec.name: devportal`, port 7007), not in the cluster. `.github/workflows/backstage.yaml`
+builds it on PRs and on `main` pushes the image and commits its `sha-` tag
+into that manifest. Root `renovate.json` only updates `@backstage/*` and
+`backstage.json` under `apps/backstage/`. Keep scaffold changes minimal so
+upgrades apply cleanly.
+
+`XAppService` derives `dockerRegistryUrl` from the image reference (the
+provider requires it). Its optional `customDomain` adds a CNAME, an `asuid`
+TXT record (verification ID read from the `LinuxWebApp` connection secret),
+then a hostname binding, managed certificate and SNI binding once both DNS
+records are observed. `XWebApplication` passes `customDomain` through and sets
+`APPLICATION_URL`. Its optional `entraIdAuth` composes `XEnterpriseApp`, copies
+the generated client secret into the environment Key Vault, and sets the
+Backstage Microsoft auth app settings. The credential rotates every 30 days;
+the versioned Key Vault URI changes the App Service configuration and forces a
+refresh.
+
 ### Entra ID compositions
 
 `provider-azuread` (in `providers/azure/`, with its own
@@ -156,6 +177,11 @@ step reads the msgraph results persisted in the XR's own status via an
 after it. kro `status` expressions can't reference `schema`, and optional
 fields need `.?x.orValue(...)`. Prefer `function-kro` over `function-go-templating` whenever
 `function-patch-and-transform` is insufficient.
+
+`XEnterpriseApp` creates the application registration, tenant-local
+`Principal` shown under Enterprise applications, and a rotating `Password`.
+It exposes the application ID and connection Secret name through status but
+never puts the generated credential in XR status.
 
 ### Managed resource activation
 
@@ -199,9 +225,10 @@ config YAML files). Never duplicate one of these steps in a per-target
 script — add/extend the shared function instead.
 
 The SP is Contributor on the subscription plus the Microsoft Graph application
-permissions `Group.ReadWrite.All` and `User.Read.All`, granted with admin
-consent by `ensure_graph_permissions` on every bootstrap (so reused SPs are
-upgraded). It warns and continues when the user can't grant consent.
+permissions `Application.ReadWrite.All`, `Group.ReadWrite.All`, and
+`User.Read.All`, granted with admin consent by `ensure_graph_permissions` on
+every bootstrap (so reused SPs are upgraded). It warns and continues when the
+user can't grant consent.
 
 - **`verify-crossplane.sh [--context <ctx>]`**: read-only health check of
   the Flux + Crossplane stack (Kustomizations/HelmReleases Ready, packages

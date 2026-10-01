@@ -101,6 +101,5 @@ class AppTemplateTests(unittest.TestCase):
                 self.assertEqual(alternate_result.returncode, 0, alternate_result.stderr)
                 self.assertEqual(list(yaml.safe_load_all(alternate_result.stdout)), alternate_expected)
 
-
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,22 @@
+---
+# Backstage from apps/backstage. The image tag is updated by the
+# backstage GitHub Actions workflow on every build from main.
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+metadata:
+  name: devportal
+spec:
+  name: devportal
+  image: ghcr.io/sjovang/azure-crossplane-demo/backstage:latest
+  location: swedencentral
+  appSize: small
+  databaseSize: small
+  port: 7007
+  entraIdAuth:
+    enabled: true
+    additionalRedirectUris:
+      - http://localhost:7007/api/auth/microsoft/handler/frame
+  customDomain:
+    hostname: backstage.demo.liasis.dev
+    dnsZone: demo.liasis.dev
+    dnsZoneResourceGroup: rg-public-dns

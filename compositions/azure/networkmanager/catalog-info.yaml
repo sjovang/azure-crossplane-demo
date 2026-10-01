@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-networkmanager
+  description: >-
+    An Azure Virtual Network Manager, the subscription-scoped service that
+    owns IPAM pools and central network configuration.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

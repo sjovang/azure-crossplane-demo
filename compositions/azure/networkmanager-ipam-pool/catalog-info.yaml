@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-networkmanager-ipam-pool
+  description: >-
+    An IPAM pool on a network manager, so virtual networks get address
+    space allocated automatically instead of teams picking CIDRs by hand.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

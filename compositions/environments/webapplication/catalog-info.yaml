@@ -1,0 +1,15 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: environments-webapplication
+  description: >-
+    A complete Azure web application environment with a resource group,
+    PostgreSQL database, Linux App Service, and Key Vault-backed database
+    credential, plus optional Microsoft Entra ID authentication.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

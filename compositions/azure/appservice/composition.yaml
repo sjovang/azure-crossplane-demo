@@ -20,6 +20,21 @@ spec:
         inline:
           template: |
             {{- $xr := .observed.composite.resource -}}
+            {{- /* App Service needs the registry separately from the image. */ -}}
+            {{- $registry := "index.docker.io" -}}
+            {{- $imageName := $xr.spec.image -}}
+            {{- $registryPrefix := regexFind "^[^/]*[.:][^/]*/" $xr.spec.image -}}
+            {{- if $registryPrefix -}}
+            {{- $registry = trimSuffix "/" $registryPrefix -}}
+            {{- $imageName = trimPrefix $registryPrefix $xr.spec.image -}}
+            {{- end -}}
+            {{- if eq $registry "docker.io" -}}
+            {{- $registry = "index.docker.io" -}}
+            {{- end -}}
+            {{- $domain := dict -}}
+            {{- if and $xr.spec.customDomain $xr.spec.customDomain.hostname -}}
+            {{- $domain = $xr.spec.customDomain -}}
+            {{- end }}
             ---
             apiVersion: web.azure.m.upbound.io/v1beta1
             kind: ServicePlan
@@ -44,6 +59,12 @@ spec:
                 {{ setResourceNameAnnotation "linuxWebApp" }}
                 crossplane.io/external-name: app-{{ $xr.spec.name }}
             spec:
+            {{- if $domain }}
+              # The domain verification ID is sensitive, so the provider
+              # only publishes it as a connection detail.
+              writeConnectionSecretToRef:
+                name: app-{{ $xr.spec.name }}-connection
+            {{- end }}
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: default
@@ -62,11 +83,99 @@ spec:
                   enabled: false
                 siteConfig:
                   applicationStack:
-                    dockerImageName: {{ $xr.spec.image }}
+                    dockerImageName: {{ $imageName }}
+                    dockerRegistryUrl: https://{{ $registry }}
                 appSettings:
                   WEBSITES_PORT: "{{ $xr.spec.port }}"
             {{- if $xr.spec.envVars }}
             {{ toYaml $xr.spec.envVars | nindent 6 }}
+            {{- end }}
+            {{- if $domain }}
+            {{- $record := trimSuffix (printf ".%s" $domain.dnsZone) $domain.hostname }}
+            ---
+            apiVersion: network.azure.m.upbound.io/v1beta1
+            kind: DNSCNAMERecord
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "dnsCnameRecord" }}
+                crossplane.io/external-name: {{ $record }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                resourceGroupName: {{ $domain.dnsZoneResourceGroup }}
+                zoneName: {{ $domain.dnsZone }}
+                ttl: 300
+                record: app-{{ $xr.spec.name }}.azurewebsites.net
+            {{- $observedWebApp := get (.observed.resources | default dict) "linuxWebApp" | default dict }}
+            {{- $verificationId := get ($observedWebApp.connectionDetails | default dict) "attribute.custom_domain_verification_id" | b64dec }}
+            {{- if $verificationId }}
+            ---
+            # App Service only binds a hostname once asuid.<record> proves
+            # ownership of the domain.
+            apiVersion: network.azure.m.upbound.io/v1beta1
+            kind: DNSTXTRecord
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "dnsTxtRecord" }}
+                crossplane.io/external-name: asuid.{{ $record }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                resourceGroupName: {{ $domain.dnsZoneResourceGroup }}
+                zoneName: {{ $domain.dnsZone }}
+                ttl: 300
+                record:
+                  - value: {{ $verificationId | quote }}
+            {{- end }}
+            {{- if and (getComposedResource . "dnsCnameRecord") (getComposedResource . "dnsTxtRecord") }}
+            ---
+            apiVersion: web.azure.m.upbound.io/v1beta1
+            kind: AppServiceCustomHostNameBinding
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "customHostnameBinding" }}
+                crossplane.io/external-name: {{ $domain.hostname }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                appServiceName: app-{{ $xr.spec.name }}
+                resourceGroupName: rg-{{ $xr.spec.resourceGroupRef.name }}
+            ---
+            apiVersion: web.azure.m.upbound.io/v1beta1
+            kind: AppServiceManagedCertificate
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "managedCertificate" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                customHostnameBindingIdSelector:
+                  matchControllerRef: true
+            ---
+            apiVersion: web.azure.m.upbound.io/v1beta1
+            kind: AppServiceCertificateBinding
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "certificateBinding" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                hostnameBindingIdSelector:
+                  matchControllerRef: true
+                certificateIdSelector:
+                  matchControllerRef: true
+                sslState: SniEnabled
+            {{- end }}
             {{- end }}
             {{- $linuxWebApp := getComposedResource . "linuxWebApp" }}
             {{- $servicePlan := getComposedResource . "servicePlan" }}
@@ -78,6 +187,7 @@ spec:
               id: {{ $linuxWebApp.status.atProvider.id }}
               servicePlanId: {{ $servicePlan.status.atProvider.id }}
               defaultHostname: {{ $linuxWebApp.status.atProvider.defaultHostname }}
+              url: https://{{ if $domain }}{{ $domain.hostname }}{{ else }}{{ $linuxWebApp.status.atProvider.defaultHostname }}{{ end }}
             {{- if and $xr.spec.systemAssignedIdentity $linuxWebApp.status.atProvider.identity }}
               identityPrincipalId: {{ $linuxWebApp.status.atProvider.identity.principalId }}
             {{- end }}

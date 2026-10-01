@@ -1,0 +1,119 @@
+---
+# yamllint disable rule:line-length
+apiVersion: web.azure.m.upbound.io/v1beta1
+kind: ServicePlan
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: servicePlan
+    crossplane.io/external-name: asp-appservicedemo01
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    location: swedencentral
+    resourceGroupName: rg-crd-dev-apps
+    osType: Linux
+    skuName: B1
+---
+apiVersion: web.azure.m.upbound.io/v1beta1
+kind: LinuxWebApp
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: linuxWebApp
+    crossplane.io/external-name: app-appservicedemo01
+spec:
+  writeConnectionSecretToRef:
+    name: app-appservicedemo01-connection
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    location: swedencentral
+    resourceGroupName: rg-crd-dev-apps
+    servicePlanIdSelector:
+      matchControllerRef: true
+    authSettings:
+      enabled: false
+    siteConfig:
+      applicationStack:
+        dockerImageName: library/nginx:latest
+        dockerRegistryUrl: https://index.docker.io
+    appSettings:
+      WEBSITES_PORT: '80'
+---
+apiVersion: network.azure.m.upbound.io/v1beta1
+kind: DNSCNAMERecord
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: dnsCnameRecord
+    crossplane.io/external-name: portal
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    resourceGroupName: rg-dns
+    zoneName: demo.example.org
+    ttl: 300
+    record: app-appservicedemo01.azurewebsites.net
+---
+apiVersion: network.azure.m.upbound.io/v1beta1
+kind: DNSTXTRecord
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: dnsTxtRecord
+    crossplane.io/external-name: asuid.portal
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    resourceGroupName: rg-dns
+    zoneName: demo.example.org
+    ttl: 300
+    record:
+      - value: ABC123
+---
+apiVersion: web.azure.m.upbound.io/v1beta1
+kind: AppServiceCustomHostNameBinding
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: customHostnameBinding
+    crossplane.io/external-name: portal.demo.example.org
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    appServiceName: app-appservicedemo01
+    resourceGroupName: rg-crd-dev-apps
+---
+apiVersion: web.azure.m.upbound.io/v1beta1
+kind: AppServiceManagedCertificate
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: managedCertificate
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    customHostnameBindingIdSelector:
+      matchControllerRef: true
+---
+apiVersion: web.azure.m.upbound.io/v1beta1
+kind: AppServiceCertificateBinding
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: certificateBinding
+spec:
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+  forProvider:
+    hostnameBindingIdSelector:
+      matchControllerRef: true
+    certificateIdSelector:
+      matchControllerRef: true
+    sslState: SniEnabled

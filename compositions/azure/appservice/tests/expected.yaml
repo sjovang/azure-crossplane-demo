@@ -34,6 +34,7 @@ spec:
       enabled: false
     siteConfig:
       applicationStack:
-        dockerImageName: docker.io/library/nginx:latest
+        dockerImageName: library/nginx:latest
+        dockerRegistryUrl: https://index.docker.io
     appSettings:
       WEBSITES_PORT: "80"

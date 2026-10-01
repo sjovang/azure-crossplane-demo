@@ -12,6 +12,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.xrd = yaml.safe_load((ROOT / "xrd.yaml").read_text())
         self.composition = yaml.safe_load((ROOT / "composition.yaml").read_text())
         self.xr = yaml.safe_load((ROOT / "tests/xr.yaml").read_text())
+        self.auth_xr = yaml.safe_load((ROOT / "tests/xr-auth.yaml").read_text())
         self.expected = yaml.safe_load((ROOT / "tests/expected.yaml").read_text())
 
     def test_public_api_contract(self):
@@ -45,6 +46,10 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertTrue(
             by_id["appService"]["template"]["spec"]["systemAssignedIdentity"]
         )
+        self.assertEqual(
+            by_id["appService"]["template"]["spec"]["customDomain"],
+            self.expected["customDomain"],
+        )
         self.assertTrue(
             by_id["database"]["template"]["spec"]["allowAzureServices"]
         )
@@ -53,6 +58,23 @@ class WebApplicationCompositionTests(unittest.TestCase):
                 "valueSecretRef"
             ]["name"],
             "${databaseCredentials.metadata.name}",
+        )
+        self.assertEqual(
+            by_id["entraClientSecret"]["template"]["spec"]["forProvider"][
+                "valueSecretRef"
+            ],
+            {
+                "name": "${enterpriseAppConnectionSecret.metadata.name}",
+                "key": "value",
+            },
+        )
+        self.assertEqual(
+            by_id["enterpriseApp"]["includeWhen"],
+            ["${schema.spec.?entraIdAuth.?enabled.orValue(false)}"],
+        )
+        self.assertEqual(
+            by_id["entraClientSecret"]["includeWhen"],
+            ["${schema.spec.?entraIdAuth.?enabled.orValue(false)}"],
         )
         self.assertEqual(
             by_id["crossplaneKeyVaultRoleAssignment"]["template"]["spec"][
@@ -81,6 +103,8 @@ class WebApplicationCompositionTests(unittest.TestCase):
             "properties"
         ]["spec"]["required"]
         self.assertTrue(all(field in self.xr["spec"] for field in required))
+        self.assertTrue(all(field in self.auth_xr["spec"] for field in required))
+        self.assertTrue(self.auth_xr["spec"]["entraIdAuth"]["enabled"])
 
 
 if __name__ == "__main__":

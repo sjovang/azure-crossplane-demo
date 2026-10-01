@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "includePaths": [
+    "apps/backstage/**"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Keep backstage.json on the Backstage release the packages use",
+      "managerFilePatterns": [
+        "/^apps/backstage/backstage\\.json$/"
+      ],
+      "matchStrings": [
+        "\"version\":\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "backstage/backstage",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver-coerced",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Only Backstage itself is updated; other dependencies follow Backstage releases",
+      "matchFileNames": [
+        "apps/backstage/**"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Update every Backstage package and backstage.json together in one PR",
+      "matchFileNames": [
+        "apps/backstage/**"
+      ],
+      "matchPackageNames": [
+        "@backstage/**",
+        "backstage/backstage"
+      ],
+      "enabled": true,
+      "groupName": "backstage",
+      "separateMajorMinor": false,
+      "minimumReleaseAge": null
+    }
+  ],
+  "postUpdateOptions": [
+    "yarnDedupeHighest"
+  ]
+}

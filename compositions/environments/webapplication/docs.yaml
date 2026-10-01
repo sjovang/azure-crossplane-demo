@@ -2,11 +2,33 @@
 summary: >-
   A complete Azure web application environment with a resource group,
   PostgreSQL database, Linux App Service, and Key Vault-backed database
-  credential.
+  credential. Microsoft Entra ID authentication can be enabled with an
+  automatically managed enterprise application and rotating client secret.
 stability: experimental
 exampleRef: teams/crd-dev/webapplication.yaml
 exampleLines: 1-12
 exampleNotes: >-
   The platform generates the database password and exposes it to App Service
   through an Azure Key Vault reference. PostgreSQL permits Azure service IPs
-  so the public App Service can connect.
+  so the public App Service can connect. The app receives its public URL in
+  APPLICATION_URL. Set the optional customDomain to serve the app on a
+  hostname in an existing Azure DNS zone with a managed certificate. Set
+  entraIdAuth.enabled to create an XEnterpriseApp; its client secret rotates
+  every 30 days and is copied into the environment Key Vault.
+commonErrors:
+  - symptom: >-
+      The enterpriseApp resource reports Authorization_RequestDenied.
+    cause: >-
+      The Crossplane service principal lacks Application.ReadWrite.All or its
+      Microsoft Graph admin consent.
+    fix: >-
+      Re-run the cluster bootstrap as a Global Administrator or Privileged
+      Role Administrator.
+  - symptom: Backstage reports an invalid or expired Microsoft client secret.
+    cause: >-
+      Credential rotation has started but the new Key Vault version or App
+      Service setting has not reconciled yet.
+    fix: >-
+      Check XEnterpriseApp, the entra-client-secret Key Vault managed resource,
+      and the App Service reconciliation. This demo accepts a short rotation
+      race instead of maintaining two active credentials.

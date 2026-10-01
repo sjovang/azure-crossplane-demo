@@ -1,0 +1,21 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+metadata:
+  name: backstage
+  namespace: developer-portal
+spec:
+  name: backstage
+  image: ghcr.io/example/backstage:latest
+  location: swedencentral
+  appSize: small
+  databaseSize: small
+  port: 7007
+  customDomain:
+    hostname: backstage.example.org
+    dnsZone: example.org
+    dnsZoneResourceGroup: rg-public-dns
+  entraIdAuth:
+    enabled: true
+    additionalRedirectUris:
+      - http://localhost:7007/api/auth/microsoft/handler/frame

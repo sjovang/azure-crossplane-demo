@@ -1,0 +1,21 @@
+---
+# yamllint disable rule:line-length
+resourceIds:
+  - rotationGenerator
+  - rotationExternalSecret
+  - rotationSecret
+  - application
+  - servicePrincipal
+  - applicationPassword
+status:
+  id: ${application.status.atProvider.id}
+  clientId: ${application.status.atProvider.clientId}
+  objectId: ${application.status.atProvider.objectId}
+  servicePrincipalId: ${servicePrincipal.status.atProvider.id}
+  connectionSecretName: ${applicationPassword.spec.writeConnectionSecretToRef.name}
+  rotationRevision: ${string(rotationSecret.metadata.resourceVersion)}
+redirectUris: ${schema.spec.redirectUris}
+rotation:
+  interval: ${schema.spec.rotationInterval}
+  validity: ${schema.spec.credentialValidity}
+  trigger: '${string(rotationSecret.data["password"]).trim()}'

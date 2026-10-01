@@ -10,6 +10,9 @@ resourceIds:
   - keyVault
   - crossplaneKeyVaultRoleAssignment
   - keyVaultSecret
+  - enterpriseApp
+  - enterpriseAppConnectionSecret
+  - entraClientSecret
   - appService
   - keyVaultRoleAssignment
 appSettings:
@@ -17,6 +20,14 @@ appSettings:
   DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
   DATABASE_USER: ${schema.spec.databaseAdminUsername}
   DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.resourceVersionlessId})'
+  APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
+  AUTH_MICROSOFT_CLIENT_ID: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? enterpriseApp.status.clientId : ""}'
+  AUTH_MICROSOFT_CLIENT_SECRET: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? "@Microsoft.KeyVault(SecretUri=" + entraClientSecret.status.atProvider.resourceId + ")" : ""}'
+  AUTH_MICROSOFT_TENANT_ID: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? azurePlatformConfig.data.tenantId : ""}'
+customDomain:
+  hostname: '${schema.spec.?customDomain.?hostname.orValue("")}'
+  dnsZone: '${schema.spec.?customDomain.?dnsZone.orValue("")}'
+  dnsZoneResourceGroup: '${schema.spec.?customDomain.?dnsZoneResourceGroup.orValue("")}'
 status:
   id: ${resourceGroup.status.id}
   resourceGroupId: ${resourceGroup.status.id}
@@ -24,3 +35,6 @@ status:
   databaseFqdn: ${database.status.fqdn}
   applicationId: ${appService.status.id}
   applicationHostname: ${appService.status.defaultHostname}
+  applicationUrl: ${appService.status.url}
+  enterpriseApplicationId: ${enterpriseApp.?status.?id.orValue("")}
+  enterpriseApplicationClientId: ${enterpriseApp.?status.?clientId.orValue("")}

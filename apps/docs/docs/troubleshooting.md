@@ -114,6 +114,13 @@ node: the new node carries a startup taint until it is ready. It resolves on
 its own, and the health check only shows Warning events from the last five
 minutes so resolved ones do not linger in the output.
 
+## An Entra ID enterprise application is not created
+
+`XEnterpriseApp` needs `Application.ReadWrite.All` on the Crossplane service
+principal. `Authorization_RequestDenied` on its Application, Password, or
+Principal means the permission is missing or lacks admin consent. Re-run the
+bootstrap as an administrator so the existing service principal is upgraded.
+
 ## An Entra ID group is not created or updated
 
 `XSecurityGroup` needs Microsoft Graph permissions on the service principal.

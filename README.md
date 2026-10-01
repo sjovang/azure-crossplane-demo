@@ -40,8 +40,9 @@ flowchart LR
   from a locally generated service principal before bootstrapping Flux. The
   service principal is Contributor and Role Based Access Control Administrator
   on the subscription and gets the Microsoft Graph application permissions
-  `Group.ReadWrite.All` and `User.Read.All` (admin consent required; the
-  bootstrap warns and continues if it cannot grant them).
+  `Application.ReadWrite.All`, `Group.ReadWrite.All`, and `User.Read.All`
+  (admin consent required; the bootstrap warns and continues if it cannot
+  grant them).
 - Full convergence takes a few minutes after bootstrap. Watch it with `flux get kustomizations -A`, then run `./infrastructure/verify-crossplane.sh`.
 
 > [!NOTE]
@@ -84,3 +85,15 @@ which Flux then applies. See [`apps/docs/README.md`](apps/docs/README.md).
 > [!IMPORTANT]
 > The GHCR package is created private even though this repository is public.
 > Make it public once in the package settings, or the pod cannot pull it.
+
+## Developer portal
+
+[`apps/backstage/`](apps/backstage/) is a plain [Backstage](https://backstage.io)
+app published at `https://backstage.demo.liasis.dev`. It runs **outside** the
+cluster on Azure App Service, provisioned like any other team workload by the
+`XWebApplication` in [`teams/developer-portal/`](teams/developer-portal/),
+with DNS records and a managed certificate from its `customDomain`.
+
+Pull requests build the image; pushes to `main` publish it to GHCR and commit
+the new tag into the team manifest. Renovate keeps Backstage current. See
+[`apps/backstage/README.md`](apps/backstage/README.md).

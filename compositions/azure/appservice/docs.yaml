@@ -6,4 +6,6 @@ exampleRef: teams/crd-dev/apps.yaml
 exampleLines: 11-22
 exampleNotes: >-
   Create the referenced XResourceGroup before creating the app. The team
-  example is disabled by default in its kustomization.yaml.
+  example is disabled by default in its kustomization.yaml. Set the optional
+  customDomain to add CNAME and asuid TXT records in an existing Azure DNS
+  zone, bind the hostname, and issue a free App Service managed certificate.
