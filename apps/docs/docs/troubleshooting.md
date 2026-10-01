@@ -63,6 +63,57 @@ the
 Otherwise Crossplane never creates the CRD for that kind. Add the MRD name in
 `<plural>.<group>` form, then wait for Flux to reconcile the activation policy.
 
+## A provider is installed but does nothing
+
+The health check reports `Healthy=True but reason=AwaitingActivation`, or
+`deployment <name>: scaled to zero`:
+
+```sh
+kubectl get providers.pkg.crossplane.io \
+  -o custom-columns=NAME:.metadata.name,REASON:'.status.conditions[?(@.type=="Healthy")].reason'
+```
+
+Crossplane scales a package runtime to zero while none of the MRDs that
+package owns are activated, so the provider is installed but reconciles
+nothing. Check which MRDs it actually owns before assuming the package is the
+right one — provider families split kinds across sub-packages, and
+`resourcegroups.azure.m.upbound.io` belongs to `upbound-provider-family-azure`,
+not to `provider-azure-resources`:
+
+```sh
+kubectl get managedresourcedefinitions.apiextensions.crossplane.io -o json | jq -r \
+  '.items[] | select([.metadata.ownerReferences[]?.name] | index("<provider-name>")) |
+   "\(.spec.state)\t\(.metadata.name)"'
+```
+
+Either add one of those MRDs to the activation policy, or remove the package
+if no composition uses its kinds.
+
+## Pods stay Pending with `Insufficient cpu`
+
+`FailedScheduling: 0/N nodes are available: N Insufficient cpu` means total
+CPU *requests* exceed allocatable CPU. Compare the two:
+
+```sh
+kubectl get nodes -o custom-columns=NAME:.metadata.name,ALLOCATABLE_CPU:.status.allocatable.cpu
+kubectl get pods -A -o json | jq -r '[.items[] | select(.status.phase=="Running")
+  | [.spec.containers[].resources.requests.cpu // "0"]
+  | map(if test("m$") then (.[:-1]|tonumber) else (tonumber*1000) end) | add] | add'
+```
+
+Each Crossplane provider and function requests 100m
+([`deployment-runtime-config.yaml`](https://github.com/sjovang/azure-crossplane-demo/blob/main/clusters/base/crossplane/providers/azure/deployment-runtime-config.yaml)),
+and the `azureMonitorMetrics`, `keda` and `vpa` addons in
+[`config-aks.yaml`](https://github.com/sjovang/azure-crossplane-demo/blob/main/infrastructure/config-aks.yaml)
+add substantially to `kube-system`. Raise `nodeCount`, pick a larger `vmSize`,
+or turn addons off.
+
+A variant mentioning `node(s) had untolerated taint(s)` alongside
+`Insufficient cpu` is normal while node auto-provisioning boots a replacement
+node: the new node carries a startup taint until it is ready. It resolves on
+its own, and the health check only shows Warning events from the last five
+minutes so resolved ones do not linger in the output.
+
 ## An Entra ID enterprise application is not created
 
 `XEnterpriseApp` needs `Application.ReadWrite.All` on the Crossplane service

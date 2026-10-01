@@ -22,14 +22,26 @@ done
 
 require_tools kubectl jq
 
-activation_policy="$script_dir/../clusters/base/crossplane/activation-policies/azure/managed-resource-activation-policy.yaml"
+activation_policy_name="azure-resources"
+# Only report Warning events young enough to still describe the current
+# state. Without a bound, long-resolved events (a FailedScheduling for a pod
+# that has since been replaced) print directly above the summary and read as
+# live failures even when every check passed.
+event_window_minutes=5
+# Condition reasons that mean "not actually working" even though the
+# condition's status is True. Crossplane reports Healthy=True with reason
+# AwaitingActivation for a package whose runtime is scaled to zero because
+# none of its ManagedResourceDefinitions are activated: the package is
+# installed, but no controller is running and it reconciles nothing.
+bad_condition_reasons='["AwaitingActivation"]'
 failures=0
 
 pass() { echo "  ok    $*"; }
 fail() { echo "  FAIL  $*"; failures=$((failures + 1)); }
 
 # check_conditions <resource> <condition...>
-# Every object of <resource> must have each listed condition set to True.
+# Every object of <resource> must have each listed condition set to True with
+# a reason that is not in bad_condition_reasons.
 check_conditions() {
   local resource="$1"
   shift
@@ -40,12 +52,15 @@ check_conditions() {
     fail "$resource: none found"
     return
   fi
-  rows=$(jq -r --argjson conds "$conds" '
+  rows=$(jq -r --argjson conds "$conds" --argjson badReasons "$bad_condition_reasons" '
     .items[] | . as $o
     | [$conds[] as $c
        | ($o.status.conditions // [] | map(select(.type == $c)) | first) as $s
-       | if ($s.status // "") == "True" then empty
-         else "\($c)=\($s.status // "Unknown")\(if $s.message then " (\($s.message))" else "" end)"
+       | if ($s.status // "") != "True" then
+           "\($c)=\($s.status // "Unknown")\(if $s.message then " (\($s.message))" else "" end)"
+         elif ($badReasons | index($s.reason // "")) then
+           "\($c)=True but reason=\($s.reason)\(if $s.message then " (\($s.message))" else "" end)"
+         else empty
          end] as $problems
     | "\(if $o.metadata.namespace then $o.metadata.namespace + "/" else "" end)\($o.metadata.name)\t\($problems | join("; "))"
   ' <<<"$json")
@@ -65,6 +80,31 @@ check_conditions helmreleases.helm.toolkit.fluxcd.io Ready
 echo "==> Crossplane packages"
 check_conditions providers.pkg.crossplane.io Installed Healthy
 check_conditions functions.pkg.crossplane.io Installed Healthy
+
+echo "==> Package runtimes (crossplane-system)"
+# The pod checks below only see pods that exist, so a package whose runtime
+# is scaled to zero contributes no row and is silently skipped. Check the
+# Deployments directly so an installed-but-not-running package fails loudly.
+runtimes=$(run_kubectl "$context" -n crossplane-system get deployments -o json | jq -r '
+  .items[]
+  | select([.metadata.ownerReferences[]?
+            | select(.kind == "ProviderRevision" or .kind == "FunctionRevision")] | length > 0)
+  | [.metadata.name, (.spec.replicas // 0 | tostring), (.status.readyReplicas // 0 | tostring)]
+  | @tsv')
+if [[ -z "$runtimes" ]]; then
+  fail "no package runtime Deployments found in crossplane-system"
+else
+  while IFS=$'\t' read -r deployment desired ready; do
+    [[ -z "$deployment" ]] && continue
+    if (( desired < 1 )); then
+      fail "deployment $deployment: scaled to zero (package installed but no controller running)"
+    elif (( ready < desired )); then
+      fail "deployment $deployment: $ready/$desired replica(s) ready"
+    else
+      pass "deployment $deployment ($ready/$desired ready)"
+    fi
+  done <<<"$runtimes"
+fi
 
 echo "==> Compositions"
 check_conditions compositeresourcedefinitions.apiextensions.crossplane.io Established
@@ -100,23 +140,48 @@ if run_kubectl "$context" get managedresourceactivationpolicies.apiextensions.cr
 else
   pass "no chart-default MRAP"
 fi
-expected=$(awk '/^ *- [a-z0-9.]+$/ {print $2}' "$activation_policy" | sort)
+# The in-cluster policy is authoritative: it is what Crossplane actually acts
+# on, and scraping the manifest with awk would pick up any other list item
+# added to that file. `|| true` because a missing MRAP must be reported as a
+# failure below, not abort the script via set -e/pipefail.
+expected=$(run_kubectl "$context" get managedresourceactivationpolicies.apiextensions.crossplane.io \
+  "$activation_policy_name" -o json 2>/dev/null | jq -r '.spec.activate[]?' | sort) || true
 active=$(run_kubectl "$context" get managedresourcedefinitions.apiextensions.crossplane.io -o json \
   | jq -r '.items[] | select(.spec.state == "Active") | .metadata.name' | sort)
-unexpected=$(comm -13 <(echo "$expected") <(echo "$active"))
-missing=$(comm -23 <(echo "$expected") <(echo "$active"))
-if [[ -n "$unexpected" ]]; then
-  fail "$(wc -l <<<"$unexpected" | tr -d ' ') active MRD(s) not in azure-resources policy, e.g. $(head -1 <<<"$unexpected")"
+if [[ -z "$expected" ]]; then
+  fail "MRAP '$activation_policy_name' not found or has no .spec.activate entries"
 else
-  pass "only azure-resources MRDs are active ($(grep -c . <<<"$active" || true))"
-fi
-if [[ -n "$missing" ]]; then
-  fail "MRD(s) in policy but not active: $(tr '\n' ' ' <<<"$missing")"
+  unexpected=$(comm -13 <(echo "$expected") <(echo "$active"))
+  missing=$(comm -23 <(echo "$expected") <(echo "$active"))
+  if [[ -n "$unexpected" ]]; then
+    fail "$(grep -c . <<<"$unexpected") active MRD(s) not in $activation_policy_name policy, e.g. $(head -1 <<<"$unexpected")"
+  else
+    pass "only $activation_policy_name MRDs are active ($(grep -c . <<<"$active" || true))"
+  fi
+  if [[ -n "$missing" ]]; then
+    fail "MRD(s) in policy but not active: $(tr '\n' ' ' <<<"$missing")"
+  fi
 fi
 
-echo "==> Recent Warning events in crossplane-system (informational)"
-run_kubectl "$context" -n crossplane-system get events --field-selector type=Warning \
-  --sort-by=.lastTimestamp 2>/dev/null | tail -n 10 || true
+echo "==> Warning events in crossplane-system, last ${event_window_minutes}m (informational)"
+recent_events=$(run_kubectl "$context" -n crossplane-system get events \
+  --field-selector type=Warning -o json 2>/dev/null \
+  | jq -r --argjson window "$((event_window_minutes * 60))" '
+      [.items[]
+       | . as $e
+       | ($e.lastTimestamp // $e.eventTime // $e.firstTimestamp) as $ts
+       | select($ts != null)
+       # eventTime carries fractional seconds, which fromdateiso8601 rejects.
+       | (try ($ts | sub("\\.[0-9]+"; "") | fromdateiso8601) catch null) as $epoch
+       | select($epoch != null and (now - $epoch) <= $window)
+       | "  \($ts)  \($e.involvedObject.kind)/\($e.involvedObject.name)  \($e.reason): \($e.message)"]
+      | sort | .[-10:][]') || recent_events=""
+if [[ -n "$recent_events" ]]; then
+  echo "$recent_events"
+  echo "  (informational only; these do not affect the result below)"
+else
+  echo "  none"
+fi
 
 echo
 if (( failures > 0 )); then
