@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: entraid-securitygroup
+  description: >-
+    An Entra ID security group, with optional members and owners given as
+    user principal names (UPNs).
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-virtualnetwork
+  description: >-
+    A virtual network with its subnets, network security groups and
+    IPAM-driven address space.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

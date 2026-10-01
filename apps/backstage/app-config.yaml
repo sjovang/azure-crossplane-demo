@@ -173,12 +173,43 @@ auth:
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
 
+# see https://backstage.io/docs/integrations/github/locations for details.
+# GITHUB_TOKEN only needs public_repo scope; see apps/backstage/README.md.
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+
 catalog:
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, Group]
+  providers:
+    # Discovers teams/*/catalog-info.yaml (Group + System per team) and
+    # compositions/*/*/catalog-info.yaml (API per Crossplane XRD) from the
+    # public azure-crossplane-demo repo. See
+    # https://backstage.io/docs/integrations/github/discovery/
+    github:
+      teams:
+        organization: 'sjovang'
+        catalogPath: '/teams/*/catalog-info.yaml'
+        filters:
+          branch: 'main'
+          repository: 'azure-crossplane-demo'
+        schedule:
+          frequency: {minutes: 30}
+          timeout: {minutes: 3}
+      compositions:
+        organization: 'sjovang'
+        catalogPath: '/compositions/*/*/catalog-info.yaml'
+        filters:
+          branch: 'main'
+          repository: 'azure-crossplane-demo'
+        schedule:
+          frequency: {minutes: 30}
+          timeout: {minutes: 3}
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file

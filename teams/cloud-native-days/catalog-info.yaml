@@ -1,0 +1,19 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: cloud-native-days
+  description: >-
+    Workshop team for the Cloud Native Days event, provisioning a demo
+    Azure resource group via Crossplane.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: cloud-native-days
+  description: Azure resources provisioned by the cloud-native-days team.
+spec:
+  owner: group:cloud-native-days

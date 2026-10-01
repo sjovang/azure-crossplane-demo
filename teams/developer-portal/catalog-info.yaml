@@ -1,0 +1,19 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: developer-portal
+  description: >-
+    Platform team hosting the Backstage developer portal itself on Azure
+    App Service via Crossplane.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: developer-portal
+  description: Azure resources provisioned by the developer-portal team.
+spec:
+  owner: group:developer-portal

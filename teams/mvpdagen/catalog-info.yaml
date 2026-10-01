@@ -1,0 +1,19 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: mvpdagen
+  description: >-
+    Workshop team for the MVP-dagen event, provisioning a demo Azure
+    resource group via Crossplane.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: mvpdagen
+  description: Azure resources provisioned by the mvpdagen team.
+spec:
+  owner: group:mvpdagen

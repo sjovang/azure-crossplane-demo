@@ -1,0 +1,13 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-appservice
+  description: >-
+    An Azure Linux Web App and its Service Plan, using a container image.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

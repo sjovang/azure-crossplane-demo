@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-resourcegroup
+  description: >-
+    An Azure resource group: the container every other resource in this
+    platform is created inside.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml
