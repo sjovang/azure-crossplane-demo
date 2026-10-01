@@ -50,6 +50,7 @@ class EnterpriseAppCompositionTests(unittest.TestCase):
             by_id["rotationExternalSecret"]["template"]["spec"]["refreshInterval"],
             self.expected["rotation"]["interval"],
         )
+        self.assertEqual(by_id["rotationGenerator"]["readyWhen"], ["${true}"])
         self.assertEqual(
             by_id["applicationPassword"]["template"]["spec"]["forProvider"][
                 "endDateRelative"

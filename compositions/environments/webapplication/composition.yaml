@@ -35,6 +35,8 @@ spec:
                 name: azure-platform-config
                 namespace: crossplane-system
           - id: passwordGenerator
+            readyWhen:
+              - ${true}
             template:
               apiVersion: generators.external-secrets.io/v1alpha1
               kind: Password

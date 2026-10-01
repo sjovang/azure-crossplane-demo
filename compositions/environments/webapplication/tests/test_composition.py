@@ -72,6 +72,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
             by_id["enterpriseApp"]["includeWhen"],
             ["${schema.spec.?entraIdAuth.?enabled.orValue(false)}"],
         )
+        self.assertEqual(by_id["passwordGenerator"]["readyWhen"], ["${true}"])
         self.assertEqual(
             by_id["entraClientSecret"]["includeWhen"],
             ["${schema.spec.?entraIdAuth.?enabled.orValue(false)}"],
