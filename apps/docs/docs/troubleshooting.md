@@ -63,6 +63,13 @@ the
 Otherwise Crossplane never creates the CRD for that kind. Add the MRD name in
 `<plural>.<group>` form, then wait for Flux to reconcile the activation policy.
 
+## An Entra ID enterprise application is not created
+
+`XEnterpriseApp` needs `Application.ReadWrite.All` on the Crossplane service
+principal. `Authorization_RequestDenied` on its Application, Password, or
+Principal means the permission is missing or lacks admin consent. Re-run the
+bootstrap as an administrator so the existing service principal is upgraded.
+
 ## An Entra ID group is not created or updated
 
 `XSecurityGroup` needs Microsoft Graph permissions on the service principal.

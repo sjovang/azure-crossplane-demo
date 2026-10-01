@@ -13,8 +13,42 @@ Requires Node.js 22 or 24 (Node 26 is unsupported) and Yarn via corepack.
 ```sh
 corepack enable
 yarn install
-yarn start      # http://localhost:3000, in-memory SQLite, guest login
+yarn start      # http://localhost:3000, in-memory SQLite
 ```
+
+### Microsoft Entra ID sign-in
+
+`XWebApplication` creates the developer portal's Entra application, enterprise
+service principal, and client credential. It registers both the production
+callback and `http://localhost:7007/api/auth/microsoft/handler/frame`.
+
+Re-run the cluster bootstrap after pulling this change. It upgrades the
+Crossplane service principal with the Microsoft Graph
+`Application.ReadWrite.All` application permission and admin consent.
+
+For local development, export the generated values from the cluster before
+starting Backstage:
+
+```sh
+export AUTH_MICROSOFT_CLIENT_ID="$(
+  kubectl -n developer-portal get xenterpriseapp devportal \
+    -o jsonpath='{.status.clientId}'
+)"
+export AUTH_MICROSOFT_CLIENT_SECRET="$(
+  kubectl -n developer-portal get secret devportal-entra-client-secret \
+    -o jsonpath='{.data.value}' | base64 --decode
+)"
+export AUTH_MICROSOFT_TENANT_ID="$(
+  kubectl -n crossplane-system get configmap azure-platform-config \
+    -o jsonpath='{.data.tenantId}'
+)"
+```
+
+Any user in the configured tenant can sign in; this demo does not require an
+Entra group assignment or a pre-existing Backstage `User` entity. The client
+credential rotates every 30 days, is copied into the environment's Key Vault,
+and causes App Service to restart against the new version. Re-export the local
+client secret after a rotation.
 
 ### Catalog discovery
 
@@ -36,8 +70,9 @@ docker build -t backstage apps/backstage   # or: container build ...
 ```
 
 `app-config.production.yaml` reads the App Service settings that
-`XWebApplication` sets: `APPLICATION_URL` and `DATABASE_HOST`, `_USER`,
-`_PASSWORD`, `_NAME`. Plugins use one schema each in that database.
+`XWebApplication` sets: `APPLICATION_URL`, `DATABASE_HOST`, `_USER`,
+`_PASSWORD`, `_NAME`, and the `AUTH_MICROSOFT_*` values. Database plugins use
+one schema each.
 
 ## Release
 

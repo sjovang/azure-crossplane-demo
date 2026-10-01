@@ -21,7 +21,7 @@
     "@backstage/plugin-app-backend": "^0.5.18",
     "@backstage/plugin-auth-backend": "^0.30.1",
     "@backstage/plugin-auth-backend-module-github-provider": "^0.5.7",
-    "@backstage/plugin-auth-backend-module-guest-provider": "^0.2.23",
+    "@backstage/plugin-auth-backend-module-microsoft-provider": "^0.3.19",
     "@backstage/plugin-auth-node": "^0.7.6",
     "@backstage/plugin-catalog-backend": "^4.0.0",
     "@backstage/plugin-catalog-backend-module-github": "^0.14.0",

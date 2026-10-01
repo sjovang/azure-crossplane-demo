@@ -1,0 +1,30 @@
+---
+summary: >-
+  A single-tenant Entra ID application registration and enterprise service
+  principal with web redirect URIs and an automatically rotated client
+  credential. The credential is written to a Kubernetes connection Secret;
+  consumers should copy it into their own secret store.
+stability: experimental
+commonErrors:
+  - symptom: >-
+      The Application or Principal reports Authorization_RequestDenied.
+    cause: >-
+      The Crossplane service principal lacks the Microsoft Graph application
+      permission Application.ReadWrite.All, or admin consent is missing.
+    fix: >-
+      Re-run the bootstrap script as a Global Administrator or Privileged Role
+      Administrator, or grant Application.ReadWrite.All manually.
+  - symptom: The Application, Password, or Principal is never created.
+    cause: The corresponding provider-azuread MRD is not activated.
+    fix: >-
+      Add applications.applications.azuread.m.upbound.io,
+      passwords.applications.azuread.m.upbound.io, and
+      principals.serviceprincipals.azuread.m.upbound.io to the managed
+      resource activation policy.
+  - symptom: The client credential does not rotate.
+    cause: >-
+      External Secrets is not reconciling the rotation ExternalSecret, or its
+      generated Secret is missing.
+    fix: >-
+      Check the ExternalSecret and Password generator in the XR namespace.
+      A new generator value changes rotateWhenChanged every 720 hours.

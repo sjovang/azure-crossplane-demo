@@ -30,10 +30,7 @@ backend:
         rejectUnauthorized: true
 
 auth:
-  providers:
-    # Demo only: anyone reaching the URL signs in as the guest user.
-    guest:
-      dangerouslyAllowOutsideDevelopment: true
+  environment: production
 
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.

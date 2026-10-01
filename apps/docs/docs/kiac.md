@@ -84,11 +84,12 @@ this identity separate from the AKS service principal.
     The service principal is Contributor and Role Based Access Control
     Administrator on the subscription. The latter lets Crossplane grant
     composed managed identities access to their Key Vault secrets. It also has
-    the Microsoft Graph application permissions `Group.ReadWrite.All` and
-    `User.Read.All`, used for Entra ID groups. Granting the Graph permissions
-    needs a Global Administrator or Privileged Role Administrator. If you are
-    neither, the bootstrap prints a warning and the commands to run, and
-    continues without them. Only the Entra ID compositions need them.
+    the Microsoft Graph application permissions `Application.ReadWrite.All`,
+    `Group.ReadWrite.All`, and `User.Read.All`, used for Entra ID applications,
+    groups, and user lookup. Granting the Graph permissions needs a Global
+    Administrator or Privileged Role Administrator. If you are neither, the
+    bootstrap prints a warning and the commands to run, and continues without
+    them. Only the Entra ID compositions need them.
     Re-running the bootstrap upgrades an existing service principal with any
     missing permissions. If Azure RBAC administration cannot be granted, the
     bootstrap prints the manual command and XWebApplication resources will not

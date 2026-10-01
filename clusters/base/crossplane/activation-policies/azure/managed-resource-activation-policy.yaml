@@ -18,7 +18,10 @@ spec:
     - networkinterfaces.network.azure.m.upbound.io
     - linuxvirtualmachines.compute.azure.m.upbound.io
     - windowsvirtualmachines.compute.azure.m.upbound.io
+    - applications.applications.azuread.m.upbound.io
+    - passwords.applications.azuread.m.upbound.io
     - groups.groups.azuread.m.upbound.io
+    - principals.serviceprincipals.azuread.m.upbound.io
     - serviceplans.web.azure.m.upbound.io
     - linuxwebapps.web.azure.m.upbound.io
     - appservicecustomhostnamebindings.web.azure.m.upbound.io

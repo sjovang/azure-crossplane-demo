@@ -6,7 +6,7 @@ metadata:
   description: >-
     A complete Azure web application environment with a resource group,
     PostgreSQL database, Linux App Service, and Key Vault-backed database
-    credential.
+    credential, plus optional Microsoft Entra ID authentication.
 spec:
   type: crossplane-xrd
   lifecycle: experimental

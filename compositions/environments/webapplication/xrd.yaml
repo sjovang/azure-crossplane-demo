@@ -90,6 +90,26 @@ spec:
                   x-kubernetes-validations:
                     - rule: self.hostname.endsWith('.' + self.dnsZone)
                       message: hostname must be inside dnsZone
+                entraIdAuth:
+                  type: object
+                  description: >-
+                    Optional Microsoft Entra ID authentication for the
+                    application. When enabled, an XEnterpriseApp and rotating
+                    client credential are provisioned automatically.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: Enable Entra ID authentication.
+                    additionalRedirectUris:
+                      type: array
+                      default: []
+                      items:
+                        type: string
+                        pattern: "^https?://"
+                      description: >-
+                        Additional OAuth redirect URIs, such as the Backstage
+                        localhost callback used during development.
               required:
                 - name
                 - image
@@ -126,5 +146,11 @@ spec:
                   description: >-
                     Public HTTPS URL of the application: the custom hostname
                     when set, otherwise the default hostname.
+                enterpriseApplicationId:
+                  type: string
+                  description: Provider ID of the Entra application.
+                enterpriseApplicationClientId:
+                  type: string
+                  description: Application (client) ID used for OAuth.
           required:
             - spec

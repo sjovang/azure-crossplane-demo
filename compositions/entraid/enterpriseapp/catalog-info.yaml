@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: entraid-enterpriseapp
+  description: >-
+    A single-tenant Entra ID application registration, enterprise service
+    principal, and automatically rotated client credential.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./xrd.yaml

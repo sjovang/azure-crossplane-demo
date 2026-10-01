@@ -24,6 +24,8 @@ spec:
           applicationId: ${appService.status.id}
           applicationHostname: ${appService.status.defaultHostname}
           applicationUrl: ${appService.status.url}
+          enterpriseApplicationId: ${enterpriseApp.?status.?id.orValue("")}
+          enterpriseApplicationClientId: ${enterpriseApp.?status.?clientId.orValue("")}
         resources:
           - id: azurePlatformConfig
             externalRef:
@@ -147,6 +149,46 @@ spec:
                   valueSecretRef:
                     name: ${databaseCredentials.metadata.name}
                     key: password
+          - id: enterpriseApp
+            includeWhen:
+              - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
+            template:
+              apiVersion: entraid.platform.example.org/v1alpha1
+              kind: XEnterpriseApp
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                redirectUris: '${["https://" + schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net") + "/api/auth/microsoft/handler/frame"] + schema.spec.?entraIdAuth.?additionalRedirectUris.orValue([])}'
+                rotationInterval: 720h
+                credentialValidity: 1440h
+          - id: enterpriseAppConnectionSecret
+            includeWhen:
+              - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
+            externalRef:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ${enterpriseApp.status.connectionSecretName}
+          - id: entraClientSecret
+            includeWhen:
+              - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
+            template:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Secret
+              metadata:
+                annotations:
+                  crossplane.io/external-name: entra-client-secret
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  name: entra-client-secret
+                  keyVaultId: ${crossplaneKeyVaultRoleAssignment.spec.forProvider.scope}
+                  valueSecretRef:
+                    name: ${enterpriseAppConnectionSecret.metadata.name}
+                    key: value
           - id: appService
             template:
               apiVersion: azure.platform.example.org/v1alpha1
@@ -172,6 +214,9 @@ spec:
                   DATABASE_USER: ${schema.spec.databaseAdminUsername}
                   DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.resourceVersionlessId})'
                   APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
+                  AUTH_MICROSOFT_CLIENT_ID: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? enterpriseApp.status.clientId : ""}'
+                  AUTH_MICROSOFT_CLIENT_SECRET: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? "@Microsoft.KeyVault(SecretUri=" + entraClientSecret.status.atProvider.resourceId + ")" : ""}'
+                  AUTH_MICROSOFT_TENANT_ID: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? azurePlatformConfig.data.tenantId : ""}'
           - id: keyVaultRoleAssignment
             template:
               apiVersion: authorization.azure.m.upbound.io/v1beta1

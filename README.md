@@ -40,8 +40,9 @@ flowchart LR
   from a locally generated service principal before bootstrapping Flux. The
   service principal is Contributor and Role Based Access Control Administrator
   on the subscription and gets the Microsoft Graph application permissions
-  `Group.ReadWrite.All` and `User.Read.All` (admin consent required; the
-  bootstrap warns and continues if it cannot grant them).
+  `Application.ReadWrite.All`, `Group.ReadWrite.All`, and `User.Read.All`
+  (admin consent required; the bootstrap warns and continues if it cannot
+  grant them).
 - Full convergence takes a few minutes after bootstrap. Watch it with `flux get kustomizations -A`, then run `./infrastructure/verify-crossplane.sh`.
 
 > [!NOTE]

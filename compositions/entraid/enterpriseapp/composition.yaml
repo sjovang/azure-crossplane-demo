@@ -1,0 +1,126 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: enterpriseapps.entraid.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: entraid.platform.example.org/v1alpha1
+    kind: XEnterpriseApp
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${application.status.atProvider.id}
+          clientId: ${application.status.atProvider.clientId}
+          objectId: ${application.status.atProvider.objectId}
+          servicePrincipalId: ${servicePrincipal.status.atProvider.id}
+          connectionSecretName: ${applicationPassword.spec.writeConnectionSecretToRef.name}
+          rotationRevision: ${string(rotationSecret.metadata.resourceVersion)}
+        resources:
+          # External Secrets invokes generators on every periodic refresh. The
+          # generated value is only a rotation trigger, never an app credential.
+          - id: rotationGenerator
+            template:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              metadata:
+                name: ${schema.metadata.name}-entra-rotation
+              spec:
+                length: 32
+                digits: 8
+                symbols: 0
+                noUpper: false
+                allowRepeat: true
+          - id: rotationExternalSecret
+            template:
+              apiVersion: external-secrets.io/v1
+              kind: ExternalSecret
+              metadata:
+                name: ${schema.metadata.name}-entra-rotation
+              spec:
+                refreshInterval: ${schema.spec.rotationInterval}
+                target:
+                  name: ${schema.metadata.name}-entra-rotation
+                dataFrom:
+                  - sourceRef:
+                      generatorRef:
+                        apiVersion: generators.external-secrets.io/v1alpha1
+                        kind: Password
+                        name: ${rotationGenerator.metadata.name}
+          - id: rotationSecret
+            externalRef:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ${rotationExternalSecret.spec.target.name}
+          - id: application
+            template:
+              apiVersion: applications.azuread.m.upbound.io/v1beta1
+              kind: Application
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  displayName: ${schema.spec.name}
+                  preventDuplicateNames: true
+                  signInAudience: AzureADMyOrg
+                  featureTags:
+                    - enterprise: true
+                  web:
+                    redirectUris: ${schema.spec.redirectUris}
+                  requiredResourceAccess:
+                    - resourceAppId: 00000003-0000-0000-c000-000000000000
+                      resourceAccess:
+                        - id: 64a6cdd6-aab1-4aaf-94b8-3cc8405e90d0
+                          type: Scope
+                        - id: 7427e0e9-2fba-42fe-b0c0-848c9e6a8182
+                          type: Scope
+                        - id: 37f7f235-527c-4136-accd-4a02d197296e
+                          type: Scope
+                        - id: 14dad69e-099b-42c9-810b-d002981feec1
+                          type: Scope
+                        - id: e1fe6dd8-ba31-4d61-89e7-88639da4683d
+                          type: Scope
+          - id: servicePrincipal
+            template:
+              apiVersion: serviceprincipals.azuread.m.upbound.io/v1beta1
+              kind: Principal
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  appRoleAssignmentRequired: false
+                  clientIdSelector:
+                    matchControllerRef: true
+          - id: applicationPassword
+            template:
+              apiVersion: applications.azuread.m.upbound.io/v1beta1
+              kind: Password
+              metadata: {}
+              spec:
+                writeConnectionSecretToRef:
+                  name: ${schema.metadata.name}-entra-client-secret
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  applicationIdSelector:
+                    matchControllerRef: true
+                  displayName: Crossplane-managed Backstage credential
+                  endDateRelative: ${schema.spec.credentialValidity}
+                  rotateWhenChanged:
+                    rotation: ${string(rotationSecret.data["password"]).trim()}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

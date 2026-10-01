@@ -1,0 +1,11 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XEnterpriseApp
+metadata:
+  name: backstage
+  namespace: developer-portal
+spec:
+  name: backstage
+  redirectUris:
+    - https://backstage.example.org/api/auth/microsoft/handler/frame
+    - http://localhost:7007/api/auth/microsoft/handler/frame
