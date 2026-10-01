@@ -90,6 +90,11 @@ class WebApplicationCompositionTests(unittest.TestCase):
             "/providers/Microsoft.Authorization/roleDefinitions/"
             "4633458b-17de-408a-b874-0445c86b69e6",
         )
+        for resource_id in (
+            "crossplaneKeyVaultRoleAssignment",
+            "keyVaultRoleAssignment",
+        ):
+            self.assertEqual(by_id[resource_id]["template"]["metadata"], {})
         self.assertEqual(
             by_id["azurePlatformConfig"]["externalRef"]["metadata"],
             {
