@@ -27,6 +27,8 @@ spec:
           # External Secrets invokes generators on every periodic refresh. The
           # generated value is only a rotation trigger, never an app credential.
           - id: rotationGenerator
+            readyWhen:
+              - ${true}
             template:
               apiVersion: generators.external-secrets.io/v1alpha1
               kind: Password
