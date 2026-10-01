@@ -84,3 +84,15 @@ which Flux then applies. See [`apps/docs/README.md`](apps/docs/README.md).
 > [!IMPORTANT]
 > The GHCR package is created private even though this repository is public.
 > Make it public once in the package settings, or the pod cannot pull it.
+
+## Developer portal
+
+[`apps/backstage/`](apps/backstage/) is a plain [Backstage](https://backstage.io)
+app published at `https://backstage.demo.liasis.dev`. It runs **outside** the
+cluster on Azure App Service, provisioned like any other team workload by the
+`XWebApplication` in [`teams/developer-portal/`](teams/developer-portal/),
+with DNS records and a managed certificate from its `customDomain`.
+
+Pull requests build the image; pushes to `main` publish it to GHCR and commit
+the new tag into the team manifest. Renovate keeps Backstage current. See
+[`apps/backstage/README.md`](apps/backstage/README.md).

@@ -9,4 +9,6 @@ exampleLines: 1-12
 exampleNotes: >-
   The platform generates the database password and exposes it to App Service
   through an Azure Key Vault reference. PostgreSQL permits Azure service IPs
-  so the public App Service can connect.
+  so the public App Service can connect. The app receives its public URL in
+  APPLICATION_URL. Set the optional customDomain to serve the app on a
+  hostname in an existing Azure DNS zone with a managed certificate.

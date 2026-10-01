@@ -45,6 +45,10 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertTrue(
             by_id["appService"]["template"]["spec"]["systemAssignedIdentity"]
         )
+        self.assertEqual(
+            by_id["appService"]["template"]["spec"]["customDomain"],
+            self.expected["customDomain"],
+        )
         self.assertTrue(
             by_id["database"]["template"]["spec"]["allowAzureServices"]
         )

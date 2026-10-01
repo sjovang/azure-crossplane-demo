@@ -1,0 +1,58 @@
+---
+# Production overrides for Azure App Service. The environment variables are
+# app settings set by the XWebApplication in teams/developer-portal:
+# APPLICATION_URL is the public URL, DATABASE_* point at the PostgreSQL
+# Flexible Server and DATABASE_PASSWORD is a resolved Key Vault reference.
+app:
+  baseUrl: ${APPLICATION_URL}
+
+backend:
+  baseUrl: ${APPLICATION_URL}
+  listen: ':7007'
+  cors:
+    origin: ${APPLICATION_URL}
+
+  # config options: https://node-postgres.com/apis/client
+  database:
+    client: pg
+    # One database (created by XDatabase) with a schema per plugin, instead
+    # of Backstage creating a database per plugin.
+    pluginDivisionMode: schema
+    connection:
+      host: ${DATABASE_HOST}
+      port: 5432
+      user: ${DATABASE_USER}
+      password: ${DATABASE_PASSWORD}
+      database: ${DATABASE_NAME}
+      # Azure Database for PostgreSQL requires TLS; its certificate chains
+      # to a public root that Node.js already trusts.
+      ssl:
+        rejectUnauthorized: true
+
+auth:
+  providers:
+    # Demo only: anyone reaching the URL signs in as the guest user.
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+
+catalog:
+  # Overrides the default list locations from app-config.yaml as these contain example data.
+  # See https://backstage.io/docs/features/software-catalog/#adding-components-to-the-catalog for more details
+  # on how to get entities into the catalog.
+  locations:
+    # Local example data, replace this with your production config, these are intended for demo use only.
+    # File locations are relative to the backend process, typically in a deployed context, such as in a Docker container, this will be the root
+    - type: file
+      target: ./examples/entities.yaml
+
+    # Local example template
+    - type: file
+      target: ./examples/template/template.yaml
+      rules:
+        - allow: [Template]
+
+    # Local example organizational data
+    - type: file
+      target: ./examples/org.yaml
+      rules:
+        - allow: [User, Group]

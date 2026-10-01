@@ -75,6 +75,40 @@ spec:
                   type: string
                   default: swedencentral
                   description: Azure region for the App Service.
+                customDomain:
+                  type: object
+                  description: >-
+                    Optional custom hostname with a free App Service managed
+                    certificate. The CNAME and asuid TXT records are created
+                    in an existing Azure public DNS zone. Omitted or empty
+                    fields mean no custom domain.
+                  properties:
+                    hostname:
+                      type: string
+                      description: >-
+                        Fully qualified hostname inside dnsZone, e.g.
+                        portal.example.com.
+                    dnsZone:
+                      type: string
+                      description: Existing Azure public DNS zone name.
+                    dnsZoneResourceGroup:
+                      type: string
+                      description: Resource group holding the DNS zone.
+                  x-kubernetes-validations:
+                    - rule: >-
+                        (has(self.hostname) && self.hostname != '') ==
+                        (has(self.dnsZone) && self.dnsZone != '') &&
+                        (has(self.hostname) && self.hostname != '') ==
+                        (has(self.dnsZoneResourceGroup) &&
+                        self.dnsZoneResourceGroup != '')
+                      message: >-
+                        hostname, dnsZone and dnsZoneResourceGroup are
+                        required together
+                    - rule: >-
+                        !has(self.hostname) || self.hostname == '' ||
+                        (has(self.dnsZone) &&
+                        self.hostname.endsWith('.' + self.dnsZone))
+                      message: hostname must be inside dnsZone
               required:
                 - name
                 - resourceGroupRef
@@ -91,6 +125,11 @@ spec:
                 defaultHostname:
                   type: string
                   description: Default public hostname of the App Service.
+                url:
+                  type: string
+                  description: >-
+                    Public HTTPS URL: the custom hostname when set, otherwise
+                    the default hostname.
                 identityPrincipalId:
                   type: string
                   description: >-

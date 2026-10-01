@@ -1,4 +1,6 @@
 ---
+# Vendored Yarn release and lockfile are generated; editing them breaks Yarn.
+exclude: ^apps/backstage/(\.yarn/releases/|yarn\.lock$)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

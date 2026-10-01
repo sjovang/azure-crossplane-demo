@@ -23,6 +23,7 @@ spec:
           databaseFqdn: ${database.status.fqdn}
           applicationId: ${appService.status.id}
           applicationHostname: ${appService.status.defaultHostname}
+          applicationUrl: ${appService.status.url}
         resources:
           - id: azurePlatformConfig
             externalRef:
@@ -161,11 +162,16 @@ spec:
                 port: ${schema.spec.port}
                 location: ${schema.spec.location}
                 systemAssignedIdentity: true
+                customDomain:
+                  hostname: '${schema.spec.?customDomain.?hostname.orValue("")}'
+                  dnsZone: '${schema.spec.?customDomain.?dnsZone.orValue("")}'
+                  dnsZoneResourceGroup: '${schema.spec.?customDomain.?dnsZoneResourceGroup.orValue("")}'
                 envVars:
                   DATABASE_HOST: ${database.status.fqdn}
                   DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
                   DATABASE_USER: ${schema.spec.databaseAdminUsername}
                   DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.resourceVersionlessId})'
+                  APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
           - id: keyVaultRoleAssignment
             template:
               apiVersion: authorization.azure.m.upbound.io/v1beta1
