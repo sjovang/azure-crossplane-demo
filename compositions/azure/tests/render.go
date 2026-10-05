@@ -18,6 +18,7 @@ func main() {
 		// Observed composed resources keyed by resource name, each shaped
 		// like the function request: {"resource": {...}, "connectionDetails": {...}}.
 		Observed map[string]interface{} `json:"observed"`
+		Desired  map[string]interface{} `json:"desired"`
 	}
 	if err := json.NewDecoder(os.Stdin).Decode(&input); err != nil {
 		panic(err)
@@ -40,13 +41,46 @@ func main() {
 			return ""
 		},
 		"default": func(fallback interface{}, value interface{}) interface{} {
-			if value == nil || value == "" {
+			if value == nil || value == "" || value == false {
 				return fallback
 			}
 			if m, ok := value.(map[string]interface{}); ok && len(m) == 0 {
 				return fallback
 			}
 			return value
+		},
+		"list": func(values ...interface{}) []interface{} { return values },
+		"append": func(values []interface{}, value interface{}) []interface{} {
+			return append(values, value)
+		},
+		"join": func(separator string, values []interface{}) string {
+			parts := make([]string, len(values))
+			for i, value := range values {
+				parts[i] = fmt.Sprint(value)
+			}
+			return strings.Join(parts, separator)
+		},
+		"set": func(values map[string]interface{}, key string, value interface{}) map[string]interface{} {
+			values[key] = value
+			return values
+		},
+		"deepCopy": func(value interface{}) interface{} {
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				panic(err)
+			}
+			var result interface{}
+			if err := json.Unmarshal(encoded, &result); err != nil {
+				panic(err)
+			}
+			return result
+		},
+		"toJson": func(value interface{}) string {
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				panic(err)
+			}
+			return string(encoded)
 		},
 		"b64dec": func(value interface{}) string {
 			encoded, _ := value.(string)
@@ -91,6 +125,7 @@ func main() {
 		panic(err)
 	}
 	data := map[string]interface{}{
+		"desired": map[string]interface{}{"resources": input.Desired},
 		"observed": map[string]interface{}{
 			"composite": map[string]interface{}{"resource": input.XR},
 			"resources": input.Observed,
