@@ -97,6 +97,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
             by_id["crossplaneKeyVaultRoleAssignment"]["template"]["spec"][
                 "forProvider"
             ]["roleDefinitionId"],
+            "/subscriptions/${azurePlatformConfig.data.subscriptionId}"
             "/providers/Microsoft.Authorization/roleDefinitions/"
             "b86a8fe4-44ce-4948-aee5-eccb2c155cd7",
         )
@@ -104,6 +105,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
             by_id["keyVaultRoleAssignment"]["template"]["spec"]["forProvider"][
                 "roleDefinitionId"
             ],
+            "/subscriptions/${azurePlatformConfig.data.subscriptionId}"
             "/providers/Microsoft.Authorization/roleDefinitions/"
             "4633458b-17de-408a-b874-0445c86b69e6",
         )
