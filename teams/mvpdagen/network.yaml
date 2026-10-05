@@ -1,0 +1,46 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManager
+metadata:
+  name: mvpdagen-demo
+spec:
+  name: mvpdagen-demo
+  subscriptionId: 297651e0-733c-45f9-b295-ad80c68785f1
+  resourceGroupRef:
+    name: mvpdagen-demo
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManagerIPAMPool
+metadata:
+  name: mvpdagen-demo
+spec:
+  name: mvpdagen-demo
+  networkManagerRef:
+    name: mvpdagen-demo
+  addressPrefixes:
+    - 10.42.0.0/16
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualNetwork
+metadata:
+  name: mvpdagen-demo
+spec:
+  name: mvpdagen-demo
+  resourceGroupRef:
+    name: mvpdagen-demo
+  ipamAllocation:
+    numberOfAllocatedIpAddresses: 256
+    # yamllint disable-line rule:line-length
+    ipamPoolId: /subscriptions/297651e0-733c-45f9-b295-ad80c68785f1/resourceGroups/rg-mvpdagen-demo/providers/Microsoft.Network/networkManagers/vnm-mvpdagen-demo/ipamPools/ipam-mvpdagen-demo
+  subnets:
+    - name: management
+      numberOfAllocatedIpAddresses: 32
+      securityRules:
+        - name: allow-ssh
+          priority: 1000
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          sourcePortRange: "*"
+          destinationPortRange: "22"
+          sourceAddressPrefix: 85.93.238.149
