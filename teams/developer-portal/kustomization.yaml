@@ -4,4 +4,4 @@ kind: Kustomization
 namespace: developer-portal
 resources:
   - ../_base
-  - webapplication.yaml
+  # - webapplication.yaml
