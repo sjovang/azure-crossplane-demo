@@ -1,3 +1,7 @@
+import copy
+import json
+import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -5,6 +9,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RENDER = ROOT.parents[1] / "azure/tests/render.go"
 
 
 class WebApplicationCompositionTests(unittest.TestCase):
@@ -122,6 +127,177 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertTrue(all(field in self.xr["spec"] for field in required))
         self.assertTrue(all(field in self.auth_xr["spec"] for field in required))
         self.assertTrue(self.auth_xr["spec"]["entraIdAuth"]["enabled"])
+
+    def test_unconditional_resources_do_not_depend_on_optional_auth(self):
+        resources = self.composition["spec"]["pipeline"][0]["input"]["resources"]
+        optional = {r["id"] for r in resources if "includeWhen" in r}
+        for resource in resources:
+            if resource["id"] in optional:
+                continue
+            references = set(re.findall(r"\b(\w+)\.", json.dumps(resource)))
+            self.assertFalse(optional & references, resource["id"])
+
+    def render_configuration(self, auth_enabled=False, observed=None, desired=None):
+        xr = copy.deepcopy(self.auth_xr if auth_enabled else self.xr)
+        template = self.composition["spec"]["pipeline"][1]["input"]["inline"][
+            "template"
+        ]
+        result = subprocess.run(
+            ["go", "run", str(RENDER)],
+            input=json.dumps(
+                {
+                    "template": template,
+                    "xr": xr,
+                    "observed": observed or {},
+                    "desired": desired or {},
+                }
+            ),
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return [doc for doc in yaml.safe_load_all(result.stdout) if doc]
+
+    def ready_resources(self, auth_enabled=False):
+        names = [
+            "resourceGroup", "database", "passwordExternalSecret", "keyVault",
+            "crossplaneKeyVaultRoleAssignment", "keyVaultSecret", "appService",
+            "keyVaultRoleAssignment",
+        ]
+        if auth_enabled:
+            names += ["enterpriseApp", "entraClientSecret"]
+        resources = {
+            name: {"resource": {"status": {"conditions": [
+                {"type": "Ready", "status": "True"}
+            ]}}}
+            for name in names
+        }
+        resources["keyVault"]["resource"]["spec"] = {
+            "forProvider": {"tenantId": "tenant-id"}
+        }
+        if auth_enabled:
+            resources["enterpriseApp"]["resource"]["status"]["clientId"] = "client-id"
+            resources["entraClientSecret"]["resource"]["status"]["atProvider"] = {
+                "id": "https://vault.vault.azure.net/secrets/entra-client-secret/version",
+                "resourceId": "/subscriptions/sub/resourceGroups/rg/providers/secret",
+            }
+        return resources
+
+    def desired_app(self):
+        graph = self.composition["spec"]["pipeline"][0]["input"]
+        app = copy.deepcopy(next(
+            r["template"] for r in graph["resources"] if r["id"] == "appService"
+        ))
+        return {"appService": {"resource": app}}
+
+    def assert_composite_ready(self, xr, ready):
+        self.assertEqual(
+            xr["metadata"]["annotations"]["gotemplating.fn.crossplane.io/ready"],
+            str(ready),
+        )
+
+    def test_auth_disabled_preserves_base_app_and_is_ready(self):
+        desired = self.desired_app()
+        rendered = self.render_configuration(
+            observed=self.ready_resources(), desired=desired
+        )
+        app, xr, condition = rendered
+        self.assertEqual(
+            app["spec"]["image"],
+            desired["appService"]["resource"]["spec"]["image"],
+        )
+        for key in (
+            "AUTH_MICROSOFT_CLIENT_ID", "AUTH_MICROSOFT_CLIENT_SECRET",
+            "AUTH_MICROSOFT_TENANT_ID",
+        ):
+            self.assertEqual(app["spec"]["envVars"][key], "")
+        self.assert_composite_ready(xr, True)
+        self.assertEqual(condition["conditions"][0]["status"], "True")
+
+    def test_auth_enabled_uses_versioned_secret_url(self):
+        app, xr, _ = self.render_configuration(
+            auth_enabled=True, observed=self.ready_resources(True),
+            desired=self.desired_app(),
+        )
+        settings = app["spec"]["envVars"]
+        self.assertEqual(settings["AUTH_MICROSOFT_CLIENT_ID"], "client-id")
+        self.assertEqual(settings["AUTH_MICROSOFT_TENANT_ID"], "tenant-id")
+        self.assertEqual(
+            settings["AUTH_MICROSOFT_CLIENT_SECRET"],
+            "@Microsoft.KeyVault(SecretUri=https://vault.vault.azure.net/"
+            "secrets/entra-client-secret/version)",
+        )
+        self.assert_composite_ready(xr, True)
+
+    def test_rotated_auth_secret_updates_app_setting(self):
+        observed = self.ready_resources(True)
+        secret_uri = "https://vault.vault.azure.net/secrets/entra-client-secret/new"
+        observed["entraClientSecret"]["resource"]["status"]["atProvider"][
+            "id"
+        ] = secret_uri
+        app, _, _ = self.render_configuration(
+            auth_enabled=True, observed=observed, desired=self.desired_app(),
+        )
+        self.assertEqual(
+            app["spec"]["envVars"]["AUTH_MICROSOFT_CLIENT_SECRET"],
+            f"@Microsoft.KeyVault(SecretUri={secret_uri})",
+        )
+
+    def test_database_reference_uses_secret_url_output(self):
+        self.assertEqual(
+            self.desired_app()["appService"]["resource"]["spec"]["envVars"][
+                "DATABASE_PASSWORD"
+            ],
+            "@Microsoft.KeyVault(SecretUri="
+            "${keyVaultSecret.status.atProvider.versionlessId})",
+        )
+
+    def test_missing_or_unready_required_resource_blocks_environment(self):
+        for missing in ("keyVault", "appService", "keyVaultRoleAssignment"):
+            with self.subTest(missing=missing):
+                observed = self.ready_resources()
+                del observed[missing]
+                xr, condition = self.render_configuration(observed=observed)
+                self.assert_composite_ready(xr, False)
+                self.assertIn(missing, condition["conditions"][0]["message"])
+        observed = self.ready_resources()
+        observed["keyVaultRoleAssignment"]["resource"]["status"]["conditions"][
+            0
+        ]["status"] = "False"
+        xr, _ = self.render_configuration(observed=observed)
+        self.assert_composite_ready(xr, False)
+
+    def test_auth_enabled_waits_for_optional_resources_and_outputs(self):
+        observed = self.ready_resources(True)
+        del observed["entraClientSecret"]
+        _, xr, condition = self.render_configuration(
+            auth_enabled=True, observed=observed, desired=self.desired_app(),
+        )
+        self.assert_composite_ready(xr, False)
+        self.assertIn("entraClientSecret", condition["conditions"][0]["message"])
+        observed = self.ready_resources(True)
+        del observed["entraClientSecret"]["resource"]["status"]["atProvider"]
+        _, xr, condition = self.render_configuration(
+            auth_enabled=True, observed=observed, desired=self.desired_app(),
+        )
+        self.assert_composite_ready(xr, False)
+        self.assertIn("authSettings", condition["conditions"][0]["message"])
+        observed = self.ready_resources(True)
+        del observed["keyVault"]
+        _, xr, condition = self.render_configuration(
+            auth_enabled=True, observed=observed, desired=self.desired_app(),
+        )
+        self.assert_composite_ready(xr, False)
+        self.assertIn("keyVault", condition["conditions"][0]["message"])
+
+    def test_observed_app_without_desired_state_is_not_ready(self):
+        xr, _ = self.render_configuration(observed=self.ready_resources())
+        self.assert_composite_ready(xr, False)
+
+    def test_no_resources_is_not_ready(self):
+        xr, condition = self.render_configuration()
+        self.assert_composite_ready(xr, False)
+        self.assertIn("appService", condition["conditions"][0]["message"])
 
 
 if __name__ == "__main__":

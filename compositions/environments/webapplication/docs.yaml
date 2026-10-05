@@ -14,7 +14,11 @@ exampleNotes: >-
   APPLICATION_URL. Set the optional customDomain to serve the app on a
   hostname in an existing Azure DNS zone with a managed certificate. Set
   entraIdAuth.enabled to create an XEnterpriseApp; its client secret rotates
-  every 30 days and is copied into the environment Key Vault.
+  every 30 days and is copied into the environment Key Vault. Disabling
+  authentication still provisions the App Service. Ready and the
+  EnvironmentReady condition remain false until every required resource,
+  including enabled authentication resources, is ready. EnvironmentReady
+  lists pending resources.
 commonErrors:
   - symptom: >-
       The enterpriseApp resource reports Authorization_RequestDenied.

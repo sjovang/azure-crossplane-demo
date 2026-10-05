@@ -43,5 +43,5 @@ spec:
                 fromFieldPath: status.atProvider.id
                 toFieldPath: status.id
               - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.name
+                fromFieldPath: metadata.annotations[crossplane.io/external-name]
                 toFieldPath: status.name

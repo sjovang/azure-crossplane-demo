@@ -210,11 +210,8 @@ spec:
                   DATABASE_HOST: ${database.status.fqdn}
                   DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
                   DATABASE_USER: ${schema.spec.databaseAdminUsername}
-                  DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.resourceVersionlessId})'
+                  DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.versionlessId})'
                   APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
-                  AUTH_MICROSOFT_CLIENT_ID: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? enterpriseApp.status.clientId : ""}'
-                  AUTH_MICROSOFT_CLIENT_SECRET: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? "@Microsoft.KeyVault(SecretUri=" + entraClientSecret.status.atProvider.resourceId + ")" : ""}'
-                  AUTH_MICROSOFT_TENANT_ID: '${schema.spec.?entraIdAuth.?enabled.orValue(false) ? azurePlatformConfig.data.tenantId : ""}'
           - id: keyVaultRoleAssignment
             template:
               apiVersion: authorization.azure.m.upbound.io/v1beta1
@@ -230,6 +227,83 @@ spec:
                   roleDefinitionId: /providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6
                   scope: ${keyVault.status.atProvider.id}
                   skipServicePrincipalAadCheck: true
+    # kro propagates includeWhen exclusions through all static dependencies,
+    # including ternaries. Enrich the unconditional app outside that graph.
+    - step: configure-auth-and-check-environment
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $auth := $xr.spec.entraIdAuth | default dict -}}
+            {{- $authEnabled := $auth.enabled | default false -}}
+            {{- $required := list "resourceGroup" "database" "passwordExternalSecret" "keyVault" "crossplaneKeyVaultRoleAssignment" "keyVaultSecret" "appService" "keyVaultRoleAssignment" -}}
+            {{- if $authEnabled -}}
+            {{- $required = append $required "enterpriseApp" -}}
+            {{- $required = append $required "entraClientSecret" -}}
+            {{- end -}}
+            {{- $pending := list -}}
+            {{- range $name := $required -}}
+            {{- $resource := getComposedResource $ $name | default dict -}}
+            {{- $ready := false -}}
+            {{- range $condition := ($resource.status | default dict).conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") -}}
+            {{- $ready = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if not $ready -}}
+            {{- $pending = append $pending $name -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $desiredApp := get .desired.resources "appService" | default dict -}}
+            {{- if $desiredApp -}}
+            {{- $app := deepCopy $desiredApp.resource -}}
+            {{- $settings := $app.spec.envVars -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" "" -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_SECRET" "" -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" "" -}}
+            {{- if $authEnabled -}}
+            {{- $enterprise := getComposedResource . "enterpriseApp" | default dict -}}
+            {{- $secret := getComposedResource . "entraClientSecret" | default dict -}}
+            {{- $clientId := ($enterprise.status | default dict).clientId | default "" -}}
+            {{- $secretUri := (($secret.status | default dict).atProvider | default dict).id | default "" -}}
+            {{- $vault := getComposedResource . "keyVault" | default dict -}}
+            {{- $tenantId := (($vault.spec | default dict).forProvider | default dict).tenantId | default "" -}}
+            {{- if and $clientId $secretUri $tenantId -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" $clientId -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_SECRET" (printf "@Microsoft.KeyVault(SecretUri=%s)" $secretUri) -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" $tenantId -}}
+            {{- end -}}
+            {{- if not (and $clientId $secretUri $tenantId) -}}
+            {{- $pending = append $pending "authSettings" -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $annotations := $app.metadata.annotations | default dict -}}
+            {{- $_ := set $annotations "gotemplating.fn.crossplane.io/composition-resource-name" "appService" -}}
+            {{- $_ := set $app.metadata "annotations" $annotations }}
+            ---
+            {{ $app | toJson }}
+            {{- else -}}
+            {{- $pending = append $pending "appServiceDesiredState" -}}
+            {{- end }}
+            ---
+            apiVersion: environments.platform.example.org/v1alpha1
+            kind: XWebApplication
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/ready: {{ if $pending }}"False"{{ else }}"True"{{ end }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: EnvironmentReady
+                status: {{ if $pending }}"False"{{ else }}"True"{{ end }}
+                reason: {{ if $pending }}WaitingForResources{{ else }}Available{{ end }}
+                message: {{ if $pending }}{{ printf "Waiting for: %s" (join ", " $pending) | quote }}{{ else }}"All required environment resources are ready"{{ end }}
     - step: auto-ready
       functionRef:
         name: function-auto-ready
