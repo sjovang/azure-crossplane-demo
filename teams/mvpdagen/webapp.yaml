@@ -1,0 +1,12 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+metadata:
+  name: mvpdagen-web
+spec:
+  name: mvpdagen-web
+  image: docker.io/library/nginx:stable
+  location: swedencentral
+  appSize: small
+  databaseSize: small
+  port: 80
