@@ -21,6 +21,16 @@ exampleNotes: >-
   lists pending resources.
 commonErrors:
   - symptom: >-
+      A Key Vault RoleAssignment reports that changing role_definition_id
+      requires replacing the resource.
+    cause: >-
+      Azure returns a subscription-qualified role definition ID while the
+      desired ID omits the subscription prefix.
+    fix: >-
+      Use the subscription-qualified role definition ID from
+      azure-platform-config.data.subscriptionId for both Key Vault roles.
+      The corrected ID matches the existing assignment without recreating it.
+  - symptom: >-
       The enterpriseApp resource reports Authorization_RequestDenied.
     cause: >-
       The Crossplane service principal lacks Application.ReadWrite.All or its
