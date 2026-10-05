@@ -7,7 +7,8 @@ exampleRef: teams/mvpdagen/resourcegroup.yaml
 exampleNotes: >-
   Most teams create one resource group per environment and then reference it
   by its logical name from the other compositions. The Azure resource is
-  named `rg-<spec.name>`.
+  named `rg-<spec.name>`. Its Azure ID is exposed as `status.id` and its
+  external name as `status.name`, which dependent compositions use.
 commonErrors:
   - symptom: >-
       The XR stays `SYNCED=False` with an authorization or subscription
