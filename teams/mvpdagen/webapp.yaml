@@ -10,3 +10,15 @@ spec:
   appSize: small
   databaseSize: small
   port: 80
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+metadata:
+  name: mvpdagen-web-2
+spec:
+  name: mvpdagen-web
+  image: docker.io/library/nginx:stable
+  location: westeurope
+  appSize: small
+  databaseSize: small
+  port: 80
