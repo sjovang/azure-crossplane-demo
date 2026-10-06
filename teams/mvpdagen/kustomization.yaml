@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: mvpdagen
 resources:
   - ../_base
-  - network.yaml
+  # - network.yaml
   - resourcegroup.yaml
-  - virtualmachines.yaml
-  - webapp.yaml
+  # - virtualmachines.yaml
+  # - webapp.yaml
