@@ -1,0 +1,14 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+metadata:
+  name: appdemo01
+  namespace: crd-dev
+spec:
+  name: appdemo01
+  vaultName: kv-appdemo01-example
+  resourceGroupRef:
+    name: crd-dev-apps
+  appServiceRef:
+    name: appservicedemo01
+  location: swedencentral

@@ -27,13 +27,6 @@ spec:
           enterpriseApplicationId: ${enterpriseApp.?status.?id.orValue("")}
           enterpriseApplicationClientId: ${enterpriseApp.?status.?clientId.orValue("")}
         resources:
-          - id: azurePlatformConfig
-            externalRef:
-              apiVersion: v1
-              kind: ConfigMap
-              metadata:
-                name: azure-platform-config
-                namespace: crossplane-system
           - id: passwordGenerator
             readyWhen:
               - ${true}
@@ -106,55 +99,31 @@ spec:
                 location: ${schema.spec.location}
           - id: keyVault
             template:
-              apiVersion: keyvault.azure.m.upbound.io/v1beta1
-              kind: Vault
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVault
               metadata:
-                annotations:
-                  crossplane.io/external-name: kv-${schema.spec.name}-${schema.metadata.uid.split("-")[0]}
+                name: ${schema.spec.name}
               spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  location: ${schema.spec.location}
-                  resourceGroupName: ${resourceGroup.status.name}
-                  tenantId: ${azurePlatformConfig.data.tenantId}
-                  skuName: standard
-                  rbacAuthorizationEnabled: true
-                  purgeProtectionEnabled: false
-                  softDeleteRetentionDays: 7
-          - id: crossplaneKeyVaultRoleAssignment
-            template:
-              apiVersion: authorization.azure.m.upbound.io/v1beta1
-              kind: RoleAssignment
-              metadata: {}
-              spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  principalId: ${azurePlatformConfig.data.principalId}
-                  principalType: ServicePrincipal
-                  roleDefinitionId: /subscriptions/${azurePlatformConfig.data.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/b86a8fe4-44ce-4948-aee5-eccb2c155cd7
-                  scope: ${keyVault.status.atProvider.id}
-                  skipServicePrincipalAadCheck: true
+                name: ${schema.spec.name}
+                vaultName: kv-${schema.spec.name}-${schema.metadata.uid.split("-")[0]}
+                resourceGroupRef:
+                  name: ${resourceGroup.spec.name}
+                appServiceRef:
+                  name: ${schema.spec.name}
+                location: ${schema.spec.location}
           - id: keyVaultSecret
             template:
-              apiVersion: keyvault.azure.m.upbound.io/v1beta1
-              kind: Secret
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVaultSecret
               metadata:
-                annotations:
-                  crossplane.io/external-name: database-password
+                name: ${schema.spec.name}-database-password
               spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  name: database-password
-                  keyVaultId: ${crossplaneKeyVaultRoleAssignment.spec.forProvider.scope}
-                  valueSecretRef:
-                    name: ${databaseCredentials.metadata.name}
-                    key: password
+                name: database-password
+                keyVaultRef:
+                  name: ${keyVault.spec.name}
+                valueSecretRef:
+                  name: ${databaseCredentials.metadata.name}
+                  key: password
           - id: enterpriseApp
             includeWhen:
               - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
@@ -172,21 +141,17 @@ spec:
             includeWhen:
               - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
             template:
-              apiVersion: keyvault.azure.m.upbound.io/v1beta1
-              kind: Secret
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVaultSecret
               metadata:
-                annotations:
-                  crossplane.io/external-name: entra-client-secret
+                name: ${schema.spec.name}-entra-client-secret
               spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  name: entra-client-secret
-                  keyVaultId: ${crossplaneKeyVaultRoleAssignment.spec.forProvider.scope}
-                  valueSecretRef:
-                    name: ${enterpriseApp.status.connectionSecretName}
-                    key: value
+                name: entra-client-secret
+                keyVaultRef:
+                  name: ${keyVault.spec.name}
+                valueSecretRef:
+                  name: ${enterpriseApp.status.connectionSecretName}
+                  key: value
           - id: appService
             template:
               apiVersion: azure.platform.example.org/v1alpha1
@@ -210,23 +175,11 @@ spec:
                   DATABASE_HOST: ${database.status.fqdn}
                   DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
                   DATABASE_USER: ${schema.spec.databaseAdminUsername}
-                  DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.versionlessId})'
                   APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
-          - id: keyVaultRoleAssignment
-            template:
-              apiVersion: authorization.azure.m.upbound.io/v1beta1
-              kind: RoleAssignment
-              metadata: {}
-              spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  principalId: ${appService.status.identityPrincipalId}
-                  principalType: ServicePrincipal
-                  roleDefinitionId: /subscriptions/${azurePlatformConfig.data.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6
-                  scope: ${keyVault.status.atProvider.id}
-                  skipServicePrincipalAadCheck: true
+                keyVaultSecretEnvVars:
+                  DATABASE_PASSWORD:
+                    vaultName: ${keyVault.spec.vaultName}
+                    secretName: ${keyVaultSecret.spec.name}
     # kro propagates includeWhen exclusions through all static dependencies,
     # including ternaries. Enrich the unconditional app outside that graph.
     - step: configure-auth-and-check-environment
@@ -241,7 +194,7 @@ spec:
             {{- $xr := .observed.composite.resource -}}
             {{- $auth := $xr.spec.entraIdAuth | default dict -}}
             {{- $authEnabled := $auth.enabled | default false -}}
-            {{- $required := list "resourceGroup" "database" "passwordExternalSecret" "keyVault" "crossplaneKeyVaultRoleAssignment" "keyVaultSecret" "appService" "keyVaultRoleAssignment" -}}
+            {{- $required := list "resourceGroup" "database" "passwordExternalSecret" "keyVault" "keyVaultSecret" "appService" -}}
             {{- if $authEnabled -}}
             {{- $required = append $required "enterpriseApp" -}}
             {{- $required = append $required "entraClientSecret" -}}
@@ -263,6 +216,7 @@ spec:
             {{- if $desiredApp -}}
             {{- $app := deepCopy $desiredApp.resource -}}
             {{- $settings := $app.spec.envVars -}}
+            {{- $secretSettings := $app.spec.keyVaultSecretEnvVars | default dict -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" "" -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_SECRET" "" -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" "" -}}
@@ -270,15 +224,20 @@ spec:
             {{- $enterprise := getComposedResource . "enterpriseApp" | default dict -}}
             {{- $secret := getComposedResource . "entraClientSecret" | default dict -}}
             {{- $clientId := ($enterprise.status | default dict).clientId | default "" -}}
-            {{- $secretUri := (($secret.status | default dict).atProvider | default dict).id | default "" -}}
+            {{- $secretName := ($secret.spec | default dict).name | default "" -}}
             {{- $vault := getComposedResource . "keyVault" | default dict -}}
-            {{- $tenantId := (($vault.spec | default dict).forProvider | default dict).tenantId | default "" -}}
-            {{- if and $clientId $secretUri $tenantId -}}
+            {{- $vaultName := ($vault.spec | default dict).vaultName | default "" -}}
+            {{- $tenantId := ($vault.status | default dict).tenantId | default "" -}}
+            {{- if and $clientId $secretName $vaultName $tenantId -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" $clientId -}}
-            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_SECRET" (printf "@Microsoft.KeyVault(SecretUri=%s)" $secretUri) -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" $tenantId -}}
+            {{- $authSecretSetting := dict -}}
+            {{- $_ := set $authSecretSetting "vaultName" $vaultName -}}
+            {{- $_ := set $authSecretSetting "secretName" $secretName -}}
+            {{- $_ := set $secretSettings "AUTH_MICROSOFT_CLIENT_SECRET" $authSecretSetting -}}
+            {{- $_ := set $app.spec "keyVaultSecretEnvVars" $secretSettings -}}
             {{- end -}}
-            {{- if not (and $clientId $secretUri $tenantId) -}}
+            {{- if not (and $clientId $secretName $vaultName $tenantId) -}}
             {{- $pending = append $pending "authSettings" -}}
             {{- end -}}
             {{- end -}}

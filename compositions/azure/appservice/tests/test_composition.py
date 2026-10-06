@@ -27,6 +27,12 @@ class AppServiceCompositionTests(unittest.TestCase):
                     "dnsZone": "demo.example.org",
                     "dnsZoneResourceGroup": "rg-dns",
                 },
+                "keyVaultSecretEnvVars": {
+                    "CLIENT_SECRET": {
+                        "vaultName": "kv-appdemo",
+                        "secretName": "client-secret",
+                    }
+                },
             }
         )
         composition = yaml.safe_load((APP_SERVICE / "composition.yaml").read_text())

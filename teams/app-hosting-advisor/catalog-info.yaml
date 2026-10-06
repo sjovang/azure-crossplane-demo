@@ -4,8 +4,8 @@ kind: Group
 metadata:
   name: app-hosting-advisor
   description: >-
-    Experimental team using a chat-based advisor to map application goals to
-    the Crossplane hosting compositions available in this repository.
+    Experimental chat advisor that maps application requirements to the
+    Crossplane compositions available in this repository.
 spec:
   type: team
   children: []

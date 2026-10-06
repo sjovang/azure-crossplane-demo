@@ -5,4 +5,4 @@ namespace: app-hosting-advisor
 resources:
   - ../_base
   - catalog-info.yaml
-  - webapplication.yaml
+  - infrastructure.yaml
