@@ -55,6 +55,14 @@ flowchart LR
 > working example: an `XResourceGroup` in the `azure.platform.example.org` API
 > group composing an Azure `ResourceGroup`.
 
+New compositions can instead be released independently as semver-tagged Flux
+OCI artifacts in GHCR. OCI-only source packages live under
+[`oci-compositions/`](oci-compositions/); each package gets its own
+release-please workflow and its own Flux `OCIRepository`/`Kustomization`.
+Existing compositions remain Git-backed. See
+[`oci-compositions/README.md`](oci-compositions/README.md) for the creation,
+release, and activation flow.
+
 ## Documentation
 
 - [Local cluster setup](apps/docs/docs/kiac.md) — a local cluster on macOS, fastest to set up.

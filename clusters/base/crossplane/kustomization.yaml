@@ -10,3 +10,4 @@ resources:
   - flux-kustomizations/azure-provider-config-kustomization.yaml
   - flux-kustomizations/functions-kustomization.yaml
   - flux-kustomizations/compositions-kustomization.yaml
+  - oci-compositions
