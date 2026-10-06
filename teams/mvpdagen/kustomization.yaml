@@ -6,5 +6,5 @@ resources:
   - ../_base
   - network.yaml
   - resourcegroup.yaml
-  # - virtualmachines.yaml
+  - virtualmachines.yaml
   - webapp.yaml
