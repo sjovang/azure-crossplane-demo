@@ -108,6 +108,17 @@ following the chain across several files:
    (`clusters/base/teams-kustomization.yaml`, `path: ./teams`), which
    `dependsOn` **both** `flux-system` and `crossplane-compositions`.
 
+New OCI-only compositions live under `oci-compositions/<provider>/<name>/`
+and are never added to `compositions/kustomization.yaml`. Run
+`scripts/scaffold-oci-composition.sh <provider> <name>` after creating the
+XRD, Composition, and package Kustomization. It generates a separate
+release-please workflow, semver state, and a suspended Flux
+`OCIRepository`/`Kustomization`. Keep both Flux resources suspended until the
+first GHCR release exists and the package has been made public, then run
+`scripts/activate-oci-composition.sh <provider> <name>`. Activation verifies
+the artifact, unsuspends both resources, and adds the OCI Kustomization to the
+teams dependency chain.
+
 ### Composition XRD scope must match the composed resource's scope
 
 Crossplane v2 (`v2.4.0` here) requires `mode: Pipeline` Compositions (no
