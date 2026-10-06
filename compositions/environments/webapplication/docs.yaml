@@ -43,6 +43,6 @@ commonErrors:
       Credential rotation has started but the new Key Vault version or App
       Service setting has not reconciled yet.
     fix: >-
-      Check XEnterpriseApp, the entra-client-secret Key Vault managed resource,
-      and the App Service reconciliation. This demo accepts a short rotation
-      race instead of maintaining two active credentials.
+      Check XEnterpriseApp, the entra-client-secret XKeyVaultSecret, and the
+      App Service reconciliation. This demo accepts a short rotation race
+      instead of maintaining two active credentials.

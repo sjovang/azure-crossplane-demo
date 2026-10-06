@@ -1,0 +1,80 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xkeyvaults.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XKeyVault
+    plural: xkeyvaults
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Logical name of the Key Vault.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                vaultName:
+                  type: string
+                  minLength: 3
+                  maxLength: 24
+                  pattern: "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$"
+                  description: Globally unique Azure Key Vault name.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: vaultName is immutable
+                resourceGroupRef:
+                  type: object
+                  description: Resource group hosting the Key Vault.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                appServiceRef:
+                  type: object
+                  description: >-
+                    Optional XAppService whose system-assigned identity receives
+                    the Key Vault Secrets User role.
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                location:
+                  type: string
+                  default: swedencentral
+                  description: Azure region for the Key Vault.
+              required:
+                - name
+                - vaultName
+                - resourceGroupRef
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Azure resource ID of the Key Vault.
+                vaultName:
+                  type: string
+                  description: Azure Key Vault name.
+                vaultUri:
+                  type: string
+                  description: Versionless Azure Key Vault URI.
+                tenantId:
+                  type: string
+                  description: Microsoft Entra tenant ID of the Key Vault.
+          required:
+            - spec

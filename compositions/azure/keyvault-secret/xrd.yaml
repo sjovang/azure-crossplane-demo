@@ -1,0 +1,64 @@
+---
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xkeyvaultsecrets.azure.platform.example.org
+spec:
+  scope: Namespaced
+  group: azure.platform.example.org
+  names:
+    kind: XKeyVaultSecret
+    plural: xkeyvaultsecrets
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Azure Key Vault secret name.
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: name is immutable
+                keyVaultRef:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                  required:
+                    - name
+                valueSecretRef:
+                  type: object
+                  description: Kubernetes Secret containing the value.
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+                  required:
+                    - name
+                    - key
+                  x-kubernetes-validations:
+                    - rule: self == oldSelf
+                      message: valueSecretRef is immutable
+              required:
+                - name
+                - keyVaultRef
+                - valueSecretRef
+            status:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Versioned Azure Key Vault secret ID.
+                versionlessId:
+                  type: string
+                  description: Versionless Azure Key Vault secret ID.
+          required:
+            - spec

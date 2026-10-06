@@ -1,0 +1,93 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: keyvaults.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XKeyVault
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${keyVault.status.atProvider.id}
+          vaultName: ${schema.spec.vaultName}
+          vaultUri: 'https://${schema.spec.vaultName}.vault.azure.net'
+          tenantId: ${azurePlatformConfig.data.tenantId}
+        resources:
+          - id: azurePlatformConfig
+            externalRef:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: azure-platform-config
+                namespace: crossplane-system
+          - id: appService
+            includeWhen:
+              - ${schema.spec.?appServiceRef.?name.orValue("") != ""}
+            externalRef:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XAppService
+              metadata:
+                name: ${schema.spec.appServiceRef.name}
+          - id: keyVault
+            template:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Vault
+              metadata:
+                annotations:
+                  crossplane.io/external-name: ${schema.spec.vaultName}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  location: ${schema.spec.location}
+                  resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
+                  tenantId: ${azurePlatformConfig.data.tenantId}
+                  skuName: standard
+                  rbacAuthorizationEnabled: true
+                  purgeProtectionEnabled: false
+                  softDeleteRetentionDays: 7
+          - id: crossplaneKeyVaultRoleAssignment
+            template:
+              apiVersion: authorization.azure.m.upbound.io/v1beta1
+              kind: RoleAssignment
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  principalId: ${azurePlatformConfig.data.principalId}
+                  principalType: ServicePrincipal
+                  roleDefinitionId: /subscriptions/${azurePlatformConfig.data.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/b86a8fe4-44ce-4948-aee5-eccb2c155cd7
+                  scope: ${keyVault.status.atProvider.id}
+                  skipServicePrincipalAadCheck: true
+          - id: appServiceKeyVaultRoleAssignment
+            includeWhen:
+              - ${schema.spec.?appServiceRef.?name.orValue("") != ""}
+            template:
+              apiVersion: authorization.azure.m.upbound.io/v1beta1
+              kind: RoleAssignment
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  principalId: ${appService.status.identityPrincipalId}
+                  principalType: ServicePrincipal
+                  roleDefinitionId: /subscriptions/${azurePlatformConfig.data.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6
+                  scope: ${keyVault.status.atProvider.id}
+                  skipServicePrincipalAadCheck: true
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

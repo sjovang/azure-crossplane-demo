@@ -48,6 +48,10 @@ class WebApplicationCompositionTests(unittest.TestCase):
             by_id["appService"]["template"]["spec"]["envVars"],
             self.expected["appSettings"],
         )
+        self.assertEqual(
+            by_id["appService"]["template"]["spec"]["keyVaultSecretEnvVars"],
+            self.expected["keyVaultSecretAppSettings"],
+        )
         self.assertTrue(
             by_id["appService"]["template"]["spec"]["systemAssignedIdentity"]
         )
@@ -59,9 +63,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
             by_id["database"]["template"]["spec"]["allowAzureServices"]
         )
         self.assertEqual(
-            by_id["keyVaultSecret"]["template"]["spec"]["forProvider"][
-                "valueSecretRef"
-            ]["name"],
+            by_id["keyVaultSecret"]["template"]["spec"]["valueSecretRef"]["name"],
             "${databaseCredentials.metadata.name}",
         )
         self.assertEqual(
@@ -75,9 +77,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
             ["${databaseCredentials.?data.?password.hasValue()}"],
         )
         self.assertEqual(
-            by_id["entraClientSecret"]["template"]["spec"]["forProvider"][
-                "valueSecretRef"
-            ],
+            by_id["entraClientSecret"]["template"]["spec"]["valueSecretRef"],
             {
                 "name": "${enterpriseApp.status.connectionSecretName}",
                 "key": "value",
@@ -94,32 +94,12 @@ class WebApplicationCompositionTests(unittest.TestCase):
             ["${schema.spec.?entraIdAuth.?enabled.orValue(false)}"],
         )
         self.assertEqual(
-            by_id["crossplaneKeyVaultRoleAssignment"]["template"]["spec"][
-                "forProvider"
-            ]["roleDefinitionId"],
-            "/subscriptions/${azurePlatformConfig.data.subscriptionId}"
-            "/providers/Microsoft.Authorization/roleDefinitions/"
-            "b86a8fe4-44ce-4948-aee5-eccb2c155cd7",
+            by_id["keyVault"]["template"]["kind"],
+            "XKeyVault",
         )
         self.assertEqual(
-            by_id["keyVaultRoleAssignment"]["template"]["spec"]["forProvider"][
-                "roleDefinitionId"
-            ],
-            "/subscriptions/${azurePlatformConfig.data.subscriptionId}"
-            "/providers/Microsoft.Authorization/roleDefinitions/"
-            "4633458b-17de-408a-b874-0445c86b69e6",
-        )
-        for resource_id in (
-            "crossplaneKeyVaultRoleAssignment",
-            "keyVaultRoleAssignment",
-        ):
-            self.assertEqual(by_id[resource_id]["template"]["metadata"], {})
-        self.assertEqual(
-            by_id["azurePlatformConfig"]["externalRef"]["metadata"],
-            {
-                "name": "azure-platform-config",
-                "namespace": "crossplane-system",
-            },
+            by_id["keyVault"]["template"]["spec"]["appServiceRef"]["name"],
+            "${schema.spec.name}",
         )
 
     def test_example_supplies_required_fields(self):
@@ -163,8 +143,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
     def ready_resources(self, auth_enabled=False):
         names = [
             "resourceGroup", "database", "passwordExternalSecret", "keyVault",
-            "crossplaneKeyVaultRoleAssignment", "keyVaultSecret", "appService",
-            "keyVaultRoleAssignment",
+            "keyVaultSecret", "appService",
         ]
         if auth_enabled:
             names += ["enterpriseApp", "entraClientSecret"]
@@ -175,13 +154,15 @@ class WebApplicationCompositionTests(unittest.TestCase):
             for name in names
         }
         resources["keyVault"]["resource"]["spec"] = {
-            "forProvider": {"tenantId": "tenant-id"}
+            "vaultName": "kv-webdemo01-example"
         }
+        resources["keyVault"]["resource"]["status"][
+            "tenantId"
+        ] = "tenant-id"
         if auth_enabled:
             resources["enterpriseApp"]["resource"]["status"]["clientId"] = "client-id"
-            resources["entraClientSecret"]["resource"]["status"]["atProvider"] = {
-                "id": "https://vault.vault.azure.net/secrets/entra-client-secret/version",
-                "resourceId": "/subscriptions/sub/resourceGroups/rg/providers/secret",
+            resources["entraClientSecret"]["resource"]["spec"] = {
+                "name": "entra-client-secret"
             }
         return resources
 
@@ -216,7 +197,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assert_composite_ready(xr, True)
         self.assertEqual(condition["conditions"][0]["status"], "True")
 
-    def test_auth_enabled_uses_versioned_secret_url(self):
+    def test_auth_enabled_uses_key_vault_secret_reference(self):
         app, xr, _ = self.render_configuration(
             auth_enabled=True, observed=self.ready_resources(True),
             desired=self.desired_app(),
@@ -224,38 +205,33 @@ class WebApplicationCompositionTests(unittest.TestCase):
         settings = app["spec"]["envVars"]
         self.assertEqual(settings["AUTH_MICROSOFT_CLIENT_ID"], "client-id")
         self.assertEqual(settings["AUTH_MICROSOFT_TENANT_ID"], "tenant-id")
+        self.assertEqual(settings["AUTH_MICROSOFT_CLIENT_SECRET"], "")
         self.assertEqual(
-            settings["AUTH_MICROSOFT_CLIENT_SECRET"],
-            "@Microsoft.KeyVault(SecretUri=https://vault.vault.azure.net/"
-            "secrets/entra-client-secret/version)",
+            app["spec"]["keyVaultSecretEnvVars"][
+                "AUTH_MICROSOFT_CLIENT_SECRET"
+            ],
+            {
+                "vaultName": "kv-webdemo01-example",
+                "secretName": "entra-client-secret",
+            },
         )
         self.assert_composite_ready(xr, True)
 
-    def test_rotated_auth_secret_updates_app_setting(self):
-        observed = self.ready_resources(True)
-        secret_uri = "https://vault.vault.azure.net/secrets/entra-client-secret/new"
-        observed["entraClientSecret"]["resource"]["status"]["atProvider"][
-            "id"
-        ] = secret_uri
-        app, _, _ = self.render_configuration(
-            auth_enabled=True, observed=observed, desired=self.desired_app(),
-        )
+    def test_database_reference_uses_key_vault_contract(self):
         self.assertEqual(
-            app["spec"]["envVars"]["AUTH_MICROSOFT_CLIENT_SECRET"],
-            f"@Microsoft.KeyVault(SecretUri={secret_uri})",
-        )
-
-    def test_database_reference_uses_secret_url_output(self):
-        self.assertEqual(
-            self.desired_app()["appService"]["resource"]["spec"]["envVars"][
+            self.desired_app()["appService"]["resource"]["spec"][
+                "keyVaultSecretEnvVars"
+            ][
                 "DATABASE_PASSWORD"
             ],
-            "@Microsoft.KeyVault(SecretUri="
-            "${keyVaultSecret.status.atProvider.versionlessId})",
+            {
+                "vaultName": "${keyVault.spec.vaultName}",
+                "secretName": "${keyVaultSecret.spec.name}",
+            },
         )
 
     def test_missing_or_unready_required_resource_blocks_environment(self):
-        for missing in ("keyVault", "appService", "keyVaultRoleAssignment"):
+        for missing in ("keyVault", "appService", "keyVaultSecret"):
             with self.subTest(missing=missing):
                 observed = self.ready_resources()
                 del observed[missing]
@@ -263,9 +239,9 @@ class WebApplicationCompositionTests(unittest.TestCase):
                 self.assert_composite_ready(xr, False)
                 self.assertIn(missing, condition["conditions"][0]["message"])
         observed = self.ready_resources()
-        observed["keyVaultRoleAssignment"]["resource"]["status"]["conditions"][
-            0
-        ]["status"] = "False"
+        observed["keyVaultSecret"]["resource"]["status"]["conditions"][0][
+            "status"
+        ] = "False"
         xr, _ = self.render_configuration(observed=observed)
         self.assert_composite_ready(xr, False)
 
@@ -278,7 +254,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assert_composite_ready(xr, False)
         self.assertIn("entraClientSecret", condition["conditions"][0]["message"])
         observed = self.ready_resources(True)
-        del observed["entraClientSecret"]["resource"]["status"]["atProvider"]
+        del observed["entraClientSecret"]["resource"]["spec"]
         _, xr, condition = self.render_configuration(
             auth_enabled=True, observed=observed, desired=self.desired_app(),
         )

@@ -62,6 +62,26 @@ spec:
                   description: >-
                     Plain (non-secret) application settings exposed to the
                     container as environment variables.
+                keyVaultSecretEnvVars:
+                  type: object
+                  nullable: true
+                  default: null
+                  additionalProperties:
+                    type: object
+                    properties:
+                      vaultName:
+                        type: string
+                        description: Azure Key Vault name.
+                      secretName:
+                        type: string
+                        description: Azure Key Vault secret name.
+                    required:
+                      - vaultName
+                      - secretName
+                  description: >-
+                    Application settings resolved through App Service Key
+                    Vault references. The XAppService identity must have Key
+                    Vault Secrets User on each referenced vault.
                 systemAssignedIdentity:
                   type: boolean
                   default: false

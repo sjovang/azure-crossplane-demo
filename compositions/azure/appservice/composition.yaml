@@ -35,6 +35,14 @@ spec:
             {{- if and $xr.spec.customDomain $xr.spec.customDomain.hostname -}}
             {{- $domain = $xr.spec.customDomain -}}
             {{- end }}
+            {{- $appSettings := dict -}}
+            {{- $_ := set $appSettings "WEBSITES_PORT" (printf "%v" $xr.spec.port) -}}
+            {{- range $name, $value := $xr.spec.envVars -}}
+            {{- $_ := set $appSettings $name $value -}}
+            {{- end -}}
+            {{- range $name, $secret := $xr.spec.keyVaultSecretEnvVars -}}
+            {{- $_ := set $appSettings $name (printf "@Microsoft.KeyVault(SecretUri=https://%s.vault.azure.net/secrets/%s)" $secret.vaultName $secret.secretName) -}}
+            {{- end }}
             ---
             apiVersion: web.azure.m.upbound.io/v1beta1
             kind: ServicePlan
@@ -86,10 +94,7 @@ spec:
                     dockerImageName: {{ $imageName }}
                     dockerRegistryUrl: https://{{ $registry }}
                 appSettings:
-                  WEBSITES_PORT: "{{ $xr.spec.port }}"
-            {{- if $xr.spec.envVars }}
-            {{ toYaml $xr.spec.envVars | nindent 6 }}
-            {{- end }}
+            {{ toYaml $appSettings | nindent 6 }}
             {{- if $domain }}
             {{- $record := trimSuffix (printf ".%s" $domain.dnsZone) $domain.hostname }}
             ---

@@ -1,0 +1,77 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XResourceGroup
+metadata:
+  name: app-hosting-advisor
+spec:
+  name: app-hosting-advisor
+  tags:
+    application: app-hosting-advisor
+    managed-by: crossplane
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+metadata:
+  name: appadvisor
+spec:
+  name: appadvisor
+  vaultName: kv-appadvisor-lsdev
+  resourceGroupRef:
+    name: app-hosting-advisor
+  appServiceRef:
+    name: appadvisor
+  location: swedencentral
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: appadvisor-github-client-id
+spec:
+  name: github-oauth-client-id
+  keyVaultRef:
+    name: appadvisor
+  valueSecretRef:
+    name: appadvisor-github-oauth
+    key: client-id
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: appadvisor-github-client-secret
+spec:
+  name: github-oauth-client-secret
+  keyVaultRef:
+    name: appadvisor
+  valueSecretRef:
+    name: appadvisor-github-oauth
+    key: client-secret
+---
+# The image tag is updated by the app-hosting-advisor workflow on main.
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XAppService
+metadata:
+  name: appadvisor
+spec:
+  name: appadvisor
+  resourceGroupRef:
+    name: app-hosting-advisor
+  image: ghcr.io/sjovang/azure-crossplane-demo/app-hosting-advisor:latest
+  port: 8080
+  size: small
+  location: swedencentral
+  systemAssignedIdentity: true
+  customDomain:
+    hostname: appadvisor.demo.liasis.dev
+    dnsZone: demo.liasis.dev
+    dnsZoneResourceGroup: rg-public-dns
+  envVars:
+    GITHUB_REPOSITORY: sjovang/azure-crossplane-demo
+    GITHUB_OAUTH_REDIRECT_URI: >-
+      https://appadvisor.demo.liasis.dev/api/auth/github/callback
+  keyVaultSecretEnvVars:
+    GITHUB_OAUTH_CLIENT_ID:
+      vaultName: kv-appadvisor-lsdev
+      secretName: github-oauth-client-id
+    GITHUB_OAUTH_CLIENT_SECRET:
+      vaultName: kv-appadvisor-lsdev
+      secretName: github-oauth-client-secret

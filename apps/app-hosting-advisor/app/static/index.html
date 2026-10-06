@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>App hosting advisor</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: #0d1117; color: #e6edf3; }
+      main { max-width: 850px; margin: auto; padding: 2rem 1rem; }
+      section { border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+      input, select, textarea, button { box-sizing: border-box; padding: .7rem; margin: .3rem 0; border-radius: 6px; border: 1px solid #30363d; }
+      input, select, textarea { width: 100%; background: #161b22; color: inherit; }
+      button { background: #238636; color: white; cursor: pointer; }
+      button:disabled { opacity: .5; cursor: default; }
+      #messages { min-height: 12rem; white-space: pre-wrap; }
+      .user { color: #79c0ff; } .assistant { color: #a5d6ff; }
+      .error { color: #ff7b72; } small { color: #8b949e; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>App hosting advisor</h1>
+      <p>Describe an application, refine the recommendation, then create its GitOps pull request.</p>
+
+      <section id="authentication">
+        <h2>1. GitHub sign-in</h2>
+        <p id="authStatus">Checking authentication...</p>
+        <a id="githubLogin" href="/api/auth/github"><button type="button">Sign in with GitHub</button></a>
+        <button id="githubLogout" type="button" hidden>Sign out</button>
+        <small>GitHub sign-in is required to use the advisor and create a pull request. No access token is entered into this page.</small>
+      </section>
+
+      <section id="configuration" hidden>
+        <h2>2. Model connection</h2>
+        <select id="provider">
+          <option value="azure">Azure OpenAI</option>
+          <option value="openai">OpenAI-compatible API</option>
+        </select>
+        <input id="endpoint" placeholder="Endpoint or API base URL">
+        <input id="model" placeholder="Deployment or model name">
+        <input id="apiKey" type="password" placeholder="API key">
+        <input id="apiVersion" value="2024-10-21" placeholder="Azure API version">
+        <button id="configure">Configure</button>
+        <small>The API key is held in server memory for this session and is never sent to GitHub or included in model messages. Non-Azure hosts must be allowlisted by the operator.</small>
+      </section>
+
+      <section id="interviewSection" hidden>
+        <h2>3. Interview</h2>
+        <div id="messages"></div>
+        <textarea id="message" rows="4" placeholder="I have a containerized web app..."></textarea>
+        <button id="send" disabled>Send</button>
+      </section>
+
+      <section id="publishSection" hidden>
+        <h2>4. Create pull request</h2>
+        <input id="teamName" placeholder="team-name">
+        <button id="publish">Create pull request</button>
+        <small>The pull request is created using your authenticated GitHub account.</small>
+      </section>
+    </main>
+    <script>
+      let sessionId;
+      const messages = document.querySelector("#messages");
+
+      function line(role, text) {
+        const element = document.createElement("p");
+        element.className = role;
+        element.textContent = `${role === "user" ? "You" : "Advisor"}: ${text}`;
+        messages.appendChild(element);
+      }
+
+      async function request(path, body, method = "POST") {
+        const options = {method, credentials: "same-origin"};
+        if (body !== undefined) {
+          options.headers = {"Content-Type": "application/json"};
+          options.body = JSON.stringify(body);
+        }
+        const response = await fetch(path, options);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Request failed.");
+        return result;
+      }
+
+      async function start() {
+        const auth = await request("/api/auth/me", undefined, "GET");
+        if (auth.sessionId) {
+          sessionId = auth.sessionId;
+        } else {
+          const result = await request("/api/sessions", {});
+          sessionId = result.sessionId;
+        }
+        const status = document.querySelector("#authStatus");
+        if (auth.authenticated) {
+          status.textContent = `Signed in as ${auth.login}.`;
+          document.querySelector("#githubLogin").hidden = true;
+          document.querySelector("#githubLogout").hidden = false;
+          document.querySelector("#configuration").hidden = false;
+          document.querySelector("#interviewSection").hidden = false;
+        } else {
+          status.textContent = "Sign in with GitHub to continue.";
+        }
+      }
+
+      document.querySelector("#configure").onclick = async () => {
+        try {
+          await request(`/api/sessions/${sessionId}/configure`, {
+            provider: document.querySelector("#provider").value,
+            endpoint: document.querySelector("#endpoint").value,
+            model: document.querySelector("#model").value,
+            apiKey: document.querySelector("#apiKey").value,
+            apiVersion: document.querySelector("#apiVersion").value
+          });
+          document.querySelector("#apiKey").value = "";
+          document.querySelector("#send").disabled = false;
+          line("assistant", "Connection configured. Describe the application you want to host.");
+        } catch (error) { line("error", error.message); }
+      };
+
+      document.querySelector("#send").onclick = async () => {
+        const input = document.querySelector("#message");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        line("user", text);
+        try {
+          const result = await request("/api/chat", {sessionId, message: text});
+          line("assistant", result.message);
+          if (result.action === "recommend") {
+            document.querySelector("#publishSection").hidden = false;
+          }
+        } catch (error) { line("error", error.message); }
+      };
+
+      document.querySelector("#publish").onclick = async () => {
+        try {
+          const result = await request("/api/publish", {
+            sessionId,
+            teamName: document.querySelector("#teamName").value
+          });
+          line("assistant", `Pull request created: ${result.pullRequestUrl}`);
+        } catch (error) { line("error", error.message); }
+      };
+
+      document.querySelector("#githubLogout").onclick = async () => {
+        await request("/api/auth/logout", {});
+        window.location.reload();
+      };
+
+      start().catch(error => line("error", error.message));
+    </script>
+  </body>
+</html>

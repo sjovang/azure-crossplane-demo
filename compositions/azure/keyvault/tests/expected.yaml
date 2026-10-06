@@ -1,0 +1,13 @@
+---
+# yamllint disable rule:line-length
+resourceIds:
+  - azurePlatformConfig
+  - appService
+  - keyVault
+  - crossplaneKeyVaultRoleAssignment
+  - appServiceKeyVaultRoleAssignment
+status:
+  id: ${keyVault.status.atProvider.id}
+  vaultName: ${schema.spec.vaultName}
+  vaultUri: 'https://${schema.spec.vaultName}.vault.azure.net'
+  tenantId: ${azurePlatformConfig.data.tenantId}
