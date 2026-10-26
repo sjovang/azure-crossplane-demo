@@ -23,10 +23,17 @@ spec:
               properties:
                 members:
                   default: []
-                  description: Optional user principal names (UPNs) to add as members.
+                  description: User principal names (UPNs) to add as members in Declared mode.
                   items:
                     type: string
                   type: array
+                membershipMode:
+                  default: Declared
+                  description: Declared makes Crossplane manage membership from members. External leaves membership to another system, such as an access package.
+                  enum:
+                    - Declared
+                    - External
+                  type: string
                 name:
                   description: Display name of the Entra ID security group.
                   minLength: 1
@@ -40,6 +47,9 @@ spec:
               required:
                 - name
               type: object
+              x-kubernetes-validations:
+                - message: spec.members must be empty when membershipMode is External.
+                  rule: self.membershipMode != 'External' || !has(self.members) || size(self.members) == 0
             status:
               properties:
                 id:

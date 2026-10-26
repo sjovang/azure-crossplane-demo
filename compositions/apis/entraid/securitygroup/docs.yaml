@@ -1,8 +1,9 @@
 ---
 summary: >-
-  An Entra ID security group, with optional members and owners given as user
-  principal names (UPNs). UPNs are looked up in Microsoft Graph and applied
-  on the next reconcile, so membership changes take about one poll interval.
+  An Entra ID security group. In Declared mode, optional members and owners
+  are user principal names (UPNs), looked up in Microsoft Graph and applied
+  on the next reconcile. Set membershipMode to External when another system,
+  such as an access package, manages membership; members must be empty then.
 stability: experimental
 commonErrors:
   - symptom: >-

@@ -89,3 +89,10 @@ the secondary group is used after seven days without a response, and both
 groups review assignments quarterly. Escalation, request timeout, and review
 duration can be overridden per package; defaults are 7, 14, and 14 days.
 Assignments are removed if reviewers miss the review window.
+
+For a group whose membership is granted through an access package, set
+`membershipMode: External` on its `XSecurityGroup` and leave `members` empty.
+This omits the provider's `members` configuration and disables late
+initialization for that managed Group, so Crossplane does not reclaim members
+added through entitlement assignments. The default `Declared` mode continues
+to manage members from `spec.members`.

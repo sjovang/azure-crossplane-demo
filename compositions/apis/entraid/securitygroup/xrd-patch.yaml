@@ -1,0 +1,7 @@
+---
+# yamllint disable rule:line-length
+properties:
+  spec:
+    x-kubernetes-validations:
+      - rule: "self.membershipMode != 'External' || !has(self.members) || size(self.members) == 0"
+        message: "spec.members must be empty when membershipMode is External."

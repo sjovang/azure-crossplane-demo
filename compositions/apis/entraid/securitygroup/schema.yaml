@@ -12,11 +12,16 @@ spec:
   name: >-
     string | required=true minLength=1
     description="Display name of the Entra ID security group."
+  membershipMode: >-
+    string | enum="Declared,External" default="Declared"
+    description="Declared makes Crossplane manage membership from members.
+    External leaves membership to another system, such as an access package."
   # function-msgraph fails if the referenced field is absent, hence the
   # empty-list defaults.
   members: >-
     []string | default=[]
-    description="Optional user principal names (UPNs) to add as members."
+    description="User principal names (UPNs) to add as members in Declared
+    mode."
   owners: >-
     []string | default=[]
     description="Optional user principal names (UPNs) to add as owners.
