@@ -1,0 +1,97 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xsecuritygroups.entraid.platform.example.org
+spec:
+  group: entraid.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XSecurityGroup
+    plural: xsecuritygroups
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XSecurityGroup is the Schema for the XSecurityGroup API.
+          properties:
+            spec:
+              properties:
+                members:
+                  default: []
+                  description: Optional user principal names (UPNs) to add as members.
+                  items:
+                    type: string
+                  type: array
+                name:
+                  description: Display name of the Entra ID security group.
+                  minLength: 1
+                  type: string
+                owners:
+                  default: []
+                  description: Optional user principal names (UPNs) to add as owners. When empty, the Crossplane service principal owns the group.
+                  items:
+                    type: string
+                  type: array
+              required:
+                - name
+              type: object
+            status:
+              properties:
+                id:
+                  description: Provider ID of the Entra ID group.
+                  type: string
+                objectId:
+                  description: Object ID of the Entra ID group.
+                  type: string
+                resolvedMembers:
+                  description: Members found in Entra ID (set by function-msgraph).
+                  items:
+                    properties:
+                      accountEnabled:
+                        type: boolean
+                      displayName:
+                        type: string
+                      id:
+                        type: string
+                      mail:
+                        type: string
+                      userPrincipalName:
+                        type: string
+                    type: object
+                  type: array
+                resolvedOwners:
+                  description: Owners found in Entra ID (set by function-msgraph).
+                  items:
+                    properties:
+                      accountEnabled:
+                        type: boolean
+                      displayName:
+                        type: string
+                      id:
+                        type: string
+                      mail:
+                        type: string
+                      userPrincipalName:
+                        type: string
+                    type: object
+                  type: array
+                unresolvedMembers:
+                  description: Member UPNs not (yet) found in Entra ID.
+                  items:
+                    type: string
+                  type: array
+                unresolvedOwners:
+                  description: Owner UPNs not (yet) found in Entra ID.
+                  items:
+                    type: string
+                  type: array
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

@@ -1,0 +1,70 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+spec:
+  name: >-
+    string | required=true immutable=true minLength=1 maxLength=12
+    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    description="Short environment name used to derive Azure resource
+    names."
+  image: >-
+    string | required=true
+    description="Container image reference run by App Service."
+  location: >-
+    string | required=true
+    description="Azure region for every environment resource."
+  appSize: >-
+    string | required=true enum="small,medium,large"
+    description="App Service t-shirt size."
+  databaseSize: >-
+    string | required=true enum="small,medium,large"
+    description="PostgreSQL t-shirt size."
+  port: >-
+    integer | default=8080 minimum=1 maximum=65535
+    description="Port the application container listens on."
+  databaseName: >-
+    string | description="PostgreSQL database name. Defaults to spec.name."
+  databaseAdminUsername: >-
+    string | default="pgadmin"
+    description="PostgreSQL administrator login name."
+  customDomain:
+    hostname: >-
+      string | required=true
+      description="Fully qualified hostname inside dnsZone, e.g.
+      portal.example.com."
+    dnsZone: >-
+      string | required=true
+      description="Existing Azure public DNS zone name."
+    dnsZoneResourceGroup: >-
+      string | required=true
+      description="Resource group holding the DNS zone."
+  entraIdAuth:
+    enabled: >-
+      boolean | default=false
+      description="Enable Entra ID authentication."
+    additionalRedirectUris: >-
+      []string | default=[]
+      description="Additional OAuth redirect URIs, such as the Backstage
+      localhost callback used during development."
+status:
+  id: >-
+    string | description="Azure resource ID of the environment resource
+    group."
+  resourceGroupId: >-
+    string | description="Azure resource ID of the environment resource
+    group."
+  databaseId: >-
+    string | description="Azure resource ID of the PostgreSQL server."
+  databaseFqdn: >-
+    string | description="Fully qualified domain name of the PostgreSQL
+    server."
+  applicationId: string | description="Azure resource ID of the App Service."
+  applicationHostname: >-
+    string | description="Default public hostname of the App Service."
+  applicationUrl: >-
+    string | description="Public HTTPS URL of the application: the custom
+    hostname when set, otherwise the default hostname."
+  enterpriseApplicationId: >-
+    string | description="Provider ID of the Entra application."
+  enterpriseApplicationClientId: >-
+    string | description="Application (client) ID used for OAuth."

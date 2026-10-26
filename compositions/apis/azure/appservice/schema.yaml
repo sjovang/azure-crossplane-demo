@@ -1,0 +1,50 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XAppService
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Name of the App Service."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  size: >-
+    string | enum="small,medium,large" default="small"
+    description="T-shirt size: small = B1, medium = P1v3, large = P2v3."
+  image: >-
+    string | required=true
+    description="Container image reference to run, e.g.
+    docker.io/library/nginx:latest."
+  port: >-
+    integer | default=8080 description="Port the container listens on."
+  envVars: >-
+    map[string]string
+    | description="Plain (non-secret) application settings exposed to the
+    container as environment variables."
+  systemAssignedIdentity: >-
+    boolean | default=false immutable=true
+    description="Enable a system-assigned managed identity for the App
+    Service."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the App Service."
+  customDomain:
+    hostname: >-
+      string | description="Fully qualified hostname inside dnsZone, e.g.
+      portal.example.com."
+    dnsZone: string | description="Existing Azure public DNS zone name."
+    dnsZoneResourceGroup: >-
+      string | description="Resource group holding the DNS zone."
+status:
+  id: string | description="Azure resource ID of the Linux Web App."
+  servicePlanId: >-
+    string | description="Azure resource ID of the App Service Plan."
+  defaultHostname: >-
+    string | description="Default public hostname of the App Service."
+  url: >-
+    string | description="Public HTTPS URL: the custom hostname when set,
+    otherwise the default hostname."
+  identityPrincipalId: >-
+    string | description="Microsoft Entra principal ID of the
+    system-assigned managed identity."

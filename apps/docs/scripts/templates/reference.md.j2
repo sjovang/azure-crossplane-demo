@@ -35,7 +35,7 @@ hide:
 | **Plural** | `{{ doc.plural }}` |
 | **Scope** | `{{ doc.scope }}` |
 | **Versions** | {{ version_list }} |
-| **Source** | [`{{ doc.xrd_path }}`]({{ source_url(doc.xrd_path) }}) |
+| **Source** | [`{{ doc.schema_path }}`]({{ source_url(doc.schema_path) }}) |
 
 ## Spec
 
@@ -92,5 +92,6 @@ composite in this repository exposes the provisioned Azure resource ID as
 
 ## Reference
 
+* Schema: [`{{ doc.schema_path }}`]({{ source_url(doc.schema_path) }})
 * XRD: [`{{ doc.xrd_path }}`]({{ source_url(doc.xrd_path) }})
 * Composition: [`{{ doc.composition_path }}`]({{ source_url(doc.composition_path) }})

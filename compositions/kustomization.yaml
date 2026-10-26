@@ -4,9 +4,8 @@ kind: Kustomization
 # Shared across clusters: any cluster wanting these compositions adds its own
 # dependsOn-gated Kustomization pointing at this directory (see
 # clusters/base/crossplane/flux-kustomizations/compositions-kustomization.yaml)
-# - this directory itself is intentionally cluster-agnostic. Add one resources:
-# entry per cloud provider subfolder.
+# - this directory itself is intentionally cluster-agnostic. Only apis/ is
+# applied; crossplane-project.yaml, schema.yaml and xrd-patch.yaml are CLI
+# inputs and must never reach the cluster.
 resources:
-  - azure
-  - entraid
-  - environments
+  - apis

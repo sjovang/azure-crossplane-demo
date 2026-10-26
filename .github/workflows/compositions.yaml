@@ -1,0 +1,75 @@
+---
+# yamllint disable rule:line-length rule:truthy
+#
+# line-length: actions are pinned to full 40-character commit SHAs, which
+#   zizmor requires and which cannot be wrapped.
+# truthy: `on:` is the GitHub Actions trigger key, not a boolean.
+#
+# Fails when a committed compositions/apis/**/definition.yaml is out of date
+# with its schema.yaml, and runs the composition tests.
+name: compositions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - compositions/**
+      - .github/workflows/compositions.yaml
+  pull_request:
+    paths:
+      - compositions/**
+      - .github/workflows/compositions.yaml
+
+permissions: {}
+
+concurrency:
+  group: compositions-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CROSSPLANE_VERSION: v2.5.0
+  CROSSPLANE_SHA256: 065dd6b40c9ea5fc71e49900d5c924cc0bec7f58375922ddbde6b402f292347e
+  YQ_VERSION: v4.54.1
+  YQ_SHA256: 8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          curl -fsSLo "$bin/crossplane" "https://cli.crossplane.io/stable/${CROSSPLANE_VERSION}/bin/linux_amd64/crossplane"
+          curl -fsSLo "$bin/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          echo "${CROSSPLANE_SHA256}  $bin/crossplane" | sha256sum -c -
+          echo "${YQ_SHA256}  $bin/yq" | sha256sum -c -
+          chmod +x "$bin/crossplane" "$bin/yq"
+          echo "$bin" >> "$GITHUB_PATH"
+          python -m pip install --quiet pyyaml
+
+      - name: Check generated XRDs are up to date
+        run: make -C compositions check
+
+      - name: Run composition tests
+        run: make -C compositions test

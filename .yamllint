@@ -8,9 +8,11 @@ rules:
     present: true
   # The Backstage scaffold's YAML keeps its upstream formatting so version
   # bumps stay easy to diff; only cosmetic rules are relaxed there.
+  # Generated XRDs keep SimpleSchema descriptions on one line.
   line-length:
     ignore: |
       apps/backstage/
+      compositions/apis/**/definition.yaml
   comments:
     ignore: |
       apps/backstage/

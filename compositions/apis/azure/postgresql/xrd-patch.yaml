@@ -1,0 +1,16 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+      - adminPasswordSecretRef
+    properties:
+      resourceGroupRef:
+        description: Resource group hosting the database server.
+      adminPasswordSecretRef:
+        description: >-
+          Secret in the same namespace holding the administrator password.
+        x-kubernetes-validations:
+          - rule: self == oldSelf
+            message: adminPasswordSecretRef is immutable

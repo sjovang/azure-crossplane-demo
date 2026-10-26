@@ -1,0 +1,46 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualMachine
+spec:
+  name: >-
+    string | required=true immutable=true maxLength=12
+    description="Name of the virtual machine."
+  os: >-
+    string | required=true enum="linux,windows"
+    description="Operating system: linux installs the latest AlmaLinux,
+    windows installs the latest Windows Server."
+  size: >-
+    string | enum="small,medium,large" default="small"
+    description="T-shirt size: small = 2 vCPU, medium = 4 vCPU,
+    large = 8 vCPU."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  virtualNetworkRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XVirtualNetwork."
+    subnet: >-
+      string | required=true
+      description="Name of the subnet within that network."
+  adminUsername: >-
+    string | default="azureuser"
+    description="Local administrator user name."
+  adminPasswordSecretRef:
+    name: string | required=true
+    key: string | required=true default="password"
+  sshPublicKeySecretRef:
+    name: string | required=true
+    key: string | required=true default="id_rsa.pub"
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the virtual machine."
+status:
+  id: string | description="Azure resource ID of the virtual machine."
+  vmSize: >-
+    string | description="Azure VM SKU resolved from the requested size."
+  privateIp: >-
+    string | description="Private IP address assigned to the NIC."
+  networkInterfaceId: >-
+    string | description="Azure resource ID of the network interface."

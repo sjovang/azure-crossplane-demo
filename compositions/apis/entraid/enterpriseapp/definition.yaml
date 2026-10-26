@@ -1,0 +1,76 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xenterpriseapps.entraid.platform.example.org
+spec:
+  group: entraid.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XEnterpriseApp
+    plural: xenterpriseapps
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XEnterpriseApp is the Schema for the XEnterpriseApp API.
+          properties:
+            spec:
+              properties:
+                credentialValidity:
+                  default: 1440h
+                  description: Validity of each generated client secret. Defaults to 60 days to tolerate a delayed rotation reconciliation.
+                  pattern: ^[1-9][0-9]*h$
+                  type: string
+                name:
+                  description: Display name of the Entra ID application.
+                  minLength: 1
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                redirectUris:
+                  description: OAuth web redirect URIs allowed for the app.
+                  items:
+                    pattern: ^https?://
+                    type: string
+                  minItems: 1
+                  type: array
+                rotationInterval:
+                  default: 720h
+                  description: How often External Secrets changes the password rotation trigger. Defaults to 30 days.
+                  pattern: ^[1-9][0-9]*h$
+                  type: string
+              required:
+                - name
+                - redirectUris
+              type: object
+            status:
+              properties:
+                clientId:
+                  description: Application (client) ID.
+                  type: string
+                connectionSecretName:
+                  description: Kubernetes Secret containing the generated client secret under the value key.
+                  type: string
+                id:
+                  description: Provider ID of the Entra application.
+                  type: string
+                objectId:
+                  description: Object ID of the application registration.
+                  type: string
+                rotationRevision:
+                  description: Non-secret revision that changes whenever credential rotation is triggered.
+                  type: string
+                servicePrincipalId:
+                  description: Object ID of the enterprise service principal.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true
