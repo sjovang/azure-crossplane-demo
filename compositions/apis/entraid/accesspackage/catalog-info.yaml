@@ -4,7 +4,7 @@ kind: API
 metadata:
   name: entraid-accesspackage
   description: >-
-    An Entra access package with group resources and governed assignments.
+    An Entra ID access package with group resources and governed assignments.
 spec:
   type: crossplane-xrd
   lifecycle: experimental
