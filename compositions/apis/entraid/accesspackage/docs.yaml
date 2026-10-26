@@ -1,7 +1,8 @@
 ---
 summary: >-
-  An Entra access package that adds existing XSecurityGroup resources to its
-  catalog and package, creates a request policy with primary approvers and
+  An Entra access package that references a same-namespace catalog by
+  catalogRef.name and includes a subset of its registered groupIds without
+  owning catalog associations. It creates a request policy with primary and
   secondary escalation approvers, and reviews assignments quarterly. The
   secondary group is notified after seven days; requests are denied after
   fourteen days without approval. The default 14-day review window removes
@@ -22,6 +23,15 @@ commonErrors:
       and accesspackageresourcepackageassociations.identitygovernance.azuread.m.upbound.io
       to the managed resource activation policy.
     # yamllint enable rule:line-length
+  - symptom: A requested group is missing or the package stays not Ready.
+    cause: >-
+      The referenced catalog has not registered the group, or its catalog
+      association is not Ready or has no provider ID yet.
+    fix: >-
+      Register the group object ID in XAccessPackageCatalog.spec.groupIds
+      once, wait for status.groupAssociations to report its ID and ready:
+      true, then select it in each package's groupIds. Missing requested
+      groups are not silently skipped. See examples/entraid-accesspackages.yaml.
   - symptom: >-
       The assignment policy or group associations report
       Authorization_RequestDenied.

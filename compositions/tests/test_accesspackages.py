@@ -27,6 +27,13 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
         self.assertEqual(spec["required"], ["description", "name"])
         self.assertFalse(spec["properties"]["externallyVisible"]["default"])
         self.assertEqual(spec["properties"]["readerGroupIds"]["default"], [])
+        self.assertEqual(spec["properties"]["groupIds"]["default"], [])
+        self.assertTrue(spec["properties"]["groupIds"]["uniqueItems"])
+        status = version["schema"]["openAPIV3Schema"]["properties"]["status"]
+        self.assertEqual(
+            set(status["properties"]["groupAssociations"]["items"]["properties"]),
+            {"groupId", "id", "ready"},
+        )
 
     def test_resource_graph_snapshot(self):
         graph = self.composition["spec"]["pipeline"][0]["input"]
@@ -45,6 +52,10 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
                 ),
                 (
                     "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackageResourceCatalogAssociation",
+                ),
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
                     "AccessPackageCatalogRoleAssignment",
                 ),
             ],
@@ -54,6 +65,24 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
             self.expected["resourceIds"],
         )
         self.assertEqual(graph["status"], self.expected["status"])
+        association = by_id["groupCatalogAssociations"]
+        self.assertEqual(association["forEach"], [{"groupId": "${schema.spec.groupIds}"}])
+        self.assertEqual(
+            association["template"]["metadata"]["name"],
+            '${("catalog-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
+        )
+        self.assertEqual(
+            association["template"]["metadata"]["namespace"],
+            "${schema.metadata.namespace}",
+        )
+        self.assertEqual(
+            association["template"]["spec"]["forProvider"],
+            {
+                "catalogId": "${catalog.status.atProvider.id}",
+                "resourceOriginId": "${groupId}",
+                "resourceOriginSystem": "AadGroup",
+            },
+        )
         self.assertEqual(
             by_id["catalogReaderRoleAssignments"]["forEach"][0]["groupId"],
             "${schema.spec.readerGroupIds}",
@@ -90,6 +119,11 @@ class AccessPackageCompositionTests(unittest.TestCase):
         spec = version["schema"]["openAPIV3Schema"]["properties"]["spec"]
 
         self.assertEqual(self.xrd["spec"]["scope"], "Namespaced")
+        self.assertIn("catalogRef", spec["required"])
+        self.assertEqual(spec["properties"]["catalogRef"]["required"], ["name"])
+        self.assertNotIn("catalogId", spec["properties"])
+        self.assertEqual(spec["properties"]["groupIds"]["default"], [])
+        self.assertTrue(spec["properties"]["groupIds"]["uniqueItems"])
         self.assertEqual(
             spec["properties"]["requestorScope"]["default"],
             "AllExistingDirectoryMemberUsers",
@@ -114,16 +148,12 @@ class AccessPackageCompositionTests(unittest.TestCase):
         self.assertEqual(
             [
                 (resource["template"]["apiVersion"], resource["template"]["kind"])
-                for resource in resources
+                for resource in resources if "template" in resource
             ],
             [
                 (
                     "identitygovernance.azuread.m.upbound.io/v1beta1",
                     "AccessPackage",
-                ),
-                (
-                    "identitygovernance.azuread.m.upbound.io/v1beta1",
-                    "AccessPackageResourceCatalogAssociation",
                 ),
                 (
                     "identitygovernance.azuread.m.upbound.io/v1beta1",
@@ -194,21 +224,29 @@ class AccessPackageCompositionTests(unittest.TestCase):
             self.expected["reviewers"],
         )
 
-        catalog_association = by_id["groupCatalogAssociations"]
         package_association = by_id["groupPackageAssociations"]
         self.assertEqual(
-            catalog_association["forEach"][0]["groupId"],
+            package_association["forEach"][0]["groupId"],
             "${schema.spec.groupIds}",
         )
+        self.assertNotIn("groupCatalogAssociations", by_id)
+        self.assertEqual(by_id["catalog"], {
+            "id": "catalog",
+            "externalRef": {
+                "apiVersion": "entraid.platform.example.org/v1alpha1",
+                "kind": "XAccessPackageCatalog",
+                "metadata": {"name": "${schema.spec.catalogRef.name}"},
+            },
+        })
         self.assertEqual(
-            catalog_association["template"]["metadata"]["name"],
-            '${("catalog-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
+            by_id["accessPackage"]["template"]["spec"]["forProvider"]["catalogId"],
+            "${catalog.status.id}",
         )
-        self.assertEqual(
-            catalog_association["template"]["spec"]["forProvider"][
-                "resourceOriginSystem"
+        self.assertIn(
+            'a.id != "" && a.ready)[0].id',
+            package_association["template"]["spec"]["forProvider"][
+                "catalogResourceAssociationId"
             ],
-            self.expected["resourceOriginSystem"],
         )
         self.assertEqual(
             package_association["template"]["spec"]["forProvider"]["accessType"],
@@ -222,8 +260,39 @@ class AccessPackageCompositionTests(unittest.TestCase):
         )
         self.assertEqual(
             package_association["template"]["metadata"]["name"],
-            '${("package-" + schema.metadata.uid + "." + catalogAssociation.spec.forProvider.resourceOriginId).lowerAscii()}',
+            '${("package-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
         )
+
+    def test_missing_groups_fail_closed_before_auto_ready(self):
+        pipeline = self.composition["spec"]["pipeline"]
+        self.assertEqual(
+            [step["step"] for step in pipeline],
+            ["kro", "check-group-resources", "auto-ready"],
+        )
+        guard = pipeline[1]
+        self.assertEqual(guard["functionRef"]["name"], "function-go-templating")
+        template = guard["input"]["inline"]["template"]
+        self.assertIn("len ($xr.spec.groupIds | default list)", template)
+        self.assertIn("AccessPackageResourcePackageAssociation", template)
+        self.assertIn('fail "Requested groups must all be registered and Ready', template)
+        self.assertIn('gotemplating.fn.crossplane.io/ready: "False"', template)
+        self.assertIn("type: GroupResourcesReady", template)
+
+    def test_shared_catalog_example_registers_the_group_once(self):
+        example = list(yaml.safe_load_all(
+            (TESTS.parent / "examples/entraid-accesspackages.yaml").read_text()
+        ))
+        catalog, *packages = example
+        self.assertEqual(catalog["kind"], "XAccessPackageCatalog")
+        self.assertEqual(len(packages), 2)
+        for package in packages:
+            self.assertEqual(
+                package["spec"]["catalogRef"]["name"], catalog["metadata"]["name"]
+            )
+            self.assertEqual(
+                package["metadata"]["namespace"], catalog["metadata"]["namespace"]
+            )
+            self.assertEqual(package["spec"]["groupIds"], catalog["spec"]["groupIds"])
 
     def test_collection_names_are_stable_and_unique(self):
         xr_uids = (

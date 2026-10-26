@@ -29,6 +29,14 @@ spec:
                   default: false
                   description: Whether guests can request packages in this catalog.
                   type: boolean
+                groupIds:
+                  default: []
+                  description: Object IDs from XSecurityGroup.status.objectId to register once as shared catalog resources. Packages may select any subset.
+                  items:
+                    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+                    type: string
+                  type: array
+                  uniqueItems: true
                 name:
                   description: Display name of the access package catalog.
                   minLength: 1
@@ -46,6 +54,21 @@ spec:
               type: object
             status:
               properties:
+                groupAssociations:
+                  description: Catalog-owned group associations referenced by packages.
+                  items:
+                    properties:
+                      groupId:
+                        description: Entra group object ID.
+                        type: string
+                      id:
+                        description: Provider ID of the catalog resource association.
+                        type: string
+                      ready:
+                        description: Whether the association is Ready.
+                        type: boolean
+                    type: object
+                  type: array
                 id:
                   description: Provider ID of the Entra access package catalog.
                   type: string

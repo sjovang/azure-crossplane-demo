@@ -20,6 +20,12 @@ spec:
           id: ${accessPackage.status.atProvider.id}
           assignmentPolicyId: ${assignmentPolicy.status.atProvider.id}
         resources:
+          - id: catalog
+            externalRef:
+              apiVersion: entraid.platform.example.org/v1alpha1
+              kind: XAccessPackageCatalog
+              metadata:
+                name: ${schema.spec.catalogRef.name}
           - id: accessPackage
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
@@ -30,37 +36,19 @@ spec:
                   kind: ClusterProviderConfig
                   name: default
                 forProvider:
-                  catalogId: ${schema.spec.catalogId}
+                  catalogId: ${catalog.status.id}
                   displayName: ${schema.spec.name}
                   description: ${schema.spec.description}
-          - id: groupCatalogAssociations
-            forEach:
-              - groupId: ${schema.spec.groupIds}
-            template:
-              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
-              kind: AccessPackageResourceCatalogAssociation
-              metadata:
-                name: >-
-                  ${("catalog-" + schema.metadata.uid
-                  + "." + groupId).lowerAscii()}
-              spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  catalogId: ${schema.spec.catalogId}
-                  resourceOriginId: ${groupId}
-                  resourceOriginSystem: AadGroup
           - id: groupPackageAssociations
             forEach:
-              - catalogAssociation: ${groupCatalogAssociations}
+              - groupId: ${schema.spec.groupIds}
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
               kind: AccessPackageResourcePackageAssociation
               metadata:
                 name: >-
-                  ${("package-" + schema.metadata.uid + "."
-                  + catalogAssociation.spec.forProvider.resourceOriginId).lowerAscii()}
+                  ${("package-" + schema.metadata.uid
+                  + "." + groupId).lowerAscii()}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -68,7 +56,10 @@ spec:
                 forProvider:
                   accessPackageId: ${accessPackage.status.atProvider.id}
                   accessType: Member
-                  catalogResourceAssociationId: ${catalogAssociation.status.atProvider.id}
+                  catalogResourceAssociationId: >-
+                    ${catalog.?status.?groupAssociations.orValue([]).filter(a,
+                      a.groupId.lowerAscii() == groupId.lowerAscii()
+                      && a.id != "" && a.ready)[0].id}
           - id: assignmentPolicy
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
@@ -89,9 +80,9 @@ spec:
                     approvalRequired: true
                     requestorJustificationRequired: true
                     approvalStage:
-                      - approvalTimeoutInDays: ${schema.spec.approvalTimeoutDays}
+                      - approvalTimeoutInDays: ${double(schema.spec.approvalTimeoutDays)}
                         alternativeApprovalEnabled: true
-                        enableAlternativeApprovalInDays: ${schema.spec.escalationAfterDays}
+                        enableAlternativeApprovalInDays: ${double(schema.spec.escalationAfterDays)}
                         primaryApprover:
                           - objectId: ${schema.spec.primaryApproverGroupId}
                             subjectType: GroupMembers
@@ -101,7 +92,7 @@ spec:
                   assignmentReviewSettings:
                     enabled: true
                     reviewFrequency: ${schema.spec.reviewFrequency}
-                    durationInDays: ${schema.spec.reviewDurationDays}
+                    durationInDays: ${double(schema.spec.reviewDurationDays)}
                     reviewType: Reviewers
                     reviewer:
                       - objectId: ${schema.spec.primaryApproverGroupId}
@@ -109,6 +100,53 @@ spec:
                       - objectId: ${schema.spec.secondaryApproverGroupId}
                         subjectType: GroupMembers
                     accessReviewTimeoutBehavior: removeAccess
+    # kro treats missing list entries as pending and omits the whole collection.
+    # Fail closed after package creation, before Crossplane can prune associations.
+    - step: check-group-resources
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $count := 0 -}}
+            {{- range $resource := .desired.resources -}}
+            {{- if eq $resource.resource.kind "AccessPackageResourcePackageAssociation" -}}
+            {{- $count = add1 $count -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if or (ne (int $count) (len ($xr.spec.groupIds | default list))) (not (get .desired.resources "accessPackage")) -}}
+            {{- $package := getComposedResource . "accessPackage" | default dict -}}
+            {{- if (($package.status | default dict).atProvider | default dict).id -}}
+            {{- fail "Requested groups must all be registered and Ready in catalogRef before package associations can reconcile" -}}
+            {{- end }}
+            ---
+            apiVersion: entraid.platform.example.org/v1alpha1
+            kind: XAccessPackage
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/ready: "False"
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: GroupResourcesReady
+                status: "False"
+                reason: WaitingForCatalogGroups
+                message: All requested groups must be registered and Ready in catalogRef.
+            {{- else }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: GroupResourcesReady
+                status: "True"
+                reason: Available
+                message: All requested group associations are present.
+            {{- end }}
     - step: auto-ready
       functionRef:
         name: function-auto-ready

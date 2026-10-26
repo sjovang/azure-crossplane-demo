@@ -26,10 +26,15 @@ spec:
                   description: Days before an unapproved request is denied.
                   minimum: 1
                   type: integer
-                catalogId:
-                  description: Catalog ID from XAccessPackageCatalog.status.id.
-                  minLength: 1
-                  type: string
+                catalogRef:
+                  properties:
+                    name:
+                      description: Logical name of the XAccessPackageCatalog in this namespace.
+                      minLength: 1
+                      type: string
+                  required:
+                    - name
+                  type: object
                 description:
                   description: Description of the access package and assignment policy.
                   minLength: 1
@@ -41,11 +46,12 @@ spec:
                   type: integer
                 groupIds:
                   default: []
-                  description: Object IDs from XSecurityGroup.status.objectId to add as package resources.
+                  description: Object IDs from XSecurityGroup.status.objectId already registered in catalogRef's groupIds to include as package resources.
                   items:
                     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
                     type: string
                   type: array
+                  uniqueItems: true
                 name:
                   description: Display name of the access package and assignment policy.
                   minLength: 1
@@ -76,7 +82,7 @@ spec:
                   pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
                   type: string
               required:
-                - catalogId
+                - catalogRef
                 - description
                 - name
                 - primaryApproverGroupId

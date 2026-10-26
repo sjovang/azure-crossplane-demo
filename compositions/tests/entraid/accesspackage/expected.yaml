@@ -1,7 +1,7 @@
 ---
 resourceIds:
+  - catalog
   - accessPackage
-  - groupCatalogAssociations
   - groupPackageAssociations
   - assignmentPolicy
 status:
@@ -11,15 +11,17 @@ requestorScopes:
   - AllExistingDirectoryMemberUsers
   - AllExternalSubjects
 reviewFrequency: ${schema.spec.reviewFrequency}
-approvalTimeoutDays: ${schema.spec.approvalTimeoutDays}
-escalationAfterDays: ${schema.spec.escalationAfterDays}
-reviewDurationDays: ${schema.spec.reviewDurationDays}
+approvalTimeoutDays: ${double(schema.spec.approvalTimeoutDays)}
+escalationAfterDays: ${double(schema.spec.escalationAfterDays)}
+reviewDurationDays: ${double(schema.spec.reviewDurationDays)}
 reviewType: Reviewers
 reviewers:
   - objectId: ${schema.spec.primaryApproverGroupId}
     subjectType: GroupMembers
   - objectId: ${schema.spec.secondaryApproverGroupId}
     subjectType: GroupMembers
-resourceOriginSystem: AadGroup
 accessType: Member
-catalogAssociationId: ${catalogAssociation.status.atProvider.id}
+catalogAssociationId: >-
+  ${catalog.?status.?groupAssociations.orValue([]).filter(a,
+    a.groupId.lowerAscii() == groupId.lowerAscii()
+    && a.id != "" && a.ready)[0].id}

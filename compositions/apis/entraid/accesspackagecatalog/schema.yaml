@@ -1,6 +1,11 @@
 ---
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XAccessPackageCatalog
+customTypes:
+  GroupAssociation:
+    groupId: string | description="Entra group object ID."
+    id: string | description="Provider ID of the catalog resource association."
+    ready: boolean | description="Whether the association is Ready."
 spec:
   name: >-
     string | required=true minLength=1
@@ -11,9 +16,16 @@ spec:
   externallyVisible: >-
     boolean | default=false
     description="Whether guests can request packages in this catalog."
+  groupIds: >-
+    []string | default=[]
+    description="Object IDs from XSecurityGroup.status.objectId to register
+    once as shared catalog resources. Packages may select any subset."
   readerGroupIds: >-
     []string | default=[]
     description="Object IDs from XSecurityGroup.status.objectId to grant the
     Catalog Reader role."
 status:
   id: string | description="Provider ID of the Entra access package catalog."
+  groupAssociations: >-
+    []GroupAssociation
+    | description="Catalog-owned group associations referenced by packages."

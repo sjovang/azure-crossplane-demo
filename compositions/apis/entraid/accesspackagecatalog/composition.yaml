@@ -17,6 +17,13 @@ spec:
         kind: ResourceGraph
         status:
           id: ${catalog.status.atProvider.id}
+          groupAssociations: >-
+            ${groupCatalogAssociations.map(a, {
+              "groupId": a.spec.forProvider.resourceOriginId,
+              "id": a.?status.?atProvider.?id.orValue(""),
+              "ready": a.?status.?conditions.orValue([]).exists(c,
+                c.type == "Ready" && c.status == "True")
+            })}
         resources:
           - id: catalog
             template:
@@ -32,6 +39,25 @@ spec:
                   description: ${schema.spec.description}
                   externallyVisible: ${schema.spec.externallyVisible}
                   published: true
+          - id: groupCatalogAssociations
+            forEach:
+              - groupId: ${schema.spec.groupIds}
+            template:
+              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+              kind: AccessPackageResourceCatalogAssociation
+              metadata:
+                namespace: ${schema.metadata.namespace}
+                name: >-
+                  ${("catalog-" + schema.metadata.uid
+                  + "." + groupId).lowerAscii()}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  catalogId: ${catalog.status.atProvider.id}
+                  resourceOriginId: ${groupId}
+                  resourceOriginSystem: AadGroup
           - id: catalogReaderRoleAssignments
             forEach:
               - groupId: ${schema.spec.readerGroupIds}

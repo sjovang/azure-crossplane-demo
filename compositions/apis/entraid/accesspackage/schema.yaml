@@ -8,13 +8,14 @@ spec:
   description: >-
     string | required=true minLength=1
     description="Description of the access package and assignment policy."
-  catalogId: >-
-    string | required=true minLength=1
-    description="Catalog ID from XAccessPackageCatalog.status.id."
+  catalogRef:
+    name: >-
+      string | required=true minLength=1
+      description="Logical name of the XAccessPackageCatalog in this namespace."
   groupIds: >-
     []string | default=[]
-    description="Object IDs from XSecurityGroup.status.objectId to add as
-    package resources."
+    description="Object IDs from XSecurityGroup.status.objectId already
+    registered in catalogRef's groupIds to include as package resources."
   requestorScope: >-
     string | default="AllExistingDirectoryMemberUsers"
     description="Who may request access: AllExistingDirectoryMemberUsers or

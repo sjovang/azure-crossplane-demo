@@ -76,9 +76,14 @@ To add an API, create the directory, run `make generate`, add a
 ## Entra entitlement management
 
 `apis/entraid/accesspackagecatalog/` creates a catalog and can grant the
-built-in Catalog Reader role to groups. `apis/entraid/accesspackage/` creates
-an access package, adds the requested groups as catalog resources and package
-resources, and configures its assignment policy. Create groups with
+built-in Catalog Reader role to groups. It registers each `groupIds` entry
+once as a shared catalog resource and publishes its provider ID and readiness
+in `status.groupAssociations`. `apis/entraid/accesspackage/` creates an access
+package and its assignment policy. Set `catalogRef.name` to the catalog's
+Kubernetes name in the **same namespace**, then select any subset of the
+catalog's `groupIds` in the package's `groupIds`. Packages read the catalog
+through a read-only kro `externalRef`; they own only their package-level
+associations, not the shared catalog associations. Create groups with
 `XSecurityGroup` first and use each group's `status.objectId` in
 `readerGroupIds`, `groupIds`, and the approver group ID fields. Catalog write
 roles are not assigned because Crossplane manages the catalog. For guest
@@ -89,6 +94,46 @@ the secondary group is used after seven days without a response, and both
 groups review assignments quarterly. Escalation, request timeout, and review
 duration can be overridden per package; defaults are 7, 14, and 14 days.
 Assignments are removed if reviewers miss the review window.
+
+See [`examples/entraid-accesspackages.yaml`](examples/entraid-accesspackages.yaml)
+for one catalog registering a group once and two packages including that same
+group. Replace the example UUIDs with actual `XSecurityGroup.status.objectId`
+values. Apply the catalog first and wait for its `status.groupAssociations`
+entries to have nonempty `id` and `ready: true`. A missing requested group
+fails pipeline validation rather than disappearing silently from the package;
+pending or unready catalog associations keep the package not Ready.
+An empty package `groupIds` is supported.
+The `check-group-resources` step explicitly checks the desired association
+count: kro v0.3.0 otherwise omits a collection with pending entries. Once the
+package has a provider ID, missing entries fail the pipeline before any
+existing associations can be pruned. Initial provisioning instead reports
+`GroupResourcesReady=False` while waiting for dependencies.
+
+Deleting a package or removing one of its `groupIds` deletes only its
+package-level associations. Before removing a group from the catalog, remove
+it from every package that uses it; deleting the catalog deletes the shared
+associations. Do not create multiple catalogs for the same existing provider
+catalog, or register the same catalog/group pair outside its owning catalog.
+
+This experimental API replaces package `catalogId` with `catalogRef.name`.
+For already deployed packages, do not simply apply the ownership change:
+pause reconciliation of both catalog and package XRs, orphan the old
+package-owned catalog associations
+(`deletionPolicy: Orphan`), and remove those managed resources before importing
+the existing provider associations under the catalog's new managed resource
+names using `crossplane.io/external-name`. Resume only after the catalog
+reports the imported IDs. This avoids deleting shared provider associations
+or attempting to create duplicates during migration.
+
+Run the real function regression tests (Docker, `crossplane` and authenticated
+`gh` required; downloads the pinned provider CRDs):
+
+```sh
+cd compositions
+# Set DOCKER_HOST to your Docker context endpoint if needed (e.g. Colima).
+RUN_ACCESSPACKAGE_RENDER=1 python3 -m unittest discover \
+  -s tests -p test_accesspackages_render.py
+```
 
 For a group whose membership is granted through an access package, set
 `membershipMode: External` on its `XSecurityGroup` and leave `members` empty.
