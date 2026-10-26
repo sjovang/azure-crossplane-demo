@@ -20,8 +20,8 @@ spec:
         resources:
           - id: catalog
             template:
-              apiVersion: entitlementmanagement.azuread.m.upbound.io/v1beta1
-              kind: Catalog
+              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+              kind: AccessPackageCatalog
               metadata: {}
               spec:
                 providerConfigRef:
@@ -36,8 +36,8 @@ spec:
             forEach:
               - groupId: ${schema.spec.readerGroupIds}
             template:
-              apiVersion: entitlementmanagement.azuread.m.upbound.io/v1beta1
-              kind: CatalogRoleAssignment
+              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+              kind: AccessPackageCatalogRoleAssignment
               metadata: {}
               spec:
                 providerConfigRef:

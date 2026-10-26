@@ -33,6 +33,22 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
         by_id = {resource["id"]: resource for resource in resources}
 
         self.assertEqual(
+            [
+                (resource["template"]["apiVersion"], resource["template"]["kind"])
+                for resource in resources
+            ],
+            [
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackageCatalog",
+                ),
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackageCatalogRoleAssignment",
+                ),
+            ],
+        )
+        self.assertEqual(
             [resource["id"] for resource in resources],
             self.expected["resourceIds"],
         )
@@ -90,6 +106,30 @@ class AccessPackageCompositionTests(unittest.TestCase):
         resources = graph["resources"]
         by_id = {resource["id"]: resource for resource in resources}
 
+        self.assertEqual(
+            [
+                (resource["template"]["apiVersion"], resource["template"]["kind"])
+                for resource in resources
+            ],
+            [
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackage",
+                ),
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackageResourceCatalogAssociation",
+                ),
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackageResourcePackageAssociation",
+                ),
+                (
+                    "identitygovernance.azuread.m.upbound.io/v1beta1",
+                    "AccessPackageAssignmentPolicy",
+                ),
+            ],
+        )
         self.assertEqual(
             [resource["id"] for resource in resources],
             self.expected["resourceIds"],
