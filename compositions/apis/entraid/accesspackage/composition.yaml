@@ -39,7 +39,10 @@ spec:
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
               kind: AccessPackageResourceCatalogAssociation
-              metadata: {}
+              metadata:
+                name: >-
+                  ${("catalog-" + schema.metadata.uid
+                  + "." + groupId).lowerAscii()}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -54,7 +57,10 @@ spec:
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
               kind: AccessPackageResourcePackageAssociation
-              metadata: {}
+              metadata:
+                name: >-
+                  ${("package-" + schema.metadata.uid + "."
+                  + catalogAssociation.spec.forProvider.resourceOriginId).lowerAscii()}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig

@@ -1,3 +1,4 @@
+import re
 import unittest
 from pathlib import Path
 
@@ -56,6 +57,10 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
         self.assertEqual(
             by_id["catalogReaderRoleAssignments"]["forEach"][0]["groupId"],
             "${schema.spec.readerGroupIds}",
+        )
+        self.assertEqual(
+            by_id["catalogReaderRoleAssignments"]["template"]["metadata"]["name"],
+            '${("reader-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
         )
         self.assertEqual(
             by_id["catalogReaderRoleAssignments"]["template"]["spec"]["forProvider"][
@@ -196,6 +201,10 @@ class AccessPackageCompositionTests(unittest.TestCase):
             "${schema.spec.groupIds}",
         )
         self.assertEqual(
+            catalog_association["template"]["metadata"]["name"],
+            '${("catalog-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
+        )
+        self.assertEqual(
             catalog_association["template"]["spec"]["forProvider"][
                 "resourceOriginSystem"
             ],
@@ -211,6 +220,70 @@ class AccessPackageCompositionTests(unittest.TestCase):
             ],
             self.expected["catalogAssociationId"],
         )
+        self.assertEqual(
+            package_association["template"]["metadata"]["name"],
+            '${("package-" + schema.metadata.uid + "." + catalogAssociation.spec.forProvider.resourceOriginId).lowerAscii()}',
+        )
+
+    def test_collection_names_are_stable_and_unique(self):
+        xr_uids = (
+            "11111111-1111-4111-8111-111111111111",
+            "22222222-2222-4222-8222-222222222222",
+        )
+        groups = (
+            "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+            "BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB",
+        )
+
+        def names(prefix, uid, group_ids):
+            return {
+                group_id: f"{prefix}-{uid}.{group_id}".lower()
+                for group_id in group_ids
+            }
+
+        associations = [
+            {"spec": {"forProvider": {"resourceOriginId": group_id}}}
+            for group_id in groups
+        ]
+        package_groups = [
+            association["spec"]["forProvider"]["resourceOriginId"]
+            for association in associations
+        ]
+        collection_groups = {
+            "catalog": groups,
+            "reader": groups,
+            "package": package_groups,
+        }
+        collection_names = {}
+        for prefix, group_ids in collection_groups.items():
+            stable_names = names(prefix, xr_uids[0], group_ids)
+            reordered_names = names(prefix, xr_uids[0], reversed(group_ids))
+            other_xr_names = names(prefix, xr_uids[1], group_ids)
+            self.assertEqual(stable_names, reordered_names)
+            self.assertTrue(set(stable_names.values()).isdisjoint(other_xr_names.values()))
+            collection_names[prefix] = stable_names
+
+        for prefix, values in collection_names.items():
+            for other_prefix, other_values in collection_names.items():
+                if prefix != other_prefix:
+                    self.assertTrue(set(values.values()).isdisjoint(other_values.values()))
+        all_names = (
+            *(name for values in collection_names.values() for name in values.values()),
+            *(
+                name
+                for prefix, group_ids in collection_groups.items()
+                for name in names(prefix, xr_uids[1], group_ids).values()
+            ),
+        )
+        for name in all_names:
+            self.assertLessEqual(len(name), 253)
+            self.assertTrue(
+                all(
+                    len(label) <= 63
+                    and re.fullmatch(r"[a-z0-9](?:[-a-z0-9]*[a-z0-9])?", label)
+                    for label in name.split(".")
+                )
+            )
 
 
 def spec_required(xrd):

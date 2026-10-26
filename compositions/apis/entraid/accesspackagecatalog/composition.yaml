@@ -38,7 +38,10 @@ spec:
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
               kind: AccessPackageCatalogRoleAssignment
-              metadata: {}
+              metadata:
+                name: >-
+                  ${("reader-" + schema.metadata.uid
+                  + "." + groupId).lowerAscii()}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
