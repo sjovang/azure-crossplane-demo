@@ -75,7 +75,7 @@ spec:
                 forProvider:
                   catalogId: ${catalog.status.atProvider.id}
                   principalObjectId: ${groupId}
-                  roleId: 43169555-5d4b-426f-9d2e-79aa311d0570
+                  roleId: 44272f93-9762-48e8-af59-1b5351b1d6b3
     - step: auto-ready
       functionRef:
         name: function-auto-ready

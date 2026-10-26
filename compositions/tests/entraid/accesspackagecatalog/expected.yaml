@@ -12,4 +12,4 @@ status:
       "ready": a.?status.?conditions.orValue([]).exists(c,
         c.type == "Ready" && c.status == "True")
     })}
-catalogReaderRoleId: 43169555-5d4b-426f-9d2e-79aa311d0570
+catalogReaderRoleId: 44272f93-9762-48e8-af59-1b5351b1d6b3
