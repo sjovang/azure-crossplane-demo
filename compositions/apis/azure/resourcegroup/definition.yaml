@@ -1,0 +1,56 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xresourcegroups.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XResourceGroup
+    plural: xresourcegroups
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XResourceGroup is the Schema for the XResourceGroup API.
+          properties:
+            spec:
+              properties:
+                location:
+                  default: swedencentral
+                  description: Azure region for the resource group.
+                  type: string
+                name:
+                  description: Name of the Azure resource group.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                tags:
+                  additionalProperties:
+                    type: string
+                  default: null
+                  description: Optional tags to apply to the resource group.
+                  nullable: true
+                  type: object
+              required:
+                - name
+              type: object
+            status:
+              properties:
+                id:
+                  description: Azure resource ID of the resource group.
+                  type: string
+                name:
+                  description: Name of the provisioned resource group.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

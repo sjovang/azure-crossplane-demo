@@ -1,0 +1,21 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    properties:
+      customDomain:
+        description: >-
+          Optional custom hostname for the App Service, with DNS records in an
+          existing Azure public DNS zone and a free managed certificate.
+        x-kubernetes-validations:
+          - rule: self.hostname.endsWith('.' + self.dnsZone)
+            message: hostname must be inside dnsZone
+      entraIdAuth:
+        description: >-
+          Optional Microsoft Entra ID authentication for the application.
+          When enabled, an XEnterpriseApp and rotating client credential are
+          provisioned automatically.
+        properties:
+          additionalRedirectUris:
+            items:
+              pattern: "^https?://"

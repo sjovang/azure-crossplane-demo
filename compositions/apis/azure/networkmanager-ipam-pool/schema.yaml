@@ -1,0 +1,22 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManagerIPAMPool
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Logical name of the IPAM pool."
+  networkManagerRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XNetworkManager."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the IPAM pool."
+  addressPrefixes: >-
+    []string | required=true
+    description="CIDR blocks for the root IPAM pool."
+  tags: >-
+    map[string]string
+    | description="Optional tags to apply to the IPAM pool."
+status:
+  id: string | description="Azure resource ID of the IPAM pool."

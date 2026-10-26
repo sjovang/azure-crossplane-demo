@@ -2,8 +2,9 @@
 #
 # Build context is the REPOSITORY ROOT, not apps/docs:
 #   docker build -f apps/docs/Dockerfile .
-# The reference pages are generated from compositions/**/xrd.yaml and the
-# examples are snippet-included from teams/, so both must be in the context.
+# The reference pages are generated from compositions/apis/**/definition.yaml
+# and the examples are snippet-included from teams/, so both must be in the
+# context.
 
 # The site is static and architecture-independent, so build it natively once
 # and copy it into every target platform's image without emulation.

@@ -1,0 +1,116 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xappservices.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XAppService
+    plural: xappservices
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XAppService is the Schema for the XAppService API.
+          properties:
+            spec:
+              properties:
+                customDomain:
+                  description: Optional custom hostname with a free App Service managed certificate. The CNAME and asuid TXT records are created in an existing Azure public DNS zone. Omitted or empty fields mean no custom domain.
+                  properties:
+                    dnsZone:
+                      description: Existing Azure public DNS zone name.
+                      type: string
+                    dnsZoneResourceGroup:
+                      description: Resource group holding the DNS zone.
+                      type: string
+                    hostname:
+                      description: Fully qualified hostname inside dnsZone, e.g. portal.example.com.
+                      type: string
+                  type: object
+                  x-kubernetes-validations:
+                    - message: hostname, dnsZone and dnsZoneResourceGroup are required together
+                      rule: (has(self.hostname) && self.hostname != '') == (has(self.dnsZone) && self.dnsZone != '') && (has(self.hostname) && self.hostname != '') == (has(self.dnsZoneResourceGroup) && self.dnsZoneResourceGroup != '')
+                    - message: hostname must be inside dnsZone
+                      rule: '!has(self.hostname) || self.hostname == '''' || (has(self.dnsZone) && self.hostname.endsWith(''.'' + self.dnsZone))'
+                envVars:
+                  additionalProperties:
+                    type: string
+                  default: null
+                  description: Plain (non-secret) application settings exposed to the container as environment variables.
+                  nullable: true
+                  type: object
+                image:
+                  description: Container image reference to run, e.g. docker.io/library/nginx:latest.
+                  type: string
+                location:
+                  default: swedencentral
+                  description: Azure region for the App Service.
+                  type: string
+                name:
+                  description: Name of the App Service.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                port:
+                  default: 8080
+                  description: Port the container listens on.
+                  type: integer
+                resourceGroupRef:
+                  description: Resource group hosting the App Service.
+                  properties:
+                    name:
+                      description: Logical name of the XResourceGroup.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                size:
+                  default: small
+                  description: 'T-shirt size: small = B1, medium = P1v3, large = P2v3.'
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  type: string
+                systemAssignedIdentity:
+                  default: false
+                  description: Enable a system-assigned managed identity for the App Service.
+                  type: boolean
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+              required:
+                - image
+                - name
+                - resourceGroupRef
+              type: object
+            status:
+              properties:
+                defaultHostname:
+                  description: Default public hostname of the App Service.
+                  type: string
+                id:
+                  description: Azure resource ID of the Linux Web App.
+                  type: string
+                identityPrincipalId:
+                  description: Microsoft Entra principal ID of the system-assigned managed identity.
+                  type: string
+                servicePlanId:
+                  description: Azure resource ID of the App Service Plan.
+                  type: string
+                url:
+                  description: 'Public HTTPS URL: the custom hostname when set, otherwise the default hostname.'
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

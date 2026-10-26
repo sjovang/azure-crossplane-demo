@@ -47,13 +47,16 @@ flowchart LR
 
 > [!NOTE]
 > Crossplane `CompositeResourceDefinition`s and `Composition`s live in the
-> shared, top-level [`compositions/`](compositions/) directory, outside
-> `clusters/base/`. Provider-specific APIs are grouped by provider (`azure/`,
-> `entraid/`), while higher-level platform APIs live under `environments/`.
-> This allows multiple clusters to use the same definitions.
-> [`compositions/azure/resourcegroup/`](compositions/azure/resourcegroup/) is a
-> working example: an `XResourceGroup` in the `azure.platform.example.org` API
-> group composing an Azure `ResourceGroup`.
+> shared, top-level [`compositions/`](compositions/) Crossplane CLI project,
+> outside `clusters/base/`. APIs live under `apis/`, grouped by provider
+> (`azure/`, `entraid/`), while higher-level platform APIs live under
+> `environments/`. Each API is defined in a SimpleSchema `schema.yaml`;
+> `make generate` produces its XRD (see
+> [`compositions/README.md`](compositions/README.md)). This allows multiple
+> clusters to use the same definitions.
+> [`compositions/apis/azure/resourcegroup/`](compositions/apis/azure/resourcegroup/)
+> is a working example: an `XResourceGroup` in the `azure.platform.example.org`
+> API group composing an Azure `ResourceGroup`.
 
 ## Documentation
 

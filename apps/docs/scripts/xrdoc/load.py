@@ -161,7 +161,11 @@ class CompositionDoc:
 
     @property
     def xrd_path(self) -> str:
-        return self.relative(self.directory / "xrd.yaml")
+        return self.relative(self.directory / "definition.yaml")
+
+    @property
+    def schema_path(self) -> str:
+        return self.relative(self.directory / "schema.yaml")
 
     @property
     def composition_path(self) -> str:
@@ -169,11 +173,11 @@ class CompositionDoc:
 
 
 def load_compositions(root: Optional[Path] = None) -> List[CompositionDoc]:
-    """Load every composition under ``compositions/``, sorted by kind."""
+    """Load every composition under ``compositions/apis/``, sorted by kind."""
     root = root or repo_root()
     docs: List[CompositionDoc] = []
 
-    for xrd_path in sorted((root / "compositions").rglob("xrd.yaml")):
+    for xrd_path in sorted((root / "compositions/apis").rglob("definition.yaml")):
         xrd = _first_of_kind(xrd_path, XRD_KIND)
         if xrd is None:
             continue

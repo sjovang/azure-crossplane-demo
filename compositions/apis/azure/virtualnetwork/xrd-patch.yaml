@@ -1,0 +1,17 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+      - ipamAllocation
+    properties:
+      resourceGroupRef:
+        description: >-
+          Reference to the resource group hosting the Virtual Network.
+      ipamAllocation:
+        description: >-
+          Allocate address space dynamically from Azure Network Manager IPAM.
+      tags:
+        nullable: true
+        default: null

@@ -1,0 +1,22 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XNetworkManager
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Logical name of the Network Manager."
+  subscriptionId: >-
+    string | required=true immutable=true
+    description="Azure subscription containing the Network Manager."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the Network Manager."
+  tags: >-
+    map[string]string
+    | description="Optional tags to apply to the Network Manager."
+status:
+  id: string | description="Azure resource ID of the Network Manager."

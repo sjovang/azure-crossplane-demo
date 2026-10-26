@@ -1,0 +1,70 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xnetworkmanagers.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XNetworkManager
+    plural: xnetworkmanagers
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XNetworkManager is the Schema for the XNetworkManager API.
+          properties:
+            spec:
+              properties:
+                location:
+                  default: swedencentral
+                  description: Azure region for the Network Manager.
+                  type: string
+                name:
+                  description: Logical name of the Network Manager.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                resourceGroupRef:
+                  description: Reference to the resource group hosting the Network Manager.
+                  properties:
+                    name:
+                      description: Logical name of the XResourceGroup.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                subscriptionId:
+                  description: Azure subscription containing the Network Manager.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                tags:
+                  additionalProperties:
+                    type: string
+                  default: null
+                  description: Optional tags to apply to the Network Manager.
+                  nullable: true
+                  type: object
+              required:
+                - name
+                - resourceGroupRef
+                - subscriptionId
+              type: object
+            status:
+              properties:
+                id:
+                  description: Azure resource ID of the Network Manager.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

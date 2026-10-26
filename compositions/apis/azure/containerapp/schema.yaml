@@ -1,0 +1,42 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XContainerApp
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Name of the Container App."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  size: >-
+    string | enum="small,medium,large" default="small"
+    description="T-shirt size: small = 0.25 vCPU/0.5Gi, medium = 0.5
+    vCPU/1Gi, large = 1 vCPU/2Gi."
+  image: >-
+    string | required=true
+    description="Container image reference to run, e.g.
+    docker.io/library/nginx:latest."
+  port: >-
+    integer | default=8080 description="Port the container listens on."
+  envVars: >-
+    map[string]string
+    | description="Plain (non-secret) environment variables passed to the
+    container."
+  minReplicas: >-
+    integer | default=1
+    description="Minimum number of container replicas."
+  maxReplicas: >-
+    integer | default=3
+    description="Maximum number of container replicas."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the Container App."
+status:
+  id: string | description="Azure resource ID of the Container App."
+  environmentId: >-
+    string | description="Azure resource ID of the Container App
+    Environment."
+  fqdn: >-
+    string | description="Public fully qualified domain name of the
+    Container App."

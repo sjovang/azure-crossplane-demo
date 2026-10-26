@@ -197,7 +197,7 @@ catalog:
     - allow: [Component, System, API, Resource, Location, Group]
   providers:
     # Discovers teams/*/catalog-info.yaml (Group + System per team) and
-    # compositions/*/*/catalog-info.yaml (API per Crossplane XRD) from the
+    # compositions/apis/*/*/catalog-info.yaml (API per Crossplane XRD) from the
     # public azure-crossplane-demo repo. See
     # https://backstage.io/docs/integrations/github/discovery/
     github:
@@ -212,7 +212,7 @@ catalog:
           timeout: {minutes: 3}
       compositions:
         organization: 'sjovang'
-        catalogPath: '/compositions/*/*/catalog-info.yaml'
+        catalogPath: '/compositions/apis/*/*/catalog-info.yaml'
         filters:
           branch: 'main'
           repository: 'azure-crossplane-demo'

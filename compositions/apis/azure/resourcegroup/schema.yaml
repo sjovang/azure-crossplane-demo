@@ -1,0 +1,16 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XResourceGroup
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Name of the Azure resource group."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the resource group."
+  tags: >-
+    map[string]string
+    | description="Optional tags to apply to the resource group."
+status:
+  id: string | description="Azure resource ID of the resource group."
+  name: string | description="Name of the provisioned resource group."

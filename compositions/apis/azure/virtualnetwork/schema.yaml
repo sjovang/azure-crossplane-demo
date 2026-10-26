@@ -1,0 +1,59 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualNetwork
+customTypes:
+  SecurityRule:
+    name: string | required=true
+    priority: integer | required=true minimum=100 maximum=4096
+    direction: string | enum="Inbound,Outbound" default="Inbound"
+    access: string | enum="Allow,Deny" default="Allow"
+    protocol: string | enum="Tcp,Udp,Icmp,*" default="Tcp"
+    sourcePortRange: string | default="*"
+    destinationPortRange: string | default="*"
+    sourceAddressPrefix: string | default="*"
+    destinationAddressPrefix: string | default="*"
+  Subnet:
+    name: string | required=true
+    numberOfAllocatedIpAddresses: >-
+      integer | required=true minimum=1
+      description="Number of IP addresses to allocate."
+    securityRules: >-
+      []SecurityRule
+      | description="Optional Network Security Group rules."
+  SubnetStatus:
+    name: string
+    id: string | description="Azure resource ID of the subnet."
+    networkSecurityGroupId: >-
+      string | description="Azure resource ID of the subnet NSG."
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Name of the Azure Virtual Network."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the Virtual Network."
+  ipamAllocation:
+    numberOfAllocatedIpAddresses: >-
+      integer | required=true default=256
+      description="Number of IP addresses to allocate from the IPAM pool
+      (e.g. 256 for a /24)."
+    ipamPoolId: string | description="Resource ID of the IPAM pool."
+  subnets: >-
+    []Subnet | required=true
+    description="Child subnets to create with this virtual network."
+  tags: >-
+    map[string]string
+    | description="Optional tags to apply to the Virtual Network."
+status:
+  id: string | description="Azure resource ID of the Virtual Network."
+  name: string | description="Name of the provisioned Virtual Network."
+  addressSpace: >-
+    []string
+    | description="Allocated address prefixes for the Virtual Network."
+  subnets: >-
+    []SubnetStatus
+    | description="Provisioned subnet and NSG resource IDs."

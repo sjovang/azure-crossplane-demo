@@ -1,0 +1,32 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+    properties:
+      resourceGroupRef:
+        description: Resource group hosting the App Service.
+      envVars:
+        nullable: true
+        default: null
+      customDomain:
+        description: >-
+          Optional custom hostname with a free App Service managed
+          certificate. The CNAME and asuid TXT records are created in an
+          existing Azure public DNS zone. Omitted or empty fields mean no
+          custom domain.
+        x-kubernetes-validations:
+          - rule: >-
+              (has(self.hostname) && self.hostname != '') ==
+              (has(self.dnsZone) && self.dnsZone != '') &&
+              (has(self.hostname) && self.hostname != '') ==
+              (has(self.dnsZoneResourceGroup) &&
+              self.dnsZoneResourceGroup != '')
+            message: >-
+              hostname, dnsZone and dnsZoneResourceGroup are required together
+          - rule: >-
+              !has(self.hostname) || self.hostname == '' ||
+              (has(self.dnsZone) &&
+              self.hostname.endsWith('.' + self.dnsZone))
+            message: hostname must be inside dnsZone

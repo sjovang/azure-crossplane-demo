@@ -1,0 +1,12 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+    properties:
+      resourceGroupRef:
+        description: Resource group hosting the Container App.
+      envVars:
+        nullable: true
+        default: null

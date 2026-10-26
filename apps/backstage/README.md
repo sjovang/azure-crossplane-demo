@@ -54,7 +54,7 @@ client secret after a rotation.
 
 The catalog's `github` provider (`app-config.yaml`) scans the public
 `sjovang/azure-crossplane-demo` repo on GitHub for `teams/*/catalog-info.yaml`
-(one `Group` + `System` per team) and `compositions/*/*/catalog-info.yaml`
+(one `Group` + `System` per team) and `compositions/apis/*/*/catalog-info.yaml`
 (one `API` per Crossplane XRD). It needs a `GITHUB_TOKEN` env var set before
 `yarn start`, otherwise GitHub's API rate-limits unauthenticated requests:
 
