@@ -22,8 +22,6 @@ tools:
 		command -v $$tool >/dev/null || { echo "missing required tool: $$tool" >&2; exit 1; }; \
 	done
 
-.SECONDEXPANSION:
-
 .PHONY: generate
 generate: tools $(DEFINITIONS) ## Generate every definition.yaml from its schema.yaml.
 
@@ -33,10 +31,11 @@ NORMALIZE := ... comments="" | (.. | select(tag == "!!map" and (.required | tag)
 # The CLI writes relative to apis/. SimpleSchema cannot express object-level
 # CEL rules, object descriptions or nullable defaults, so an optional
 # xrd-patch.yaml is deep-merged (lists appended) into the generated
-# openAPIV3Schema.
-apis/%/definition.yaml: apis/%/schema.yaml $$(wildcard apis/$$*/xrd-patch.yaml) Makefile
+# openAPIV3Schema. Always regenerate: file timestamps cannot detect a deleted
+# xrd-patch.yaml, and generation is fast.
+apis/%/definition.yaml: FORCE
 	@$(CROSSPLANE) xrd generate --from simpleschema --replace \
-		--path $*/definition.yaml $< >/dev/null
+		--path $*/definition.yaml apis/$*/schema.yaml >/dev/null
 	@if [[ -f apis/$*/xrd-patch.yaml ]]; then \
 		$(YQ) -i '.spec.versions[0].schema.openAPIV3Schema *=+ load("apis/$*/xrd-patch.yaml")' $@; \
 	fi
@@ -45,13 +44,16 @@ apis/%/definition.yaml: apis/%/schema.yaml $$(wildcard apis/$$*/xrd-patch.yaml) 
 		$(YQ) -P -I2 '$(NORMALIZE)' $@; } >$@.tmp && mv $@.tmp $@
 	@echo "generated $@"
 
+.PHONY: FORCE
+FORCE:
+
 .PHONY: clean
 clean: ## Delete generated definition.yaml files.
 	rm -f $(DEFINITIONS)
 
 .PHONY: check
 check: ## Regenerate and fail if any definition.yaml is out of date.
-	@$(MAKE) --no-print-directory -B generate
+	@$(MAKE) --no-print-directory generate
 	@if ! git diff --exit-code -- apis \
 		|| [[ -n "$$(git ls-files --others --exclude-standard -- 'apis/*definition.yaml')" ]]; then \
 		echo 'definition.yaml is out of date; run `make generate` and commit the result.' >&2; \
