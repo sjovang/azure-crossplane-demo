@@ -72,3 +72,20 @@ quote YAML 1.1 boolean-like keys such as `n` or `on`.
 
 To add an API, create the directory, run `make generate`, add a
 `kustomization.yaml` and list the directory in `apis/<provider>/kustomization.yaml`.
+
+## Entra entitlement management
+
+`apis/entraid/accesspackagecatalog/` creates a catalog and can grant the
+built-in Catalog Reader role to groups. `apis/entraid/accesspackage/` creates
+an access package, adds the requested groups as catalog resources and package
+resources, and configures its assignment policy. Create groups with
+`XSecurityGroup` first and use each group's `status.objectId` in
+`readerGroupIds`, `groupIds`, and the approver group ID fields. Catalog write
+roles are not assigned because Crossplane manages the catalog. For guest
+requestors, set the catalog's `externallyVisible` to `true` and use
+`AllExternalSubjects`; internal requests use
+`AllExistingDirectoryMemberUsers`. The primary group approves requests first,
+the secondary group is used after seven days without a response, and both
+groups review assignments quarterly. Escalation, request timeout, and review
+duration can be overridden per package; defaults are 7, 14, and 14 days.
+Assignments are removed if reviewers miss the review window.

@@ -1,0 +1,19 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackageCatalog
+spec:
+  name: >-
+    string | required=true minLength=1
+    description="Display name of the access package catalog."
+  description: >-
+    string | required=true minLength=1
+    description="Description of the access package catalog."
+  externallyVisible: >-
+    boolean | default=false
+    description="Whether guests can request packages in this catalog."
+  readerGroupIds: >-
+    []string | default=[]
+    description="Object IDs from XSecurityGroup.status.objectId to grant the
+    Catalog Reader role."
+status:
+  id: string | description="Provider ID of the Entra access package catalog."

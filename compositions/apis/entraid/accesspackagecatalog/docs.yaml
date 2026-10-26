@@ -1,0 +1,29 @@
+---
+summary: >-
+  An Entra entitlement management catalog. Optional XSecurityGroup object IDs
+  can be granted the built-in Catalog Reader role; no write-enabled catalog
+  roles are assigned.
+stability: experimental
+commonErrors:
+  - symptom: The Catalog or CatalogRoleAssignment is never created.
+    cause: >-
+      The corresponding provider-azuread managed resource definition is not
+      activated.
+    fix: >-
+      Add catalogs.entitlementmanagement.azuread.m.upbound.io and
+      catalogroleassignments.entitlementmanagement.azuread.m.upbound.io to the
+      managed resource activation policy.
+  - symptom: >-
+      The catalog or reader role assignment reports
+      Authorization_RequestDenied.
+    cause: >-
+      The service principal lacks the Microsoft Graph application permission
+      EntitlementManagement.ReadWrite.All, or admin consent is missing.
+    fix: >-
+      Re-run the bootstrap script as a Global Administrator or Privileged Role
+      Administrator, or grant EntitlementManagement.ReadWrite.All manually.
+  - symptom: A reader role assignment is rejected.
+    cause: >-
+      A readerGroupIds value is not an Entra security group's object ID.
+    fix: >-
+      Use the value from the group's XSecurityGroup status.objectId.

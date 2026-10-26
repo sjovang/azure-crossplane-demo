@@ -1,0 +1,7 @@
+---
+resourceIds:
+  - catalog
+  - catalogReaderRoleAssignments
+status:
+  id: ${catalog.status.atProvider.id}
+catalogReaderRoleId: 43169555-5d4b-426f-9d2e-79aa311d0570

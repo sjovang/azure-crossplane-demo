@@ -1,0 +1,25 @@
+---
+resourceIds:
+  - accessPackage
+  - groupCatalogAssociations
+  - groupPackageAssociations
+  - assignmentPolicy
+status:
+  id: ${accessPackage.status.atProvider.id}
+  assignmentPolicyId: ${assignmentPolicy.status.atProvider.id}
+requestorScopes:
+  - AllExistingDirectoryMemberUsers
+  - AllExternalSubjects
+reviewFrequency: ${schema.spec.reviewFrequency}
+approvalTimeoutDays: ${schema.spec.approvalTimeoutDays}
+escalationAfterDays: ${schema.spec.escalationAfterDays}
+reviewDurationDays: ${schema.spec.reviewDurationDays}
+reviewType: Reviewers
+reviewers:
+  - objectId: ${schema.spec.primaryApproverGroupId}
+    subjectType: GroupMembers
+  - objectId: ${schema.spec.secondaryApproverGroupId}
+    subjectType: GroupMembers
+resourceOriginSystem: AadGroup
+accessType: Member
+catalogAssociationId: ${catalogAssociation.status.atProvider.id}

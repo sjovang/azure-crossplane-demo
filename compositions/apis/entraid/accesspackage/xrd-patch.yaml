@@ -1,0 +1,22 @@
+---
+# yamllint disable rule:line-length
+properties:
+  spec:
+    properties:
+      groupIds:
+        items:
+          pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      requestorScope:
+        pattern: "^(AllExistingDirectoryMemberUsers|AllExternalSubjects)$"
+      primaryApproverGroupId:
+        pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      secondaryApproverGroupId:
+        pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      approvalTimeoutDays:
+        minimum: 1
+      escalationAfterDays:
+        minimum: 1
+      reviewDurationDays:
+        minimum: 1
+      reviewFrequency:
+        pattern: "^(weekly|monthly|quarterly|halfyearly|annual)$"

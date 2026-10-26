@@ -1,0 +1,108 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: accesspackages.entraid.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: entraid.platform.example.org/v1alpha1
+    kind: XAccessPackage
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${accessPackage.status.atProvider.id}
+          assignmentPolicyId: ${assignmentPolicy.status.atProvider.id}
+        resources:
+          - id: accessPackage
+            template:
+              apiVersion: entitlementmanagement.azuread.m.upbound.io/v1beta1
+              kind: AccessPackage
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  catalogId: ${schema.spec.catalogId}
+                  displayName: ${schema.spec.name}
+                  description: ${schema.spec.description}
+          - id: groupCatalogAssociations
+            forEach:
+              - groupId: ${schema.spec.groupIds}
+            template:
+              apiVersion: entitlementmanagement.azuread.m.upbound.io/v1beta1
+              kind: ResourceCatalogAssociation
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  catalogId: ${schema.spec.catalogId}
+                  resourceOriginId: ${groupId}
+                  resourceOriginSystem: AadGroup
+          - id: groupPackageAssociations
+            forEach:
+              - catalogAssociation: ${groupCatalogAssociations}
+            template:
+              apiVersion: entitlementmanagement.azuread.m.upbound.io/v1beta1
+              kind: ResourcePackageAssociation
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  accessPackageId: ${accessPackage.status.atProvider.id}
+                  accessType: Member
+                  catalogResourceAssociationId: ${catalogAssociation.status.atProvider.id}
+          - id: assignmentPolicy
+            template:
+              apiVersion: entitlementmanagement.azuread.m.upbound.io/v1beta1
+              kind: AssignmentPolicy
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  accessPackageId: ${accessPackage.status.atProvider.id}
+                  displayName: ${schema.spec.name}
+                  description: ${schema.spec.description}
+                  requestorSettings:
+                    requestsAccepted: true
+                    scopeType: ${schema.spec.requestorScope}
+                  approvalSettings:
+                    approvalRequired: true
+                    requestorJustificationRequired: true
+                    approvalStage:
+                      - approvalTimeoutInDays: ${schema.spec.approvalTimeoutDays}
+                        alternativeApprovalEnabled: true
+                        enableAlternativeApprovalInDays: ${schema.spec.escalationAfterDays}
+                        primaryApprover:
+                          - objectId: ${schema.spec.primaryApproverGroupId}
+                            subjectType: GroupMembers
+                        alternativeApprover:
+                          - objectId: ${schema.spec.secondaryApproverGroupId}
+                            subjectType: GroupMembers
+                  assignmentReviewSettings:
+                    enabled: true
+                    reviewFrequency: ${schema.spec.reviewFrequency}
+                    durationInDays: ${schema.spec.reviewDurationDays}
+                    reviewType: Reviewers
+                    reviewer:
+                      - objectId: ${schema.spec.primaryApproverGroupId}
+                        subjectType: GroupMembers
+                      - objectId: ${schema.spec.secondaryApproverGroupId}
+                        subjectType: GroupMembers
+                    accessReviewTimeoutBehavior: removeAccess
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

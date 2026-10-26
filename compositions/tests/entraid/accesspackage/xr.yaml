@@ -1,0 +1,15 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackage
+metadata:
+  name: engineering-access
+  namespace: developer-portal
+spec:
+  name: engineering-access
+  description: Access for the engineering team.
+  catalogId: 019cc02b-9649-7b5a-9cbb-8c5b8a0c7078
+  groupIds:
+    - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
+  requestorScope: AllExistingDirectoryMemberUsers
+  primaryApproverGroupId: 00000000-0000-0000-0000-000000000001
+  secondaryApproverGroupId: 00000000-0000-0000-0000-000000000002

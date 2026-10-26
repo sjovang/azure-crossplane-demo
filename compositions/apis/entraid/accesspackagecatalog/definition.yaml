@@ -1,0 +1,56 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xaccesspackagecatalogs.entraid.platform.example.org
+spec:
+  group: entraid.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XAccessPackageCatalog
+    plural: xaccesspackagecatalogs
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XAccessPackageCatalog is the Schema for the XAccessPackageCatalog API.
+          properties:
+            spec:
+              properties:
+                description:
+                  description: Description of the access package catalog.
+                  minLength: 1
+                  type: string
+                externallyVisible:
+                  default: false
+                  description: Whether guests can request packages in this catalog.
+                  type: boolean
+                name:
+                  description: Display name of the access package catalog.
+                  minLength: 1
+                  type: string
+                readerGroupIds:
+                  default: []
+                  description: Object IDs from XSecurityGroup.status.objectId to grant the Catalog Reader role.
+                  items:
+                    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+                    type: string
+                  type: array
+              required:
+                - description
+                - name
+              type: object
+            status:
+              properties:
+                id:
+                  description: Provider ID of the Entra access package catalog.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

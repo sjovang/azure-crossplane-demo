@@ -1,0 +1,36 @@
+---
+summary: >-
+  An Entra access package that adds existing XSecurityGroup resources to its
+  catalog and package, creates a request policy with primary approvers and
+  secondary escalation approvers, and reviews assignments quarterly. The
+  secondary group is notified after seven days; requests are denied after
+  fourteen days without approval. The default 14-day review window removes
+  access if reviewers do not respond.
+stability: experimental
+commonErrors:
+  - symptom: >-
+      The AccessPackage, AssignmentPolicy, or association is never created.
+    cause: >-
+      The corresponding provider-azuread managed resource definition is not
+      activated.
+    fix: >-
+      Add accesspackages.entitlementmanagement.azuread.m.upbound.io,
+      assignmentpolicies.entitlementmanagement.azuread.m.upbound.io,
+      resourcecatalogassociations.entitlementmanagement.azuread.m.upbound.io,
+      and resourcepackageassociations.entitlementmanagement.azuread.m.upbound.io
+      to the managed resource activation policy.
+  - symptom: >-
+      The assignment policy or group associations report
+      Authorization_RequestDenied.
+    cause: >-
+      The service principal lacks the Microsoft Graph application permission
+      EntitlementManagement.ReadWrite.All, or admin consent is missing.
+    fix: >-
+      Re-run the bootstrap script as a Global Administrator or Privileged Role
+      Administrator, or grant EntitlementManagement.ReadWrite.All manually.
+  - symptom: Guests cannot request the access package.
+    cause: >-
+      The package uses AllExternalSubjects but its catalog is not externally
+      visible.
+    fix: >-
+      Set externallyVisible: true on the XAccessPackageCatalog.

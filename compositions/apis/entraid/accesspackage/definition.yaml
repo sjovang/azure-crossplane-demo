@@ -1,0 +1,97 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xaccesspackages.entraid.platform.example.org
+spec:
+  group: entraid.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XAccessPackage
+    plural: xaccesspackages
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XAccessPackage is the Schema for the XAccessPackage API.
+          properties:
+            spec:
+              properties:
+                approvalTimeoutDays:
+                  default: 14
+                  description: Days before an unapproved request is denied.
+                  minimum: 1
+                  type: integer
+                catalogId:
+                  description: Catalog ID from XAccessPackageCatalog.status.id.
+                  minLength: 1
+                  type: string
+                description:
+                  description: Description of the access package and assignment policy.
+                  minLength: 1
+                  type: string
+                escalationAfterDays:
+                  default: 7
+                  description: Days primary approvers have before escalation.
+                  minimum: 1
+                  type: integer
+                groupIds:
+                  default: []
+                  description: Object IDs from XSecurityGroup.status.objectId to add as package resources.
+                  items:
+                    pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+                    type: string
+                  type: array
+                name:
+                  description: Display name of the access package and assignment policy.
+                  minLength: 1
+                  type: string
+                primaryApproverGroupId:
+                  description: Object ID from XSecurityGroup.status.objectId for primary approvals.
+                  minLength: 1
+                  pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+                  type: string
+                requestorScope:
+                  default: AllExistingDirectoryMemberUsers
+                  description: 'Who may request access: AllExistingDirectoryMemberUsers or AllExternalSubjects.'
+                  pattern: ^(AllExistingDirectoryMemberUsers|AllExternalSubjects)$
+                  type: string
+                reviewDurationDays:
+                  default: 14
+                  description: Days reviewers have to complete each access review.
+                  minimum: 1
+                  type: integer
+                reviewFrequency:
+                  default: quarterly
+                  description: How often access assignments are reviewed. Defaults to quarterly.
+                  pattern: ^(weekly|monthly|quarterly|halfyearly|annual)$
+                  type: string
+                secondaryApproverGroupId:
+                  description: Object ID from XSecurityGroup.status.objectId for escalation and access reviews.
+                  minLength: 1
+                  pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+                  type: string
+              required:
+                - catalogId
+                - description
+                - name
+                - primaryApproverGroupId
+                - secondaryApproverGroupId
+              type: object
+            status:
+              properties:
+                assignmentPolicyId:
+                  description: Provider ID of the access package assignment policy.
+                  type: string
+                id:
+                  description: Provider ID of the Entra access package.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true
