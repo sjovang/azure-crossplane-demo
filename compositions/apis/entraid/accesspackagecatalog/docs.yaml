@@ -10,9 +10,9 @@ commonErrors:
       The corresponding provider-azuread managed resource definition is not
       activated.
     fix: >-
-      Add catalogs.entitlementmanagement.azuread.m.upbound.io and
-      catalogroleassignments.entitlementmanagement.azuread.m.upbound.io to the
-      managed resource activation policy.
+      Add accesspackagecatalogs.identitygovernance.azuread.m.upbound.io and
+      accesspackagecatalogroleassignments.identitygovernance.azuread.m.upbound.io
+      to the managed resource activation policy.
   - symptom: >-
       The catalog or reader role assignment reports
       Authorization_RequestDenied.

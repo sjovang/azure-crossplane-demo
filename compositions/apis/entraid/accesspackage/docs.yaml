@@ -13,12 +13,15 @@ commonErrors:
     cause: >-
       The corresponding provider-azuread managed resource definition is not
       activated.
+    # The provider MRD identifiers exceed the configured line-length limit.
+    # yamllint disable rule:line-length
     fix: >-
-      Add accesspackages.entitlementmanagement.azuread.m.upbound.io,
-      assignmentpolicies.entitlementmanagement.azuread.m.upbound.io,
-      resourcecatalogassociations.entitlementmanagement.azuread.m.upbound.io,
-      and resourcepackageassociations.entitlementmanagement.azuread.m.upbound.io
+      Add accesspackages.identitygovernance.azuread.m.upbound.io,
+      accesspackageassignmentpolicies.identitygovernance.azuread.m.upbound.io,
+      accesspackageresourcecatalogassociations.identitygovernance.azuread.m.upbound.io,
+      and accesspackageresourcepackageassociations.identitygovernance.azuread.m.upbound.io
       to the managed resource activation policy.
+    # yamllint enable rule:line-length
   - symptom: >-
       The assignment policy or group associations report
       Authorization_RequestDenied.
