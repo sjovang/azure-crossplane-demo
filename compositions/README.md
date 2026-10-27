@@ -67,6 +67,9 @@ properties:
         default: null
 ```
 
+For unique scalar arrays, use `x-kubernetes-list-type: set`, not
+`uniqueItems: true` (Kubernetes rejects it in CRD schemas).
+
 Wrap long markers in a folded scalar (`>-`) to stay within the line limit, and
 quote YAML 1.1 boolean-like keys such as `n` or `on`.
 

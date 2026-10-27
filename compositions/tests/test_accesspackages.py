@@ -28,7 +28,10 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
         self.assertFalse(spec["properties"]["externallyVisible"]["default"])
         self.assertEqual(spec["properties"]["readerGroupIds"]["default"], [])
         self.assertEqual(spec["properties"]["groupIds"]["default"], [])
-        self.assertTrue(spec["properties"]["groupIds"]["uniqueItems"])
+        self.assertEqual(
+            spec["properties"]["groupIds"]["x-kubernetes-list-type"], "set"
+        )
+        self.assertNotIn("uniqueItems", spec["properties"]["groupIds"])
         status = version["schema"]["openAPIV3Schema"]["properties"]["status"]
         self.assertEqual(
             set(status["properties"]["groupAssociations"]["items"]["properties"]),
@@ -131,7 +134,10 @@ class AccessPackageCompositionTests(unittest.TestCase):
         )
         self.assertNotIn("catalogId", spec["properties"])
         self.assertEqual(spec["properties"]["groupIds"]["default"], [])
-        self.assertTrue(spec["properties"]["groupIds"]["uniqueItems"])
+        self.assertEqual(
+            spec["properties"]["groupIds"]["x-kubernetes-list-type"], "set"
+        )
+        self.assertNotIn("uniqueItems", spec["properties"]["groupIds"])
         self.assertEqual(
             spec["properties"]["requestorScope"]["default"],
             "AllExistingDirectoryMemberUsers",
