@@ -1,5 +1,6 @@
 ---
-# Replace UUIDs with XSecurityGroup.status.objectId values.
+# The approver groups are resolved by same-namespace XSecurityGroup references.
+# Replace groupIds with XSecurityGroup.status.objectId values.
 # Groups granting access must use membershipMode: External.
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XAccessPackageCatalog
@@ -24,8 +25,10 @@ spec:
     name: engineering-catalog
   groupIds:
     - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
-  primaryApproverGroupId: 00000000-0000-0000-0000-000000000001
-  secondaryApproverGroupId: 00000000-0000-0000-0000-000000000002
+  primaryApproverGroupRef:
+    name: engineering-approvers
+  secondaryApproverGroupRef:
+    name: engineering-reviewers
 ---
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XAccessPackage
@@ -39,5 +42,7 @@ spec:
     name: engineering-catalog
   groupIds:
     - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
-  primaryApproverGroupId: 00000000-0000-0000-0000-000000000001
-  secondaryApproverGroupId: 00000000-0000-0000-0000-000000000002
+  primaryApproverGroupRef:
+    name: engineering-approvers
+  secondaryApproverGroupRef:
+    name: engineering-reviewers

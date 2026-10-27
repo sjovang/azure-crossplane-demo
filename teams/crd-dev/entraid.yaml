@@ -9,3 +9,21 @@ spec:
     - a_tj@sjovang.no
   members:
     - trond@sjovang.no
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XSecurityGroup
+metadata:
+  name: crd-dev-primary-approvers
+spec:
+  name: crd-dev-primary-approvers
+  members:
+    - a_tj@sjovang.no
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XSecurityGroup
+metadata:
+  name: crd-dev-secondary-approvers
+spec:
+  name: crd-dev-secondary-approvers
+  members:
+    - trond@sjovang.no

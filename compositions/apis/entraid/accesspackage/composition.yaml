@@ -26,6 +26,18 @@ spec:
               kind: XAccessPackageCatalog
               metadata:
                 name: ${schema.spec.catalogRef.name}
+          - id: primaryApproverGroup
+            externalRef:
+              apiVersion: entraid.platform.example.org/v1alpha1
+              kind: XSecurityGroup
+              metadata:
+                name: ${schema.spec.primaryApproverGroupRef.name}
+          - id: secondaryApproverGroup
+            externalRef:
+              apiVersion: entraid.platform.example.org/v1alpha1
+              kind: XSecurityGroup
+              metadata:
+                name: ${schema.spec.secondaryApproverGroupRef.name}
           - id: accessPackage
             template:
               apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
@@ -84,10 +96,10 @@ spec:
                         alternativeApprovalEnabled: true
                         enableAlternativeApprovalInDays: ${double(schema.spec.escalationAfterDays)}
                         primaryApprover:
-                          - objectId: ${schema.spec.primaryApproverGroupId}
+                          - objectId: ${primaryApproverGroup.status.objectId}
                             subjectType: GroupMembers
                         alternativeApprover:
-                          - objectId: ${schema.spec.secondaryApproverGroupId}
+                          - objectId: ${secondaryApproverGroup.status.objectId}
                             subjectType: GroupMembers
                   assignmentReviewSettings:
                     enabled: true
@@ -95,9 +107,9 @@ spec:
                     durationInDays: ${double(schema.spec.reviewDurationDays)}
                     reviewType: Reviewers
                     reviewer:
-                      - objectId: ${schema.spec.primaryApproverGroupId}
+                      - objectId: ${primaryApproverGroup.status.objectId}
                         subjectType: GroupMembers
-                      - objectId: ${schema.spec.secondaryApproverGroupId}
+                      - objectId: ${secondaryApproverGroup.status.objectId}
                         subjectType: GroupMembers
                     accessReviewTimeoutBehavior: removeAccess
     # kro treats missing list entries as pending and omits the whole collection.

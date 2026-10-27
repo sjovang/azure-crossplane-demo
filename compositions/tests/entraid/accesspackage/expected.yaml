@@ -1,6 +1,8 @@
 ---
 resourceIds:
   - catalog
+  - primaryApproverGroup
+  - secondaryApproverGroup
   - accessPackage
   - groupPackageAssociations
   - assignmentPolicy
@@ -16,9 +18,9 @@ escalationAfterDays: ${double(schema.spec.escalationAfterDays)}
 reviewDurationDays: ${double(schema.spec.reviewDurationDays)}
 reviewType: Reviewers
 reviewers:
-  - objectId: ${schema.spec.primaryApproverGroupId}
+  - objectId: ${primaryApproverGroup.status.objectId}
     subjectType: GroupMembers
-  - objectId: ${schema.spec.secondaryApproverGroupId}
+  - objectId: ${secondaryApproverGroup.status.objectId}
     subjectType: GroupMembers
 accessType: Member
 catalogAssociationId: >-

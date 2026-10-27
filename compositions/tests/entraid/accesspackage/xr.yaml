@@ -9,8 +9,10 @@ spec:
   description: Access for the engineering team.
   catalogRef:
     name: engineering-catalog
+  primaryApproverGroupRef:
+    name: engineering-approvers
+  secondaryApproverGroupRef:
+    name: engineering-reviewers
   groupIds:
     - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
   requestorScope: AllExistingDirectoryMemberUsers
-  primaryApproverGroupId: 00000000-0000-0000-0000-000000000001
-  secondaryApproverGroupId: 00000000-0000-0000-0000-000000000002

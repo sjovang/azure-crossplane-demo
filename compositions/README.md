@@ -82,10 +82,12 @@ in `status.groupAssociations`. `apis/entraid/accesspackage/` creates an access
 package and its assignment policy. Set `catalogRef.name` to the catalog's
 Kubernetes name in the **same namespace**, then select any subset of the
 catalog's `groupIds` in the package's `groupIds`. Packages read the catalog
-through a read-only kro `externalRef`; they own only their package-level
-associations, not the shared catalog associations. Create groups with
-`XSecurityGroup` first and use each group's `status.objectId` in
-`readerGroupIds`, `groupIds`, and the approver group ID fields. Catalog write
+through read-only kro `externalRef`s; they own only their package-level
+associations, not the shared catalog associations. Set
+`primaryApproverGroupRef.name` and `secondaryApproverGroupRef.name` to
+same-namespace `XSecurityGroup` names; the composition resolves their object
+IDs from status. Catalog `readerGroupIds` and catalog/package `groupIds` still
+take `XSecurityGroup.status.objectId` values. Catalog write
 roles are not assigned because Crossplane manages the catalog. For guest
 requestors, set the catalog's `externallyVisible` to `true` and use
 `AllExternalSubjects`; internal requests use

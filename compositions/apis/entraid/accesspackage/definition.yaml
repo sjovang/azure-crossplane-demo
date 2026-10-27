@@ -56,11 +56,15 @@ spec:
                   description: Display name of the access package and assignment policy.
                   minLength: 1
                   type: string
-                primaryApproverGroupId:
-                  description: Object ID from XSecurityGroup.status.objectId for primary approvals.
-                  minLength: 1
-                  pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
-                  type: string
+                primaryApproverGroupRef:
+                  properties:
+                    name:
+                      description: Same-namespace XSecurityGroup used for primary approvals.
+                      minLength: 1
+                      type: string
+                  required:
+                    - name
+                  type: object
                 requestorScope:
                   default: AllExistingDirectoryMemberUsers
                   description: 'Who may request access: AllExistingDirectoryMemberUsers or AllExternalSubjects.'
@@ -76,17 +80,21 @@ spec:
                   description: How often access assignments are reviewed. Defaults to quarterly.
                   pattern: ^(weekly|monthly|quarterly|halfyearly|annual)$
                   type: string
-                secondaryApproverGroupId:
-                  description: Object ID from XSecurityGroup.status.objectId for escalation and access reviews.
-                  minLength: 1
-                  pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
-                  type: string
+                secondaryApproverGroupRef:
+                  properties:
+                    name:
+                      description: Same-namespace XSecurityGroup used for escalation and reviews.
+                      minLength: 1
+                      type: string
+                  required:
+                    - name
+                  type: object
               required:
                 - catalogRef
                 - description
                 - name
-                - primaryApproverGroupId
-                - secondaryApproverGroupId
+                - primaryApproverGroupRef
+                - secondaryApproverGroupRef
               type: object
             status:
               properties:

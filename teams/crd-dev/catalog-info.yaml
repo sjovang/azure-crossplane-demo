@@ -4,9 +4,8 @@ kind: Group
 metadata:
   name: crd-dev
   description: >-
-    Internal team exercising every composition (networking, virtual
-    machines, App Service, Entra ID, and the web application environment)
-    for development and demo purposes.
+    Internal team exercising the platform compositions for networking,
+    compute, application hosting, databases, Entra ID, and access governance.
 spec:
   type: team
   children: []
