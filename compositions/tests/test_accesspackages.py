@@ -120,7 +120,15 @@ class AccessPackageCompositionTests(unittest.TestCase):
 
         self.assertEqual(self.xrd["spec"]["scope"], "Namespaced")
         self.assertIn("catalogRef", spec["required"])
+        self.assertIn("primaryApproverGroupRef", spec["required"])
+        self.assertIn("secondaryApproverGroupRef", spec["required"])
         self.assertEqual(spec["properties"]["catalogRef"]["required"], ["name"])
+        self.assertEqual(
+            spec["properties"]["primaryApproverGroupRef"]["required"], ["name"]
+        )
+        self.assertEqual(
+            spec["properties"]["secondaryApproverGroupRef"]["required"], ["name"]
+        )
         self.assertNotIn("catalogId", spec["properties"])
         self.assertEqual(spec["properties"]["groupIds"]["default"], [])
         self.assertTrue(spec["properties"]["groupIds"]["uniqueItems"])
@@ -170,6 +178,22 @@ class AccessPackageCompositionTests(unittest.TestCase):
             self.expected["resourceIds"],
         )
         self.assertEqual(graph["status"], self.expected["status"])
+        self.assertEqual(
+            by_id["primaryApproverGroup"]["externalRef"],
+            {
+                "apiVersion": "entraid.platform.example.org/v1alpha1",
+                "kind": "XSecurityGroup",
+                "metadata": {"name": "${schema.spec.primaryApproverGroupRef.name}"},
+            },
+        )
+        self.assertEqual(
+            by_id["secondaryApproverGroup"]["externalRef"],
+            {
+                "apiVersion": "entraid.platform.example.org/v1alpha1",
+                "kind": "XSecurityGroup",
+                "metadata": {"name": "${schema.spec.secondaryApproverGroupRef.name}"},
+            },
+        )
         policy = by_id["assignmentPolicy"]["template"]["spec"]["forProvider"]
         self.assertEqual(
             self.expected["requestorScopes"],
@@ -205,7 +229,13 @@ class AccessPackageCompositionTests(unittest.TestCase):
             policy["approvalSettings"]["approvalStage"][0][
                 "alternativeApprover"
             ][0]["objectId"],
-            "${schema.spec.secondaryApproverGroupId}",
+            "${secondaryApproverGroup.status.objectId}",
+        )
+        self.assertEqual(
+            policy["approvalSettings"]["approvalStage"][0]["primaryApprover"][0][
+                "objectId"
+            ],
+            "${primaryApproverGroup.status.objectId}",
         )
         self.assertEqual(
             policy["assignmentReviewSettings"]["reviewFrequency"],

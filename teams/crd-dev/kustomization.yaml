@@ -4,11 +4,13 @@ kind: Kustomization
 namespace: crd-dev
 resources:
   - ../_base
-  # - network.yaml
-  # - virtualmachines.yaml
-  # - apps.yaml
-  # - webapplication.yaml
-  # - entraid.yaml
+  - network.yaml
+  - virtualmachines.yaml
+  - apps.yaml
+  - webapplication.yaml
+  - entraid.yaml
+  - enterpriseapp.yaml
+  - accesspackages.yaml
 patches:
   - target:
       group: azure.platform.example.org

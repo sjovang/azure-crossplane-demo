@@ -9,3 +9,4 @@ spec:
   location: swedencentral
   appSize: small
   databaseSize: small
+  port: 80

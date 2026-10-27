@@ -16,18 +16,19 @@ spec:
     []string | default=[]
     description="Object IDs from XSecurityGroup.status.objectId already
     registered in catalogRef's groupIds to include as package resources."
+  primaryApproverGroupRef:
+    name: >-
+      string | required=true minLength=1
+      description="Same-namespace XSecurityGroup used for primary approvals."
+  secondaryApproverGroupRef:
+    name: >-
+      string | required=true minLength=1
+      description="Same-namespace XSecurityGroup used for escalation and
+      reviews."
   requestorScope: >-
     string | default="AllExistingDirectoryMemberUsers"
     description="Who may request access: AllExistingDirectoryMemberUsers or
     AllExternalSubjects."
-  primaryApproverGroupId: >-
-    string | required=true minLength=1
-    description="Object ID from XSecurityGroup.status.objectId for primary
-    approvals."
-  secondaryApproverGroupId: >-
-    string | required=true minLength=1
-    description="Object ID from XSecurityGroup.status.objectId for
-    escalation and access reviews."
   approvalTimeoutDays: >-
     integer | default=14
     description="Days before an unapproved request is denied."

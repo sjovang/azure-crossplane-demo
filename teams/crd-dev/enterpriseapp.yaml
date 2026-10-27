@@ -1,0 +1,9 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XEnterpriseApp
+metadata:
+  name: crd-dev-sample-app
+spec:
+  name: crd-dev-sample-app
+  redirectUris:
+    - http://localhost:3000/auth/callback

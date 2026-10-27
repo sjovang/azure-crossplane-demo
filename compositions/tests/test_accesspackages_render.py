@@ -37,7 +37,7 @@ class AccessPackageRenderTests(unittest.TestCase):
         ).read_text())
         provider_version = provider["spec"]["package"].rsplit(":", 1)[1]
         definitions = []
-        for api in ("accesspackage", "accesspackagecatalog"):
+        for api in ("accesspackage", "accesspackagecatalog", "securitygroup"):
             xrd = yaml.safe_load((APIS / api / "definition.yaml").read_text())
             definitions.append((
                 xrd["spec"]["names"]["kind"],
@@ -132,6 +132,12 @@ class AccessPackageRenderTests(unittest.TestCase):
         }
 
     def render(self, api, xr, observed, required=(), failure=False):
+        if api == "accesspackage":
+            required = [
+                *required,
+                self.approver_group("engineering-approvers", "approver-id"),
+                self.approver_group("engineering-reviewers", "reviewer-id"),
+            ]
         result = subprocess.run([
             "crossplane", "render", str(self.write("xr.yaml", [xr])),
             str(APIS / api / "composition.yaml"), str(self.work / "functions.yaml"),
@@ -147,6 +153,14 @@ class AccessPackageRenderTests(unittest.TestCase):
             return []
         self.assertEqual(result.returncode, 0, result.stderr)
         return list(yaml.safe_load_all(result.stdout))
+
+    def approver_group(self, name, object_id):
+        return {
+            "apiVersion": "entraid.platform.example.org/v1alpha1",
+            "kind": "XSecurityGroup",
+            "metadata": {"name": name, "namespace": "developer-portal"},
+            "status": {"objectId": object_id},
+        }
 
     def test_shared_catalog_lifecycle_and_strict_group_selection(self):
         uid = "11111111-1111-4111-8111-111111111111"
@@ -201,6 +215,25 @@ class AccessPackageRenderTests(unittest.TestCase):
                 r for r in rendered if r["kind"] == "AccessPackageResourcePackageAssociation"
             ]
             self.assertEqual(len(associations), 1)
+            policy = next(
+                r for r in rendered if r["kind"] == "AccessPackageAssignmentPolicy"
+            )
+            approval_stage = policy["spec"]["forProvider"]["approvalSettings"][
+                "approvalStage"
+            ][0]
+            self.assertEqual(
+                approval_stage["primaryApprover"][0]["objectId"], "approver-id"
+            )
+            self.assertEqual(
+                approval_stage["alternativeApprover"][0]["objectId"], "reviewer-id"
+            )
+            self.assertEqual(
+                policy["spec"]["forProvider"]["assignmentReviewSettings"]["reviewer"],
+                [
+                    {"objectId": "approver-id", "subjectType": "GroupMembers"},
+                    {"objectId": "reviewer-id", "subjectType": "GroupMembers"},
+                ],
+            )
             self.assertEqual(
                 associations[0]["metadata"]["ownerReferences"][0]["uid"],
                 package_uid,
