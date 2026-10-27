@@ -1,0 +1,15 @@
+---
+resourceIds:
+  - catalog
+  - groupCatalogAssociations
+  - catalogReaderRoleAssignments
+status:
+  id: ${catalog.status.atProvider.id}
+  groupAssociations: >-
+    ${groupCatalogAssociations.map(a, {
+      "groupId": a.spec.forProvider.resourceOriginId,
+      "id": a.?status.?atProvider.?id.orValue(""),
+      "ready": a.?status.?conditions.orValue([]).exists(c,
+        c.type == "Ready" && c.status == "True")
+    })}
+catalogReaderRoleId: 44272f93-9762-48e8-af59-1b5351b1d6b3

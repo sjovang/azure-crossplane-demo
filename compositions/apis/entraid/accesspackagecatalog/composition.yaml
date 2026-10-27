@@ -1,0 +1,81 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: accesspackagecatalogs.entraid.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: entraid.platform.example.org/v1alpha1
+    kind: XAccessPackageCatalog
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${catalog.status.atProvider.id}
+          groupAssociations: >-
+            ${groupCatalogAssociations.map(a, {
+              "groupId": a.spec.forProvider.resourceOriginId,
+              "id": a.?status.?atProvider.?id.orValue(""),
+              "ready": a.?status.?conditions.orValue([]).exists(c,
+                c.type == "Ready" && c.status == "True")
+            })}
+        resources:
+          - id: catalog
+            template:
+              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+              kind: AccessPackageCatalog
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  displayName: ${schema.spec.name}
+                  description: ${schema.spec.description}
+                  externallyVisible: ${schema.spec.externallyVisible}
+                  published: true
+          - id: groupCatalogAssociations
+            forEach:
+              - groupId: ${schema.spec.groupIds}
+            template:
+              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+              kind: AccessPackageResourceCatalogAssociation
+              metadata:
+                namespace: ${schema.metadata.namespace}
+                name: >-
+                  ${("catalog-" + schema.metadata.uid
+                  + "." + groupId).lowerAscii()}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  catalogId: ${catalog.status.atProvider.id}
+                  resourceOriginId: ${groupId}
+                  resourceOriginSystem: AadGroup
+          - id: catalogReaderRoleAssignments
+            forEach:
+              - groupId: ${schema.spec.readerGroupIds}
+            template:
+              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+              kind: AccessPackageCatalogRoleAssignment
+              metadata:
+                name: >-
+                  ${("reader-" + schema.metadata.uid
+                  + "." + groupId).lowerAscii()}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  catalogId: ${catalog.status.atProvider.id}
+                  principalObjectId: ${groupId}
+                  roleId: 44272f93-9762-48e8-af59-1b5351b1d6b3
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

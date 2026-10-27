@@ -1,0 +1,47 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackage
+spec:
+  name: >-
+    string | required=true minLength=1
+    description="Display name of the access package and assignment policy."
+  description: >-
+    string | required=true minLength=1
+    description="Description of the access package and assignment policy."
+  catalogRef:
+    name: >-
+      string | required=true minLength=1
+      description="Logical name of the XAccessPackageCatalog in this namespace."
+  groupIds: >-
+    []string | default=[]
+    description="Object IDs from XSecurityGroup.status.objectId already
+    registered in catalogRef's groupIds to include as package resources."
+  requestorScope: >-
+    string | default="AllExistingDirectoryMemberUsers"
+    description="Who may request access: AllExistingDirectoryMemberUsers or
+    AllExternalSubjects."
+  primaryApproverGroupId: >-
+    string | required=true minLength=1
+    description="Object ID from XSecurityGroup.status.objectId for primary
+    approvals."
+  secondaryApproverGroupId: >-
+    string | required=true minLength=1
+    description="Object ID from XSecurityGroup.status.objectId for
+    escalation and access reviews."
+  approvalTimeoutDays: >-
+    integer | default=14
+    description="Days before an unapproved request is denied."
+  escalationAfterDays: >-
+    integer | default=7
+    description="Days primary approvers have before escalation."
+  reviewDurationDays: >-
+    integer | default=14
+    description="Days reviewers have to complete each access review."
+  reviewFrequency: >-
+    string | default="quarterly"
+    description="How often access assignments are reviewed. Defaults to
+    quarterly."
+status:
+  id: string | description="Provider ID of the Entra access package."
+  assignmentPolicyId: >-
+    string | description="Provider ID of the access package assignment policy."

@@ -1,0 +1,27 @@
+---
+resourceIds:
+  - catalog
+  - accessPackage
+  - groupPackageAssociations
+  - assignmentPolicy
+status:
+  id: ${accessPackage.status.atProvider.id}
+  assignmentPolicyId: ${assignmentPolicy.status.atProvider.id}
+requestorScopes:
+  - AllExistingDirectoryMemberUsers
+  - AllExternalSubjects
+reviewFrequency: ${schema.spec.reviewFrequency}
+approvalTimeoutDays: ${double(schema.spec.approvalTimeoutDays)}
+escalationAfterDays: ${double(schema.spec.escalationAfterDays)}
+reviewDurationDays: ${double(schema.spec.reviewDurationDays)}
+reviewType: Reviewers
+reviewers:
+  - objectId: ${schema.spec.primaryApproverGroupId}
+    subjectType: GroupMembers
+  - objectId: ${schema.spec.secondaryApproverGroupId}
+    subjectType: GroupMembers
+accessType: Member
+catalogAssociationId: >-
+  ${catalog.?status.?groupAssociations.orValue([]).filter(a,
+    a.groupId.lowerAscii() == groupId.lowerAscii()
+    && a.id != "" && a.ready)[0].id}

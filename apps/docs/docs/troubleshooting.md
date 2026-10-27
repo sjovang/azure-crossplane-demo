@@ -146,6 +146,25 @@ kubectl get xsecuritygroups.entraid.platform.example.org -A \
   -o custom-columns=NAME:.metadata.name,MEMBERS:.status.unresolvedMembers,OWNERS:.status.unresolvedOwners
 ```
 
+## An access package or catalog role is not created
+
+`XAccessPackageCatalog` and `XAccessPackage` require
+`EntitlementManagement.ReadWrite.All` on the Crossplane service principal.
+`Authorization_RequestDenied` means the permission is missing or lacks admin
+consent. Re-run the bootstrap as an administrator, or ask one to grant the
+permission:
+
+```sh
+client_id=$(jq -r .clientId infrastructure/azure-credentials-aks.json)
+az ad app permission add --id "$client_id" \
+  --api 00000003-0000-0000-c000-000000000000 \
+  --api-permissions 9acd699f-1e81-4958-b001-93b1d2506e19=Role
+az ad app permission admin-consent --id "$client_id"
+```
+
+Use `azure-credentials-kiac.json` for the local cluster. For guest requests,
+the referenced `XAccessPackageCatalog` must also set `externallyVisible: true`.
+
 ## The documentation site is unavailable
 
 The site is public only on AKS. The local kiac cluster has no Gateway,

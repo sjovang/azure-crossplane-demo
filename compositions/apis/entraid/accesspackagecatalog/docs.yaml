@@ -1,0 +1,41 @@
+---
+summary: >-
+  An Entra entitlement management catalog. Optional XSecurityGroup object IDs
+  can be granted the built-in Catalog Reader role; no write-enabled catalog
+  roles are assigned. Register groupIds once here; the catalog owns their
+  associations and publishes status.groupAssociations. Multiple packages
+  reference this catalog by catalogRef.name and select groups without owning
+  or deleting these shared associations.
+stability: experimental
+commonErrors:
+  - symptom: The Catalog or CatalogRoleAssignment is never created.
+    cause: >-
+      The corresponding provider-azuread managed resource definition is not
+      activated.
+    fix: >-
+      Add accesspackagecatalogs.identitygovernance.azuread.m.upbound.io,
+      accesspackagecatalogroleassignments.identitygovernance.azuread.m.upbound.io
+      and
+      accesspackageresourcecatalogassociations.identitygovernance.azuread.m.upbound.io
+      to the managed resource activation policy.
+  - symptom: >-
+      The catalog or reader role assignment reports
+      Authorization_RequestDenied.
+    cause: >-
+      The service principal lacks the Microsoft Graph application permission
+      EntitlementManagement.ReadWrite.All, or admin consent is missing.
+    fix: >-
+      Re-run the bootstrap script as a Global Administrator or Privileged Role
+      Administrator, or grant EntitlementManagement.ReadWrite.All manually.
+  - symptom: A reader role assignment is rejected.
+    cause: >-
+      A readerGroupIds value is not an Entra security group's object ID.
+    fix: >-
+      Use the value from the group's XSecurityGroup status.objectId.
+  - symptom: Removing a catalog group breaks packages that still use it.
+    cause: >-
+      Catalog associations are shared and their lifecycle belongs to the
+      catalog, not any individual package.
+    fix: >-
+      Remove the group from all package groupIds before removing it from the
+      catalog groupIds. Keep the catalog while any packages reference it.

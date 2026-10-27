@@ -51,8 +51,9 @@ spec:
                   securityEnabled: true
                   mailEnabled: false
                   preventDuplicateNames: true
-                  members: ${compositeResource.?status.?resolvedMembers.orValue([]).filter(u, schema.spec.members.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}
+                  members: "${schema.spec.membershipMode == 'External' ? null : compositeResource.?status.?resolvedMembers.orValue([]).filter(u, schema.spec.members.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}"
                   owners: ${compositeResource.?status.?resolvedOwners.orValue([]).filter(u, schema.spec.owners.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}
+                managementPolicies: "${schema.spec.membershipMode == 'External' ? ['Observe', 'Create', 'Update', 'Delete'] : null}"
     - step: resolve-members
       functionRef:
         name: function-msgraph

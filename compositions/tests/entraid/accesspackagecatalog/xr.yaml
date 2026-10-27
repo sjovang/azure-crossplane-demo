@@ -1,0 +1,14 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackageCatalog
+metadata:
+  name: engineering-catalog
+  namespace: developer-portal
+spec:
+  name: engineering-catalog
+  description: Access packages for the engineering team.
+  externallyVisible: false
+  groupIds:
+    - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
+  readerGroupIds:
+    - 00000000-0000-0000-0000-000000000003
