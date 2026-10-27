@@ -51,7 +51,7 @@ spec:
                     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
                     type: string
                   type: array
-                  uniqueItems: true
+                  x-kubernetes-list-type: set
                 name:
                   description: Display name of the access package and assignment policy.
                   minLength: 1
