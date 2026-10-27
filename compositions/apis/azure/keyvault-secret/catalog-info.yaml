@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-keyvault-secret
+  description: >-
+    Copies a value from a namespaced Kubernetes Secret into an Azure Key Vault
+    secret.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./definition.yaml

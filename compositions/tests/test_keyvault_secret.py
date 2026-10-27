@@ -5,24 +5,37 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+API = ROOT / "apis/azure/keyvault-secret"
+FIXTURES = ROOT / "tests/azure/keyvault-secret"
 
 
 class KeyVaultSecretCompositionTests(unittest.TestCase):
     def setUp(self):
-        self.xrd = yaml.safe_load((ROOT / "xrd.yaml").read_text())
-        self.composition = yaml.safe_load((ROOT / "composition.yaml").read_text())
-        self.expected = yaml.safe_load((ROOT / "tests/expected.yaml").read_text())
+        self.definition = yaml.safe_load((API / "definition.yaml").read_text())
+        self.composition = yaml.safe_load((API / "composition.yaml").read_text())
+        self.expected = yaml.safe_load((FIXTURES / "expected.yaml").read_text())
 
     def test_public_api_contract(self):
-        version = self.xrd["spec"]["versions"][0]
-        schema = version["schema"]["openAPIV3Schema"]
+        schema = self.definition["spec"]["versions"][0]["schema"][
+            "openAPIV3Schema"
+        ]
 
-        self.assertEqual(self.xrd["spec"]["scope"], "Namespaced")
+        self.assertEqual(self.definition["spec"]["scope"], "Namespaced")
         self.assertEqual(
             schema["properties"]["spec"]["required"],
-            ["name", "keyVaultRef", "valueSecretRef"],
+            ["keyVaultRef", "name", "valueSecretRef"],
         )
         self.assertIn("id", schema["properties"]["status"]["properties"])
+        self.assertIn(
+            "versionlessId",
+            schema["properties"]["status"]["properties"],
+        )
+        self.assertEqual(
+            schema["properties"]["spec"]["properties"]["valueSecretRef"][
+                "x-kubernetes-validations"
+            ][0]["rule"],
+            "self == oldSelf",
+        )
 
     def test_resource_graph_snapshot(self):
         graph = self.composition["spec"]["pipeline"][0]["input"]

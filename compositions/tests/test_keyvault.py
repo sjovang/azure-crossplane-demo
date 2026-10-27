@@ -5,23 +5,37 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+API = ROOT / "apis/azure/keyvault"
+FIXTURES = ROOT / "tests/azure/keyvault"
 
 
 class KeyVaultCompositionTests(unittest.TestCase):
     def setUp(self):
-        self.xrd = yaml.safe_load((ROOT / "xrd.yaml").read_text())
-        self.composition = yaml.safe_load((ROOT / "composition.yaml").read_text())
-        self.expected = yaml.safe_load((ROOT / "tests/expected.yaml").read_text())
+        self.definition = yaml.safe_load((API / "definition.yaml").read_text())
+        self.composition = yaml.safe_load((API / "composition.yaml").read_text())
+        self.expected = yaml.safe_load((FIXTURES / "expected.yaml").read_text())
 
     def test_public_api_contract(self):
-        version = self.xrd["spec"]["versions"][0]
-        spec = version["schema"]["openAPIV3Schema"]["properties"]["spec"]
-        status = version["schema"]["openAPIV3Schema"]["properties"]["status"]
+        schema = self.definition["spec"]["versions"][0]["schema"][
+            "openAPIV3Schema"
+        ]
+        spec = schema["properties"]["spec"]
+        status = schema["properties"]["status"]
 
-        self.assertEqual(self.xrd["spec"]["scope"], "Namespaced")
+        self.assertEqual(self.definition["spec"]["scope"], "Namespaced")
         self.assertEqual(
             spec["required"],
-            ["name", "vaultName", "resourceGroupRef"],
+            ["name", "resourceGroupRef", "vaultName"],
+        )
+        self.assertEqual(spec["properties"]["vaultName"]["minLength"], 3)
+        self.assertEqual(spec["properties"]["vaultName"]["maxLength"], 24)
+        self.assertEqual(
+            spec["properties"]["vaultName"]["pattern"],
+            "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$",
+        )
+        self.assertEqual(
+            spec["properties"]["name"]["x-kubernetes-validations"][0]["rule"],
+            "self == oldSelf",
         )
         self.assertIn("id", status["properties"])
 
