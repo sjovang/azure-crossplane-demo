@@ -26,6 +26,20 @@ make check    # regenerate and fail if anything changed
 make test     # run tests/
 ```
 
+VM readiness regression tests run the pinned kro, go-templating and
+auto-ready functions locally. They reproduce the NIC-only false-ready case
+and cover missing dependencies, pending/ready VMs and both OS branches.
+Docker, `crossplane`, `kubectl` and read access to the three managed-resource
+CRDs are required. Only CRD schemas are read from the named cluster; no
+live Secrets are read and nothing is applied:
+
+```sh
+cd compositions
+# Set DOCKER_HOST to your Docker context endpoint if needed (e.g. Colima).
+RUN_VIRTUALMACHINE_RENDER=1 KUBE_CONTEXT=aks-azure-crossplane-demo-admin \
+  python3 -m unittest discover -s tests -p test_virtualmachine_render.py
+```
+
 ## Defining an API
 
 `schema.yaml` uses [SimpleSchema](https://kro.run/docs/concepts/simple-schema):

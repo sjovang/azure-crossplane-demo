@@ -20,7 +20,6 @@ spec:
           # linuxVm/windowsVm are mutually exclusive (includeWhen); the excluded
           # one resolves to an empty value, so concatenation picks the real one.
           # "schema" isn't available in this status block, only in resources[].
-          id: '${linuxVm.status.atProvider.id + windowsVm.status.atProvider.id}'
           vmSize: '${linuxVm.spec.forProvider.size + windowsVm.spec.forProvider.size}'
           privateIp: ${networkInterface.status.atProvider.privateIpAddress}
           networkInterfaceId: ${networkInterface.status.atProvider.id}
@@ -125,7 +124,68 @@ spec:
                     sku: 2025-datacenter-azure-edition
                     version: latest
                   patchMode: AutomaticByPlatform
-    # function-kro doesn't set composed-resource readiness itself, unlike patch-and-transform.
+    # kro can omit the selected VM while an externalRef or NIC is unresolved.
+    # auto-ready only checks emitted resources, so a ready NIC is not enough.
+    - step: check-virtual-machine
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $key := "linuxVm" -}}
+            {{- if eq $xr.spec.os "windows" -}}
+            {{- $key = "windowsVm" -}}
+            {{- end -}}
+            {{- $vm := getComposedResource . $key | default dict -}}
+            {{- $id := (($vm.status | default dict).atProvider | default dict).id | default "" -}}
+            {{- $ready := false -}}
+            {{- range ($vm.status | default dict).conditions -}}
+            {{- if and (eq .type "Ready") (eq .status "True") -}}
+            {{- $ready = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $reason := "WaitingForVirtualMachine" -}}
+            {{- $message := printf "Waiting for %s to be observed with an Azure resource ID and Ready=True." $key -}}
+            {{- if not (get .desired.resources $key) -}}
+            {{- $ready = false -}}
+            {{- $reason = "WaitingForDependencies" -}}
+            {{- $message = printf "Waiting for %s: check XVirtualNetwork %s subnet %s and networkInterface readiness." $key $xr.spec.virtualNetworkRef.name $xr.spec.virtualNetworkRef.subnet -}}
+            {{- if eq $xr.spec.os "linux" -}}
+            {{- $message = printf "%s Check Secret %s key %s in namespace %s." $message $xr.spec.sshPublicKeySecretRef.name $xr.spec.sshPublicKeySecretRef.key $xr.metadata.namespace -}}
+            {{- end -}}
+            {{- end }}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XVirtualMachine
+            metadata:
+              {{- if not (and $ready $id) }}
+              annotations:
+                gotemplating.fn.crossplane.io/ready: "False"
+              {{- else }}
+              annotations: {}
+              {{- end }}
+            status:
+              # Select the actual VM, never the NIC or the other OS branch.
+              id: {{ $id | quote }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: VirtualMachineReady
+                {{- if and $ready $id }}
+                status: "True"
+                reason: Available
+                message: The selected virtual machine has an Azure resource ID and is Ready.
+                {{- else }}
+                status: "False"
+                reason: {{ $reason }}
+                message: {{ $message | quote }}
+                {{- end }}
+    # Leave NIC readiness to auto-ready; the guard only vetoes XR readiness.
     - step: auto-ready
       functionRef:
         name: function-auto-ready

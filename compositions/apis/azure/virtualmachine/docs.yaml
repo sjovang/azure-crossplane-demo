@@ -34,6 +34,17 @@ commonErrors:
     fix: >-
       Create the Secret first; the reference is immutable, so a wrong value
       means recreating the XR.
+  - symptom: The NIC is Ready but the XR remains not-Ready.
+    cause: >-
+      NIC readiness alone does not mean the selected Linux or Windows VM
+      exists. The `VirtualMachineReady` condition reports
+      `WaitingForDependencies` if kro cannot emit the VM, or
+      `WaitingForVirtualMachine` until it has an Azure ID and is Ready.
+    fix: >-
+      Read the condition message. Check the referenced network and subnet,
+      NIC, and (for Linux) the SSH Secret name and key in the XR's namespace.
+      Then check the selected managed VM's conditions. `status.id` is the
+      actual VM's Azure resource ID, never the NIC's ID.
   - symptom: The XR is rejected because the name is too long.
     cause: '`spec.name` is limited to 12 characters.'
     fix: Shorten the name; it is immutable once set.
