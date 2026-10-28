@@ -72,7 +72,7 @@ spec:
                     version: ${schema.spec.deployment.model.version}
                   sku:
                     name: ${schema.spec.deployment.sku.name}
-                    capacity: ${schema.spec.deployment.sku.capacity}
+                    capacity: ${double(schema.spec.deployment.sku.capacity)}
                   versionUpgradeOption: NoAutoUpgrade
           - id: appServiceRoleAssignment
             template:

@@ -88,6 +88,30 @@ class AIBackendCompositionTests(unittest.TestCase):
             "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd"
         ))
 
+    def test_integer_capacity_is_cast_to_provider_numeric_type(self):
+        xrd_schema = self.definition["spec"]["versions"][0]["schema"][
+            "openAPIV3Schema"
+        ]
+        public_capacity = xrd_schema["properties"]["spec"]["properties"][
+            "deployment"
+        ]["properties"]["sku"]["properties"]["capacity"]
+        provider_capacity = yaml.safe_load(
+            (FIXTURES / "provider-deployment-capacity.yaml").read_text()
+        )
+        resources = self.composition["spec"]["pipeline"][0]["input"]["resources"]
+        deployment = next(
+            resource["template"]["spec"]["forProvider"]
+            for resource in resources
+            if resource["id"] == "deployment"
+        )
+
+        self.assertEqual(public_capacity["type"], "integer")
+        self.assertEqual(provider_capacity["type"], "number")
+        self.assertEqual(
+            deployment["sku"]["capacity"],
+            "${double(schema.spec.deployment.sku.capacity)}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
