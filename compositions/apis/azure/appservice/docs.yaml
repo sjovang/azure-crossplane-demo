@@ -11,3 +11,5 @@ exampleNotes: >-
   zone, bind the hostname, and issue a free App Service managed certificate.
   Key Vault secret references may pin a version; changing it updates app
   settings and forces App Service to refresh the referenced credential.
+  XAppService readiness also waits for both the Service Plan and web app to
+  report Synced=True; inspect their events for transient Azure API errors.
