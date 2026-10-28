@@ -1,0 +1,72 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xnetworkmanageripampools.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XNetworkManagerIPAMPool
+    plural: xnetworkmanageripampools
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XNetworkManagerIPAMPool is the Schema for the XNetworkManagerIPAMPool API.
+          properties:
+            spec:
+              properties:
+                addressPrefixes:
+                  description: CIDR blocks for the root IPAM pool.
+                  items:
+                    type: string
+                  type: array
+                location:
+                  default: swedencentral
+                  description: Azure region for the IPAM pool.
+                  type: string
+                name:
+                  description: Logical name of the IPAM pool.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                networkManagerRef:
+                  description: Reference to the parent Network Manager.
+                  properties:
+                    name:
+                      description: Logical name of the XNetworkManager.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                  x-kubernetes-validations:
+                    - message: networkManagerRef is immutable
+                      rule: self == oldSelf
+                tags:
+                  additionalProperties:
+                    type: string
+                  default: null
+                  description: Optional tags to apply to the IPAM pool.
+                  nullable: true
+                  type: object
+              required:
+                - addressPrefixes
+                - name
+                - networkManagerRef
+              type: object
+            status:
+              properties:
+                id:
+                  description: Azure resource ID of the IPAM pool.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

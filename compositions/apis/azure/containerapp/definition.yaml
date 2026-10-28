@@ -1,0 +1,93 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xcontainerapps.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XContainerApp
+    plural: xcontainerapps
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XContainerApp is the Schema for the XContainerApp API.
+          properties:
+            spec:
+              properties:
+                envVars:
+                  additionalProperties:
+                    type: string
+                  default: null
+                  description: Plain (non-secret) environment variables passed to the container.
+                  nullable: true
+                  type: object
+                image:
+                  description: Container image reference to run, e.g. docker.io/library/nginx:latest.
+                  type: string
+                location:
+                  default: swedencentral
+                  description: Azure region for the Container App.
+                  type: string
+                maxReplicas:
+                  default: 3
+                  description: Maximum number of container replicas.
+                  type: integer
+                minReplicas:
+                  default: 1
+                  description: Minimum number of container replicas.
+                  type: integer
+                name:
+                  description: Name of the Container App.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                port:
+                  default: 8080
+                  description: Port the container listens on.
+                  type: integer
+                resourceGroupRef:
+                  description: Resource group hosting the Container App.
+                  properties:
+                    name:
+                      description: Logical name of the XResourceGroup.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                size:
+                  default: small
+                  description: 'T-shirt size: small = 0.25 vCPU/0.5Gi, medium = 0.5 vCPU/1Gi, large = 1 vCPU/2Gi.'
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  type: string
+              required:
+                - image
+                - name
+                - resourceGroupRef
+              type: object
+            status:
+              properties:
+                environmentId:
+                  description: Azure resource ID of the Container App Environment.
+                  type: string
+                fqdn:
+                  description: Public fully qualified domain name of the Container App.
+                  type: string
+                id:
+                  description: Azure resource ID of the Container App.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

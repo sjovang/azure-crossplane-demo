@@ -1,0 +1,8 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    properties:
+      redirectUris:
+        items:
+          pattern: "^https?://"

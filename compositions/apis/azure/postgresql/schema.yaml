@@ -1,0 +1,45 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XDatabase
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Name of the PostgreSQL Flexible Server."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  size: >-
+    string | enum="small,medium,large" default="small"
+    description="T-shirt size: small = B_Standard_B1ms/32GB,
+    medium = GP_Standard_D2s_v3/128GB, large = GP_Standard_D4s_v3/256GB."
+  skuName: >-
+    string | default=""
+    pattern="^((B|GP|MO)_Standard_[A-Za-z0-9_]+)?$"
+    description="Optional provider-format compute SKU override, e.g.
+    B_Standard_B2s. Empty uses size. Storage still follows size.
+    Regional support does not guarantee allocation capacity."
+  postgresVersion: >-
+    string | enum="13,14,15,16" default="16"
+    description="PostgreSQL major version."
+  adminUsername: >-
+    string | default="pgadmin"
+    description="Administrator login name for the server."
+  adminPasswordSecretRef:
+    name: string | required=true
+    key: string | required=true default="password"
+  databaseName: >-
+    string | description="Name of the default database created on the
+    server. Defaults to spec.name."
+  allowAzureServices: >-
+    boolean | default=false
+    description="Add the 0.0.0.0 firewall rule that permits connections
+    from Azure services."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the database server."
+status:
+  id: string | description="Azure resource ID of the Flexible Server."
+  fqdn: string | description="Fully qualified domain name of the server."
+  databaseId: >-
+    string | description="Azure resource ID of the default database."

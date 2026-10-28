@@ -1,0 +1,54 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+    properties:
+      resourceGroupRef:
+        description: Resource group hosting the App Service.
+      envVars:
+        nullable: true
+        default: null
+      keyVaultSecretEnvVars:
+        nullable: true
+        default: null
+        description: >-
+          Application settings resolved through App Service Key Vault
+          references. The XAppService identity must have Key Vault Secrets
+          User on each referenced vault.
+        additionalProperties:
+          type: object
+          properties:
+            vaultName:
+              type: string
+              description: Azure Key Vault name.
+            secretName:
+              type: string
+              description: Azure Key Vault secret name.
+            secretVersion:
+              type: string
+              description: Optional Azure Key Vault secret version.
+          required:
+            - vaultName
+            - secretName
+      customDomain:
+        description: >-
+          Optional custom hostname with a free App Service managed
+          certificate. The CNAME and asuid TXT records are created in an
+          existing Azure public DNS zone. Omitted or empty fields mean no
+          custom domain.
+        x-kubernetes-validations:
+          - rule: >-
+              (has(self.hostname) && self.hostname != '') ==
+              (has(self.dnsZone) && self.dnsZone != '') &&
+              (has(self.hostname) && self.hostname != '') ==
+              (has(self.dnsZoneResourceGroup) &&
+              self.dnsZoneResourceGroup != '')
+            message: >-
+              hostname, dnsZone and dnsZoneResourceGroup are required together
+          - rule: >-
+              !has(self.hostname) || self.hostname == '' ||
+              (has(self.dnsZone) &&
+              self.hostname.endsWith('.' + self.dnsZone))
+            message: hostname must be inside dnsZone

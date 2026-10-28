@@ -1,0 +1,13 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: entraid-accesspackage
+  description: >-
+    An Entra ID access package with group resources and governed assignments.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./definition.yaml

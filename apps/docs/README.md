@@ -20,6 +20,14 @@ On an AKS cluster the site runs in the cluster itself, published at
 
 ## Running locally
 
+In the GitHub Copilot app, review and accept `.github/github-app.yml`, then
+choose **Run docs** from the Run button. It requires
+[`uv`](https://docs.astral.sh/uv/), prepares Python 3.14 and the pinned docs
+dependencies, generates the reference pages, and opens the local preview.
+No cluster or container runtime is needed.
+
+To run it manually with Python 3.10 or later:
+
 ```sh
 cd apps/docs
 python3 -m venv .venv
@@ -48,7 +56,7 @@ files into `docs/reference/`:
 
 | Module | Responsibility |
 | --- | --- |
-| `xrdoc/load.py` | Discover `compositions/**/xrd.yaml`, `composition.yaml`, `docs.yaml` |
+| `xrdoc/load.py` | Discover `compositions/apis/**/definition.yaml`, `composition.yaml`, `docs.yaml` |
 | `xrdoc/schema.py` | Walk `openAPIV3Schema` into flat field rows and CEL rules |
 | `xrdoc/render.py` | Render `templates/reference.md.j2` |
 
@@ -60,8 +68,9 @@ why generation is a separate step rather than a plugin.
 
 ## Adding a new composition
 
-Nothing is needed — a new directory under `compositions/` containing an
-`xrd.yaml` and a `composition.yaml` is picked up automatically.
+Nothing is needed — a new directory under `compositions/apis/` containing a
+generated `definition.yaml` and a `composition.yaml` is picked up
+automatically. See [`compositions/README.md`](../../compositions/README.md).
 
 Field flags are derived from the schema, so there is nothing to keep in sync:
 
@@ -72,8 +81,8 @@ Field flags are derived from the schema, so there is nothing to keep in sync:
 | `nullable` | `nullable: true` |
 | `unvalidated` | `x-kubernetes-preserve-unknown-fields: true` |
 
-Marking a field immutable in an XRD is therefore all that is needed for the
-badge to appear.
+Marking a field `immutable=true` in its `schema.yaml` is therefore all that is
+needed for the badge to appear.
 
 To add the prose the schema cannot supply, drop an optional `docs.yaml` next to
 them:
@@ -97,7 +106,7 @@ setting: the first is the only prose on the index page, and the second is what
 makes the page copy-pasteable.
 
 A `docs.yaml` is invisible to Flux: each composition's `kustomization.yaml`
-lists `xrd.yaml` and `composition.yaml` explicitly.
+lists `definition.yaml` and `composition.yaml` explicitly.
 
 ## Running in the cluster
 

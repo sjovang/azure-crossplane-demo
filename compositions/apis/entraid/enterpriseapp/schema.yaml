@@ -1,0 +1,31 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XEnterpriseApp
+spec:
+  name: >-
+    string | required=true immutable=true minLength=1
+    description="Display name of the Entra ID application."
+  redirectUris: >-
+    []string | required=true minItems=1
+    description="OAuth web redirect URIs allowed for the app."
+  rotationInterval: >-
+    string | default="720h" pattern="^[1-9][0-9]*h$"
+    description="How often External Secrets changes the password rotation
+    trigger. Defaults to 30 days."
+  credentialValidity: >-
+    string | default="1440h" pattern="^[1-9][0-9]*h$"
+    description="Validity of each generated client secret. Defaults to 60
+    days to tolerate a delayed rotation reconciliation."
+status:
+  id: string | description="Provider ID of the Entra application."
+  clientId: string | description="Application (client) ID."
+  objectId: >-
+    string | description="Object ID of the application registration."
+  servicePrincipalId: >-
+    string | description="Object ID of the enterprise service principal."
+  connectionSecretName: >-
+    string | description="Kubernetes Secret containing the generated client
+    secret under the value key."
+  rotationRevision: >-
+    string | description="Non-secret revision that changes whenever
+    credential rotation is triggered."

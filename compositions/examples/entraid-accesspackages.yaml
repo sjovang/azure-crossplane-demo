@@ -1,0 +1,49 @@
+---
+# The approver groups are resolved by same-namespace XSecurityGroup references.
+# Replace groupIds with XSecurityGroup.status.objectId values.
+# Alternatively, use groupRefs: [{name: <group-name>}] on catalog and packages.
+# Groups granting access must use membershipMode: External.
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackageCatalog
+metadata:
+  name: engineering-catalog
+  namespace: developer-portal
+spec:
+  name: engineering-catalog
+  description: Shared engineering access resources.
+  groupIds:
+    - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackage
+metadata:
+  name: engineering-internal
+  namespace: developer-portal
+spec:
+  name: engineering-internal
+  description: Engineering access for internal users.
+  catalogRef:
+    name: engineering-catalog
+  groupIds:
+    - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
+  primaryApproverGroupRef:
+    name: engineering-approvers
+  secondaryApproverGroupRef:
+    name: engineering-reviewers
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackage
+metadata:
+  name: engineering-onboarding
+  namespace: developer-portal
+spec:
+  name: engineering-onboarding
+  description: Engineering access through a separate onboarding package.
+  catalogRef:
+    name: engineering-catalog
+  groupIds:
+    - 4c0b5a4c-f623-4c48-a51d-d92752c9cf2f
+  primaryApproverGroupRef:
+    name: engineering-approvers
+  secondaryApproverGroupRef:
+    name: engineering-reviewers

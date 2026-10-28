@@ -1,0 +1,24 @@
+---
+resourceIds:
+  - catalog
+  - primaryApproverGroup
+  - secondaryApproverGroup
+  - accessPackage
+  - assignmentPolicy
+status:
+  id: ${accessPackage.status.atProvider.id}
+  assignmentPolicyId: ${assignmentPolicy.status.atProvider.id}
+requestorScopes:
+  - AllExistingDirectoryMemberUsers
+  - AllExternalSubjects
+reviewFrequency: ${schema.spec.reviewFrequency}
+approvalTimeoutDays: ${double(schema.spec.approvalTimeoutDays)}
+escalationAfterDays: ${double(schema.spec.escalationAfterDays)}
+reviewDurationDays: ${double(schema.spec.reviewDurationDays)}
+reviewType: Reviewers
+reviewers:
+  - objectId: ${primaryApproverGroup.status.objectId}
+    subjectType: GroupMembers
+  - objectId: ${secondaryApproverGroup.status.objectId}
+    subjectType: GroupMembers
+accessType: Member

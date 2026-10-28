@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XAIBackend
 spec:

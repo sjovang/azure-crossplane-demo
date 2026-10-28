@@ -1,0 +1,19 @@
+---
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+      - appServiceRef
+      - deployment
+    properties:
+      resourceGroupRef:
+        description: Resource group hosting the Azure AI Services account.
+      appServiceRef:
+        description: App Service identity that receives inference access.
+      deployment:
+        description: Model deployment configuration.
+        required:
+          - model
+        properties:
+          model:
+            description: Model catalog configuration.

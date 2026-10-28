@@ -146,6 +146,61 @@ kubectl get xsecuritygroups.entraid.platform.example.org -A \
   -o custom-columns=NAME:.metadata.name,MEMBERS:.status.unresolvedMembers,OWNERS:.status.unresolvedOwners
 ```
 
+## An access package or catalog role is not created
+
+`XAccessPackageCatalog` and `XAccessPackage` require
+`EntitlementManagement.ReadWrite.All` on the Crossplane service principal.
+`Authorization_RequestDenied` means the permission is missing or lacks admin
+consent. Re-run the bootstrap as an administrator, or ask one to grant the
+permission:
+
+```sh
+client_id=$(jq -r .clientId infrastructure/azure-credentials-aks.json)
+az ad app permission add --id "$client_id" \
+  --api 00000003-0000-0000-c000-000000000000 \
+  --api-permissions 9acd699f-1e81-4958-b001-93b1d2506e19=Role
+az ad app permission admin-consent --id "$client_id"
+```
+
+Use `azure-credentials-kiac.json` for the local cluster. For guest requests,
+the referenced `XAccessPackageCatalog` must also set `externallyVisible: true`.
+
+If `GroupResourcesReady=False`, check that every `groupRefs[].name` names a
+Ready `XSecurityGroup` in the same namespace with `status.objectId`, and that
+the catalog registers every selected package group. Its
+`status.groupAssociations` entries must have a nonempty `id` and `ready: true`.
+Approver groups configure approvals only; they do not grant package resources.
+The `crd-dev-access-demo` group is registered in `crd-dev-access-catalog` and
+granted by `crd-dev-access` through name references. After merging, Flux creates
+the group and associations automatically; do not copy object IDs or apply
+manifests manually.
+
+## An access-package catalog returns `403 UnAuthorized`
+
+The AKS and kiac bootstrap scripts declare and grant
+`EntitlementManagement.ReadWrite.All`, but a configured app permission alone
+does not prove tenant admin consent. Inspect the Crossplane service principal's
+Microsoft Graph application-role assignments and confirm that this role is
+assigned to the Microsoft Graph service principal. Re-run the matching
+bootstrap as a Global Administrator or Privileged Role Administrator to grant
+missing permissions. Catalog creation also requires a Microsoft Entra ID P2
+or Microsoft Entra ID Governance license.
+
+## PostgreSQL reports `RegionalAllocationFailed`
+
+`RegionalAllocationFailed` means Azure could not allocate the requested
+compute SKU in the selected region; an SKU listed as region-supported is not
+a capacity guarantee. Try a supported SKU or region and check current quota
+and availability before retrying. Changing region moves the server and its
+environment resources and can affect networking and cost.
+
+The `XDatabase.spec.skuName` and `XWebApplication.spec.databaseSkuName`
+overrides select the provider-format compute SKU while the existing
+`size`/`databaseSize` continues to determine storage. For example, the
+`crd-dev` lab explicitly selects `B_Standard_B2s` with `small` (32 GiB)
+storage in Sweden Central. This is a higher compute cost than `B1ms`; it is a
+capacity mitigation, not a guarantee that Azure will allocate the server.
+
 ## The documentation site is unavailable
 
 The site is public only on AKS. The local kiac cluster has no Gateway,

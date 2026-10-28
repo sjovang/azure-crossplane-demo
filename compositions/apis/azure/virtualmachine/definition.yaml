@@ -1,0 +1,138 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xvirtualmachines.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XVirtualMachine
+    plural: xvirtualmachines
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XVirtualMachine is the Schema for the XVirtualMachine API.
+          properties:
+            spec:
+              properties:
+                adminPasswordSecretRef:
+                  description: Windows only. Secret in the same namespace holding the local administrator password.
+                  properties:
+                    key:
+                      default: password
+                      type: string
+                    name:
+                      type: string
+                  required:
+                    - key
+                    - name
+                  type: object
+                  x-kubernetes-validations:
+                    - message: adminPasswordSecretRef is immutable
+                      rule: self == oldSelf
+                adminUsername:
+                  default: azureuser
+                  description: Local administrator user name.
+                  type: string
+                location:
+                  default: swedencentral
+                  description: Azure region for the virtual machine.
+                  type: string
+                name:
+                  description: Name of the virtual machine.
+                  maxLength: 12
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                os:
+                  description: 'Operating system: linux installs the latest AlmaLinux, windows installs the latest Windows Server.'
+                  enum:
+                    - linux
+                    - windows
+                  type: string
+                resourceGroupRef:
+                  description: Resource group hosting the virtual machine.
+                  properties:
+                    name:
+                      description: Logical name of the XResourceGroup.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                size:
+                  default: small
+                  description: 'T-shirt size: small = 2 vCPU, medium = 4 vCPU, large = 8 vCPU.'
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  type: string
+                sshPublicKeySecretRef:
+                  description: Linux only. Secret in the same namespace holding the OpenSSH public key authorised for the admin user.
+                  properties:
+                    key:
+                      default: id_rsa.pub
+                      type: string
+                    name:
+                      type: string
+                  required:
+                    - key
+                    - name
+                  type: object
+                  x-kubernetes-validations:
+                    - message: sshPublicKeySecretRef is immutable
+                      rule: self == oldSelf
+                virtualNetworkRef:
+                  description: Virtual network and subnet hosting the NIC.
+                  properties:
+                    name:
+                      description: Logical name of the XVirtualNetwork.
+                      type: string
+                    subnet:
+                      description: Name of the subnet within that network.
+                      type: string
+                  required:
+                    - name
+                    - subnet
+                  type: object
+              required:
+                - name
+                - os
+                - resourceGroupRef
+                - virtualNetworkRef
+              type: object
+              x-kubernetes-validations:
+                - message: linux virtual machines require sshPublicKeySecretRef
+                  rule: self.os != 'linux' || has(self.sshPublicKeySecretRef)
+                - message: linux virtual machines authenticate with SSH keys only, remove adminPasswordSecretRef
+                  rule: self.os != 'linux' || !has(self.adminPasswordSecretRef)
+                - message: windows virtual machines require adminPasswordSecretRef
+                  rule: self.os != 'windows' || has(self.adminPasswordSecretRef)
+                - message: windows virtual machines do not support sshPublicKeySecretRef
+                  rule: self.os != 'windows' || !has(self.sshPublicKeySecretRef)
+            status:
+              properties:
+                id:
+                  description: Azure resource ID of the virtual machine.
+                  type: string
+                networkInterfaceId:
+                  description: Azure resource ID of the network interface.
+                  type: string
+                privateIp:
+                  description: Private IP address assigned to the NIC.
+                  type: string
+                vmSize:
+                  description: Azure VM SKU resolved from the requested size.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

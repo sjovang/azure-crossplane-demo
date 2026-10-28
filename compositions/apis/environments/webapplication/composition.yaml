@@ -1,0 +1,289 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: webapplications.environments.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: environments.platform.example.org/v1alpha1
+    kind: XWebApplication
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${resourceGroup.status.id}
+          resourceGroupId: ${resourceGroup.status.id}
+          databaseId: ${database.status.id}
+          databaseFqdn: ${database.status.fqdn}
+          applicationId: ${appService.status.id}
+          applicationHostname: ${appService.status.defaultHostname}
+          applicationUrl: ${appService.status.url}
+          enterpriseApplicationId: ${enterpriseApp.?status.?id.orValue("")}
+          enterpriseApplicationClientId: ${enterpriseApp.?status.?clientId.orValue("")}
+        resources:
+          - id: passwordGenerator
+            readyWhen:
+              - ${true}
+            template:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              metadata:
+                name: ${schema.spec.name}-database-admin
+              spec:
+                length: 24
+                digits: 5
+                symbols: 5
+                symbolCharacters: "-_$@"
+                noUpper: false
+                allowRepeat: true
+          - id: passwordExternalSecret
+            template:
+              apiVersion: external-secrets.io/v1
+              kind: ExternalSecret
+              metadata:
+                name: ${schema.spec.name}-database-admin
+              spec:
+                refreshInterval: "0"
+                target:
+                  name: ${schema.spec.name}-database-admin
+                  creationPolicy: Merge
+                dataFrom:
+                  - sourceRef:
+                      generatorRef:
+                        apiVersion: generators.external-secrets.io/v1alpha1
+                        kind: Password
+                        name: ${passwordGenerator.metadata.name}
+          - id: databaseCredentials
+            readyWhen:
+              - ${databaseCredentials.?data.?password.hasValue()}
+            template:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ${schema.spec.name}-database-admin
+          - id: resourceGroup
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XResourceGroup
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                location: ${schema.spec.location}
+                tags:
+                  environment: ${schema.spec.name}
+                  managed-by: crossplane
+          - id: database
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XDatabase
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                resourceGroupRef:
+                  name: ${resourceGroup.spec.name}
+                size: ${schema.spec.databaseSize}
+                skuName: '${schema.spec.?databaseSkuName.orValue("")}'
+                adminUsername: ${schema.spec.databaseAdminUsername}
+                adminPasswordSecretRef:
+                  name: ${databaseCredentials.metadata.name}
+                  key: password
+                databaseName: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
+                allowAzureServices: true
+                location: ${schema.spec.location}
+          - id: keyVault
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVault
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                vaultName: kv-${schema.spec.name}-${schema.metadata.uid.split("-")[0]}
+                resourceGroupRef:
+                  name: ${resourceGroup.spec.name}
+                appServiceRef:
+                  name: ${schema.spec.name}
+                location: ${schema.spec.location}
+          - id: keyVaultSecret
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVaultSecret
+              metadata:
+                name: ${schema.spec.name}-database-password
+              spec:
+                name: database-password
+                keyVaultRef:
+                  name: ${keyVault.spec.name}
+                valueSecretRef:
+                  name: ${databaseCredentials.metadata.name}
+                  key: password
+          - id: enterpriseApp
+            includeWhen:
+              - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
+            template:
+              apiVersion: entraid.platform.example.org/v1alpha1
+              kind: XEnterpriseApp
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                redirectUris: '${["https://" + schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net") + "/api/auth/microsoft/handler/frame"] + schema.spec.?entraIdAuth.?additionalRedirectUris.orValue([])}'
+                rotationInterval: 720h
+                credentialValidity: 1440h
+          - id: entraClientSecret
+            includeWhen:
+              - ${schema.spec.?entraIdAuth.?enabled.orValue(false)}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVaultSecret
+              metadata:
+                name: ${schema.spec.name}-entra-client-secret
+              spec:
+                name: entra-client-secret
+                keyVaultRef:
+                  name: ${keyVault.spec.name}
+                valueSecretRef:
+                  name: ${enterpriseApp.status.connectionSecretName}
+                  key: value
+          - id: appService
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XAppService
+              metadata:
+                name: ${schema.spec.name}
+              spec:
+                name: ${schema.spec.name}
+                resourceGroupRef:
+                  name: ${resourceGroup.spec.name}
+                size: ${schema.spec.appSize}
+                image: ${schema.spec.image}
+                port: ${schema.spec.port}
+                location: ${schema.spec.location}
+                systemAssignedIdentity: true
+                customDomain:
+                  hostname: '${schema.spec.?customDomain.?hostname.orValue("")}'
+                  dnsZone: '${schema.spec.?customDomain.?dnsZone.orValue("")}'
+                  dnsZoneResourceGroup: '${schema.spec.?customDomain.?dnsZoneResourceGroup.orValue("")}'
+                envVars:
+                  DATABASE_HOST: ${database.status.fqdn}
+                  DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
+                  DATABASE_USER: ${schema.spec.databaseAdminUsername}
+                  APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
+                keyVaultSecretEnvVars:
+                  DATABASE_PASSWORD:
+                    vaultName: ${keyVault.spec.vaultName}
+                    secretName: ${keyVaultSecret.spec.name}
+    # kro propagates includeWhen exclusions through all static dependencies,
+    # including ternaries. Enrich the unconditional app outside that graph.
+    - step: configure-auth-and-check-environment
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $auth := $xr.spec.entraIdAuth | default dict -}}
+            {{- $authEnabled := $auth.enabled | default false -}}
+            {{- $required := list "resourceGroup" "database" "passwordExternalSecret" "keyVault" "keyVaultSecret" "appService" -}}
+            {{- if $authEnabled -}}
+            {{- $required = append $required "enterpriseApp" -}}
+            {{- $required = append $required "entraClientSecret" -}}
+            {{- end -}}
+            {{- $pending := list -}}
+            {{- range $name := $required -}}
+            {{- $resource := getComposedResource $ $name | default dict -}}
+            {{- $ready := false -}}
+            {{- range $condition := ($resource.status | default dict).conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") -}}
+            {{- $ready = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if not $ready -}}
+            {{- $pending = append $pending $name -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $desiredApp := get .desired.resources "appService" | default dict -}}
+            {{- if $desiredApp -}}
+            {{- $app := deepCopy $desiredApp.resource -}}
+            {{- $settings := $app.spec.envVars -}}
+            {{- $secretSettings := $app.spec.keyVaultSecretEnvVars | default dict -}}
+            {{- $databaseSecret := getComposedResource . "keyVaultSecret" | default dict -}}
+            {{- $databaseSecretId := ($databaseSecret.status | default dict).id | default "" -}}
+            {{- $databaseSecretVersion := "" -}}
+            {{- if $databaseSecretId -}}
+            {{- $databaseSecretVersion = regexFind "[^/]+$" $databaseSecretId -}}
+            {{- end -}}
+            {{- $databaseSecretSetting := get $secretSettings "DATABASE_PASSWORD" | default dict -}}
+            {{- if $databaseSecretVersion -}}
+            {{- $_ := set $databaseSecretSetting "secretVersion" $databaseSecretVersion -}}
+            {{- $_ := set $secretSettings "DATABASE_PASSWORD" $databaseSecretSetting -}}
+            {{- else -}}
+            {{- $_ := unset $secretSettings "DATABASE_PASSWORD" -}}
+            {{- $pending = append $pending "databaseSecretVersion" -}}
+            {{- end -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" "" -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_SECRET" "" -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" "" -}}
+            {{- if $authEnabled -}}
+            {{- $enterprise := getComposedResource . "enterpriseApp" | default dict -}}
+            {{- $secret := getComposedResource . "entraClientSecret" | default dict -}}
+            {{- $clientId := ($enterprise.status | default dict).clientId | default "" -}}
+            {{- $secretName := ($secret.spec | default dict).name | default "" -}}
+            {{- $secretId := ($secret.status | default dict).id | default "" -}}
+            {{- $secretVersion := "" -}}
+            {{- if $secretId -}}
+            {{- $secretVersion = regexFind "[^/]+$" $secretId -}}
+            {{- end -}}
+            {{- $vault := getComposedResource . "keyVault" | default dict -}}
+            {{- $vaultName := ($vault.spec | default dict).vaultName | default "" -}}
+            {{- $tenantId := ($vault.status | default dict).tenantId | default "" -}}
+            {{- if and $clientId $secretName $secretVersion $vaultName $tenantId -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" $clientId -}}
+            {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" $tenantId -}}
+            {{- $authSecretSetting := dict -}}
+            {{- $_ := set $authSecretSetting "vaultName" $vaultName -}}
+            {{- $_ := set $authSecretSetting "secretName" $secretName -}}
+            {{- $_ := set $authSecretSetting "secretVersion" $secretVersion -}}
+            {{- $_ := set $secretSettings "AUTH_MICROSOFT_CLIENT_SECRET" $authSecretSetting -}}
+            {{- $_ := set $app.spec "keyVaultSecretEnvVars" $secretSettings -}}
+            {{- end -}}
+            {{- if not (and $clientId $secretName $secretVersion $vaultName $tenantId) -}}
+            {{- $pending = append $pending "authSettings" -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $annotations := $app.metadata.annotations | default dict -}}
+            {{- $_ := set $annotations "gotemplating.fn.crossplane.io/composition-resource-name" "appService" -}}
+            {{- $_ := set $app.metadata "annotations" $annotations }}
+            ---
+            {{ $app | toJson }}
+            {{- else -}}
+            {{- $pending = append $pending "appServiceDesiredState" -}}
+            {{- end }}
+            ---
+            apiVersion: environments.platform.example.org/v1alpha1
+            kind: XWebApplication
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/ready: {{ if $pending }}"False"{{ else }}"True"{{ end }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: EnvironmentReady
+                status: {{ if $pending }}"False"{{ else }}"True"{{ end }}
+                reason: {{ if $pending }}WaitingForResources{{ else }}Available{{ end }}
+                message: {{ if $pending }}{{ printf "Waiting for: %s" (join ", " $pending) | quote }}{{ else }}"All required environment resources are ready"{{ end }}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

@@ -8,6 +8,6 @@ kind: Provider
 metadata:
   name: provider-azuread
 spec:
-  package: xpkg.upbound.io/upbound/provider-azuread:v2.4.0
+  package: xpkg.upbound.io/upbound/provider-azuread:v2.5.0
   runtimeConfigRef:
     name: azure-provider

@@ -1,0 +1,26 @@
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackageCatalog
+metadata:
+  name: crd-dev-access-catalog
+spec:
+  name: crd-dev-access-catalog
+  description: Access package catalog for CRD development examples.
+  groupRefs:
+    - name: crd-dev-access-demo
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XAccessPackage
+metadata:
+  name: crd-dev-access
+spec:
+  name: crd-dev-access
+  description: Access package example for CRD development.
+  catalogRef:
+    name: crd-dev-access-catalog
+  groupRefs:
+    - name: crd-dev-access-demo
+  primaryApproverGroupRef:
+    name: crd-dev-primary-approvers
+  secondaryApproverGroupRef:
+    name: crd-dev-secondary-approvers

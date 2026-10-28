@@ -1,0 +1,147 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xwebapplications.environments.platform.example.org
+spec:
+  group: environments.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XWebApplication
+    plural: xwebapplications
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XWebApplication is the Schema for the XWebApplication API.
+          properties:
+            spec:
+              properties:
+                appSize:
+                  description: App Service t-shirt size.
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  type: string
+                customDomain:
+                  description: Optional custom hostname for the App Service, with DNS records in an existing Azure public DNS zone and a free managed certificate.
+                  properties:
+                    dnsZone:
+                      description: Existing Azure public DNS zone name.
+                      type: string
+                    dnsZoneResourceGroup:
+                      description: Resource group holding the DNS zone.
+                      type: string
+                    hostname:
+                      description: Fully qualified hostname inside dnsZone, e.g. portal.example.com.
+                      type: string
+                  required:
+                    - dnsZone
+                    - dnsZoneResourceGroup
+                    - hostname
+                  type: object
+                  x-kubernetes-validations:
+                    - message: hostname must be inside dnsZone
+                      rule: self.hostname.endsWith('.' + self.dnsZone)
+                databaseAdminUsername:
+                  default: pgadmin
+                  description: PostgreSQL administrator login name.
+                  type: string
+                databaseName:
+                  description: PostgreSQL database name. Defaults to spec.name.
+                  type: string
+                databaseSize:
+                  description: PostgreSQL t-shirt size.
+                  enum:
+                    - small
+                    - medium
+                    - large
+                  type: string
+                databaseSkuName:
+                  default: ""
+                  description: Optional PostgreSQL compute SKU override passed to XDatabase.skuName. Empty uses databaseSize; storage still follows databaseSize. Check regional support and capacity before changing.
+                  pattern: ^((B|GP|MO)_Standard_[A-Za-z0-9_]+)?$
+                  type: string
+                entraIdAuth:
+                  default: {}
+                  description: Optional Microsoft Entra ID authentication for the application. When enabled, an XEnterpriseApp and rotating client credential are provisioned automatically.
+                  properties:
+                    additionalRedirectUris:
+                      default: []
+                      description: Additional OAuth redirect URIs, such as the Backstage localhost callback used during development.
+                      items:
+                        pattern: ^https?://
+                        type: string
+                      type: array
+                    enabled:
+                      default: false
+                      description: Enable Entra ID authentication.
+                      type: boolean
+                  type: object
+                image:
+                  description: Container image reference run by App Service.
+                  type: string
+                location:
+                  description: Azure region for every environment resource.
+                  type: string
+                name:
+                  description: Short environment name used to derive Azure resource names.
+                  maxLength: 12
+                  minLength: 1
+                  pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                port:
+                  default: 8080
+                  description: Port the application container listens on.
+                  maximum: 65535
+                  minimum: 1
+                  type: integer
+              required:
+                - appSize
+                - databaseSize
+                - image
+                - location
+                - name
+              type: object
+            status:
+              properties:
+                applicationHostname:
+                  description: Default public hostname of the App Service.
+                  type: string
+                applicationId:
+                  description: Azure resource ID of the App Service.
+                  type: string
+                applicationUrl:
+                  description: 'Public HTTPS URL of the application: the custom hostname when set, otherwise the default hostname.'
+                  type: string
+                databaseFqdn:
+                  description: Fully qualified domain name of the PostgreSQL server.
+                  type: string
+                databaseId:
+                  description: Azure resource ID of the PostgreSQL server.
+                  type: string
+                enterpriseApplicationClientId:
+                  description: Application (client) ID used for OAuth.
+                  type: string
+                enterpriseApplicationId:
+                  description: Provider ID of the Entra application.
+                  type: string
+                id:
+                  description: Azure resource ID of the environment resource group.
+                  type: string
+                resourceGroupId:
+                  description: Azure resource ID of the environment resource group.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true
