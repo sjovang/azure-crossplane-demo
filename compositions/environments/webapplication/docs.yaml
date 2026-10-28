@@ -18,7 +18,8 @@ exampleNotes: >-
   authentication still provisions the App Service. Ready and the
   EnvironmentReady condition remain false until every required resource,
   including enabled authentication resources, is ready. EnvironmentReady
-  lists pending resources.
+  lists pending resources. The generated Key Vault reference includes the
+  current secret version so App Service configuration refreshes after rotation.
 commonErrors:
   - symptom: >-
       A Key Vault RoleAssignment reports that changing role_definition_id

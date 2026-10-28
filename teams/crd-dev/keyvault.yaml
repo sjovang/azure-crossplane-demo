@@ -1,0 +1,61 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XResourceGroup
+metadata:
+  name: crd-dev-keyvault
+spec:
+  name: crd-dev-keyvault
+  tags:
+    description: Key Vault composition demo for CRD development
+    managed-by: kiac
+---
+# The source credential is generated in-cluster; do not commit Secret values.
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: keyvault-demo-value
+spec:
+  length: 24
+  digits: 5
+  symbols: 5
+  symbolCharacters: "-_$@"
+  noUpper: false
+  allowRepeat: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: keyvault-demo-value
+spec:
+  refreshInterval: "0"
+  target:
+    name: keyvault-demo-value
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: keyvault-demo-value
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+metadata:
+  name: crd-dev-keyvault
+spec:
+  name: crd-dev-keyvault
+  # Change this to a globally unique Azure Key Vault name before enabling.
+  vaultName: kv-crd-dev-demo-01
+  resourceGroupRef:
+    name: crd-dev-keyvault
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: keyvault-demo-value
+spec:
+  name: demo-value
+  keyVaultRef:
+    name: crd-dev-keyvault
+  valueSecretRef:
+    name: keyvault-demo-value
+    key: password

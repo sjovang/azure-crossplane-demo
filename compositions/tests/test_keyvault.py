@@ -49,6 +49,11 @@ class KeyVaultCompositionTests(unittest.TestCase):
             self.expected["resourceIds"],
         )
         self.assertEqual(graph["status"], self.expected["status"])
+        self.assertNotIn("schema", str(graph["status"]))
+        self.assertIn(
+            'keyVault.metadata.annotations["crossplane.io/external-name"]',
+            graph["status"]["vaultName"],
+        )
         self.assertEqual(
             by_id["crossplaneKeyVaultRoleAssignment"]["template"]["spec"][
                 "forProvider"

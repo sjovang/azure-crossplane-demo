@@ -24,6 +24,8 @@ spec:
     - principals.serviceprincipals.azuread.m.upbound.io
     - serviceplans.web.azure.m.upbound.io
     - linuxwebapps.web.azure.m.upbound.io
+    - accounts.cognitiveservices.azure.m.upbound.io
+    - deployments.cognitiveservices.azure.m.upbound.io
     - appservicecustomhostnamebindings.web.azure.m.upbound.io
     - appservicemanagedcertificates.web.azure.m.upbound.io
     - appservicecertificatebindings.web.azure.m.upbound.io

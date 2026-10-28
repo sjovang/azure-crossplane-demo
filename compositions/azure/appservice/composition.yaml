@@ -41,7 +41,11 @@ spec:
             {{- $_ := set $appSettings $name $value -}}
             {{- end -}}
             {{- range $name, $secret := $xr.spec.keyVaultSecretEnvVars -}}
-            {{- $_ := set $appSettings $name (printf "@Microsoft.KeyVault(SecretUri=https://%s.vault.azure.net/secrets/%s)" $secret.vaultName $secret.secretName) -}}
+            {{- $secretUri := printf "https://%s.vault.azure.net/secrets/%s" $secret.vaultName $secret.secretName -}}
+            {{- if $secret.secretVersion -}}
+            {{- $secretUri = printf "%s/%s" $secretUri $secret.secretVersion -}}
+            {{- end -}}
+            {{- $_ := set $appSettings $name (printf "@Microsoft.KeyVault(SecretUri=%s)" $secretUri) -}}
             {{- end }}
             ---
             apiVersion: web.azure.m.upbound.io/v1beta1

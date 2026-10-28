@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass, field
 from typing import Any
 
+from azure.core.credentials import TokenCredential
+from azure.core.exceptions import AzureError
 import httpx
 
 
@@ -24,8 +27,8 @@ Decision rules:
 - Supported regions and images are user choices; never guess them.
 - Use lowercase DNS-compatible names, at most 12 characters for
   XWebApplication.
-- Do not ask for cloud or GitHub credentials. The UI collects those outside
-  the model conversation.
+- Do not ask users for cloud or GitHub credentials; the platform handles
+  authorization outside the model conversation.
 
 Return only one JSON object with this shape:
 {
@@ -54,25 +57,34 @@ __CATALOG__
 
 
 @dataclass
-class ModelConfig:
-    provider: str
-    endpoint: str
-    model: str
-    api_key: str
-    api_version: str = "2024-10-21"
-
-
-@dataclass
 class Session:
-    config: ModelConfig | None = None
     messages: list[dict[str, str]] = field(default_factory=list)
     recommendation: dict[str, Any] | None = None
     github_access_token: str | None = None
     github_login: str | None = None
+    expires_at: float = 0
 
 
 class AdvisorError(Exception):
     pass
+
+
+class AIBackendUnavailable(AdvisorError):
+    pass
+
+
+MAX_CONVERSATION_MESSAGES = 40
+MAX_CONVERSATION_CHARS = 64 * 1024
+
+
+def _append_message(session: Session, role: str, content: str) -> None:
+    current_chars = sum(len(message["content"]) for message in session.messages)
+    if (
+        len(session.messages) >= MAX_CONVERSATION_MESSAGES
+        or current_chars + len(content) > MAX_CONVERSATION_CHARS
+    ):
+        raise AdvisorError("Conversation limit reached. Start a new advisor session.")
+    session.messages.append({"role": role, "content": content})
 
 
 def _extract_json(content: str) -> dict[str, Any]:
@@ -120,31 +132,27 @@ async def interview(
     session: Session,
     user_message: str,
     catalog: str,
+    endpoint: str,
+    deployment: str,
+    credential: TokenCredential,
 ) -> dict[str, Any]:
-    if session.config is None:
-        raise AdvisorError("Configure a model connection before starting.")
+    if not endpoint or not deployment:
+        raise AIBackendUnavailable("The AI backend is not configured.")
 
-    session.messages.append({"role": "user", "content": user_message})
-    config = session.config
-    endpoint = config.endpoint.rstrip("/")
-    headers = {"Content-Type": "application/json"}
-
-    if config.provider == "azure":
-        url = (
-            f"{endpoint}/openai/deployments/{config.model}/chat/completions"
-            f"?api-version={config.api_version}"
+    _append_message(session, "user", user_message)
+    url = f"{endpoint.rstrip('/')}/openai/v1/chat/completions"
+    try:
+        token = await asyncio.to_thread(
+            credential.get_token,
+            "https://ai.azure.com/.default",
         )
-        headers["api-key"] = config.api_key
-        model = config.model
-    elif config.provider == "openai":
-        url = f"{endpoint}/chat/completions"
-        headers["Authorization"] = f"Bearer {config.api_key}"
-        model = config.model
-    else:
-        raise AdvisorError("Unsupported model provider.")
+    except AzureError as error:
+        raise AIBackendUnavailable(
+            f"Could not authenticate to the AI backend ({type(error).__name__})."
+        ) from error
 
     payload = {
-        "model": model,
+        "model": deployment,
         "messages": [
             {
                 "role": "system",
@@ -158,14 +166,22 @@ async def interview(
 
     try:
         async with httpx.AsyncClient(timeout=90) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            if response.status_code == 400 and config.provider == "openai":
-                payload.pop("response_format")
-                response = await client.post(url, headers=headers, json=payload)
+            response = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {token.token}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
             response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        raise AIBackendUnavailable(
+            f"The AI backend returned HTTP {error.response.status_code}."
+        ) from error
     except httpx.HTTPError as error:
-        raise AdvisorError(
-            f"Model request failed with {type(error).__name__}."
+        raise AIBackendUnavailable(
+            f"The AI backend request failed ({type(error).__name__})."
         ) from error
 
     try:
@@ -179,7 +195,7 @@ async def interview(
         question = result.get("question")
         if not isinstance(question, str) or not question.strip():
             raise AdvisorError("The model did not provide its follow-up question.")
-        session.messages.append({"role": "assistant", "content": question})
+        _append_message(session, "assistant", question)
         return {"action": "ask", "message": question}
     if action != "recommend":
         raise AdvisorError("The model returned an unsupported action.")
@@ -190,7 +206,7 @@ async def interview(
         f"Recommend **{recommendation['pattern']}**: "
         f"{recommendation['reasoning']}"
     )
-    session.messages.append({"role": "assistant", "content": summary})
+    _append_message(session, "assistant", summary)
     return {
         "action": "recommend",
         "message": summary,

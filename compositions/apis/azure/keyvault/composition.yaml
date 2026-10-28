@@ -18,8 +18,8 @@ spec:
         kind: ResourceGraph
         status:
           id: ${keyVault.status.atProvider.id}
-          vaultName: ${schema.spec.vaultName}
-          vaultUri: 'https://${schema.spec.vaultName}.vault.azure.net'
+          vaultName: ${keyVault.metadata.annotations["crossplane.io/external-name"]}
+          vaultUri: ${"https://" + keyVault.metadata.annotations["crossplane.io/external-name"] + ".vault.azure.net"}
           tenantId: ${azurePlatformConfig.data.tenantId}
         resources:
           - id: azurePlatformConfig

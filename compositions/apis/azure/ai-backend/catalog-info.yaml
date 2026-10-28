@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-ai-backend
+  description: >-
+    A managed Azure AI Services account and model deployment with scoped
+    inference access for an App Service identity.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./definition.yaml

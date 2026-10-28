@@ -217,6 +217,20 @@ spec:
             {{- $app := deepCopy $desiredApp.resource -}}
             {{- $settings := $app.spec.envVars -}}
             {{- $secretSettings := $app.spec.keyVaultSecretEnvVars | default dict -}}
+            {{- $databaseSecret := getComposedResource . "keyVaultSecret" | default dict -}}
+            {{- $databaseSecretId := ($databaseSecret.status | default dict).id | default "" -}}
+            {{- $databaseSecretVersion := "" -}}
+            {{- if $databaseSecretId -}}
+            {{- $databaseSecretVersion = regexFind "[^/]+$" $databaseSecretId -}}
+            {{- end -}}
+            {{- $databaseSecretSetting := get $secretSettings "DATABASE_PASSWORD" | default dict -}}
+            {{- if $databaseSecretVersion -}}
+            {{- $_ := set $databaseSecretSetting "secretVersion" $databaseSecretVersion -}}
+            {{- $_ := set $secretSettings "DATABASE_PASSWORD" $databaseSecretSetting -}}
+            {{- else -}}
+            {{- $_ := unset $secretSettings "DATABASE_PASSWORD" -}}
+            {{- $pending = append $pending "databaseSecretVersion" -}}
+            {{- end -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" "" -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_SECRET" "" -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" "" -}}
@@ -225,19 +239,25 @@ spec:
             {{- $secret := getComposedResource . "entraClientSecret" | default dict -}}
             {{- $clientId := ($enterprise.status | default dict).clientId | default "" -}}
             {{- $secretName := ($secret.spec | default dict).name | default "" -}}
+            {{- $secretId := ($secret.status | default dict).id | default "" -}}
+            {{- $secretVersion := "" -}}
+            {{- if $secretId -}}
+            {{- $secretVersion = regexFind "[^/]+$" $secretId -}}
+            {{- end -}}
             {{- $vault := getComposedResource . "keyVault" | default dict -}}
             {{- $vaultName := ($vault.spec | default dict).vaultName | default "" -}}
             {{- $tenantId := ($vault.status | default dict).tenantId | default "" -}}
-            {{- if and $clientId $secretName $vaultName $tenantId -}}
+            {{- if and $clientId $secretName $secretVersion $vaultName $tenantId -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_CLIENT_ID" $clientId -}}
             {{- $_ := set $settings "AUTH_MICROSOFT_TENANT_ID" $tenantId -}}
             {{- $authSecretSetting := dict -}}
             {{- $_ := set $authSecretSetting "vaultName" $vaultName -}}
             {{- $_ := set $authSecretSetting "secretName" $secretName -}}
+            {{- $_ := set $authSecretSetting "secretVersion" $secretVersion -}}
             {{- $_ := set $secretSettings "AUTH_MICROSOFT_CLIENT_SECRET" $authSecretSetting -}}
             {{- $_ := set $app.spec "keyVaultSecretEnvVars" $secretSettings -}}
             {{- end -}}
-            {{- if not (and $clientId $secretName $vaultName $tenantId) -}}
+            {{- if not (and $clientId $secretName $secretVersion $vaultName $tenantId) -}}
             {{- $pending = append $pending "authSettings" -}}
             {{- end -}}
             {{- end -}}

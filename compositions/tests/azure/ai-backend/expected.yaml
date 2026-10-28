@@ -1,0 +1,11 @@
+---
+resourceIds:
+  - azurePlatformConfig
+  - appService
+  - account
+  - deployment
+  - appServiceRoleAssignment
+status:
+  id: ${account.status.atProvider.id}
+  endpoint: ${"https://" + account.metadata.annotations["crossplane.io/external-name"] + ".services.ai.azure.com"}
+  deploymentName: ${deployment.metadata.annotations["crossplane.io/external-name"]}

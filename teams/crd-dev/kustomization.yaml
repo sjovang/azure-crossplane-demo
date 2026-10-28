@@ -7,11 +7,14 @@ resources:
   # - network.yaml
   # - virtualmachines.yaml
   # - apps.yaml
+  # - keyvault.yaml
   # - webapplication.yaml
   # - entraid.yaml
 patches:
+  # Apply the team-wide region only to APIs whose specs expose location.
   - target:
       group: azure.platform.example.org
+      kind: (XResourceGroup|XNetworkManager|XVirtualNetwork|XVirtualMachine|XAppService|XContainerApp|XDatabase|XKeyVault) # yamllint disable-line rule:line-length
     patch: |-
       - op: add
         path: /spec/location

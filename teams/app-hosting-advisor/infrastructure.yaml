@@ -46,6 +46,28 @@ spec:
     name: appadvisor-github-oauth
     key: client-secret
 ---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XAIBackend
+metadata:
+  name: appadvisor
+spec:
+  name: appadvisor
+  accountName: ai-appadvisor-lsdev
+  resourceGroupRef:
+    name: app-hosting-advisor
+  appServiceRef:
+    name: appadvisor
+  location: swedencentral
+  deployment:
+    name: gpt-4.1-mini
+    model:
+      format: OpenAI
+      name: gpt-4.1-mini
+      version: "2025-04-14"
+    sku:
+      name: Standard
+      capacity: 1
+---
 # The image tag is updated by the app-hosting-advisor workflow on main.
 apiVersion: azure.platform.example.org/v1alpha1
 kind: XAppService
@@ -68,6 +90,8 @@ spec:
     GITHUB_REPOSITORY: sjovang/azure-crossplane-demo
     GITHUB_OAUTH_REDIRECT_URI: >-
       https://appadvisor.demo.liasis.dev/api/auth/github/callback
+    AI_ENDPOINT: https://ai-appadvisor-lsdev.services.ai.azure.com
+    AI_DEPLOYMENT_NAME: gpt-4.1-mini
   keyVaultSecretEnvVars:
     GITHUB_OAUTH_CLIENT_ID:
       vaultName: kv-appadvisor-lsdev

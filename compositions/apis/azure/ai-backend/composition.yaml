@@ -1,0 +1,93 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aibackends.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XAIBackend
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${account.status.atProvider.id}
+          endpoint: ${"https://" + account.metadata.annotations["crossplane.io/external-name"] + ".services.ai.azure.com"}
+          deploymentName: ${deployment.metadata.annotations["crossplane.io/external-name"]}
+        resources:
+          - id: azurePlatformConfig
+            externalRef:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: azure-platform-config
+                namespace: crossplane-system
+          - id: appService
+            externalRef:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XAppService
+              metadata:
+                name: ${schema.spec.appServiceRef.name}
+          - id: account
+            template:
+              apiVersion: cognitiveservices.azure.m.upbound.io/v1beta1
+              kind: Account
+              metadata:
+                annotations:
+                  crossplane.io/external-name: ${schema.spec.accountName}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  customSubdomainName: ${schema.spec.accountName}
+                  kind: AIServices
+                  location: ${schema.spec.location}
+                  localAuthEnabled: false
+                  publicNetworkAccessEnabled: true
+                  resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
+                  skuName: S0
+          - id: deployment
+            template:
+              apiVersion: cognitiveservices.azure.m.upbound.io/v1beta1
+              kind: Deployment
+              metadata:
+                annotations:
+                  crossplane.io/external-name: ${schema.spec.deployment.name}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  cognitiveAccountId: ${account.status.atProvider.id}
+                  model:
+                    format: ${schema.spec.deployment.model.format}
+                    name: ${schema.spec.deployment.model.name}
+                    version: ${schema.spec.deployment.model.version}
+                  sku:
+                    name: ${schema.spec.deployment.sku.name}
+                    capacity: ${schema.spec.deployment.sku.capacity}
+                  versionUpgradeOption: NoAutoUpgrade
+          - id: appServiceRoleAssignment
+            template:
+              apiVersion: authorization.azure.m.upbound.io/v1beta1
+              kind: RoleAssignment
+              metadata: {}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  principalId: ${appService.status.identityPrincipalId}
+                  principalType: ServicePrincipal
+                  roleDefinitionId: /subscriptions/${azurePlatformConfig.data.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/5e0bd9bd-7b93-4f28-af87-19fc36ad61bd
+                  scope: ${account.status.atProvider.id}
+                  skipServicePrincipalAadCheck: true
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

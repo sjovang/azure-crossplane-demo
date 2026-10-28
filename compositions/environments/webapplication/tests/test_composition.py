@@ -159,11 +159,19 @@ class WebApplicationCompositionTests(unittest.TestCase):
         resources["keyVault"]["resource"]["status"][
             "tenantId"
         ] = "tenant-id"
+        resources["keyVaultSecret"]["resource"]["status"]["id"] = (
+            "https://kv-webdemo01-example.vault.azure.net/secrets/"
+            "database-password/database-version-1"
+        )
         if auth_enabled:
             resources["enterpriseApp"]["resource"]["status"]["clientId"] = "client-id"
             resources["entraClientSecret"]["resource"]["spec"] = {
                 "name": "entra-client-secret"
             }
+            resources["entraClientSecret"]["resource"]["status"]["id"] = (
+                "https://kv-webdemo01-example.vault.azure.net/secrets/"
+                "entra-client-secret/entra-version-1"
+            )
         return resources
 
     def desired_app(self):
@@ -213,7 +221,45 @@ class WebApplicationCompositionTests(unittest.TestCase):
             {
                 "vaultName": "kv-webdemo01-example",
                 "secretName": "entra-client-secret",
+                "secretVersion": "entra-version-1",
             },
+        )
+        self.assert_composite_ready(xr, True)
+
+    def test_auth_secret_rotation_updates_app_service_reference(self):
+        observed = self.ready_resources(True)
+        first, _, _ = self.render_configuration(
+            auth_enabled=True, observed=observed, desired=self.desired_app(),
+        )
+        observed["entraClientSecret"]["resource"]["status"]["id"] = (
+            "https://kv-webdemo01-example.vault.azure.net/secrets/"
+            "entra-client-secret/entra-version-2"
+        )
+        rotated, _, _ = self.render_configuration(
+            auth_enabled=True, observed=observed, desired=self.desired_app(),
+        )
+        self.assertEqual(
+            first["spec"]["keyVaultSecretEnvVars"][
+                "AUTH_MICROSOFT_CLIENT_SECRET"
+            ]["secretVersion"],
+            "entra-version-1",
+        )
+        self.assertEqual(
+            rotated["spec"]["keyVaultSecretEnvVars"][
+                "AUTH_MICROSOFT_CLIENT_SECRET"
+            ]["secretVersion"],
+            "entra-version-2",
+        )
+
+    def test_database_secret_reference_uses_versioned_id(self):
+        app, xr, _ = self.render_configuration(
+            observed=self.ready_resources(), desired=self.desired_app(),
+        )
+        self.assertEqual(
+            app["spec"]["keyVaultSecretEnvVars"]["DATABASE_PASSWORD"][
+                "secretVersion"
+            ],
+            "database-version-1",
         )
         self.assert_composite_ready(xr, True)
 
@@ -244,6 +290,17 @@ class WebApplicationCompositionTests(unittest.TestCase):
         ] = "False"
         xr, _ = self.render_configuration(observed=observed)
         self.assert_composite_ready(xr, False)
+        observed = self.ready_resources()
+        del observed["keyVaultSecret"]["resource"]["status"]["id"]
+        app, xr, condition = self.render_configuration(
+            observed=observed, desired=self.desired_app(),
+        )
+        self.assert_composite_ready(xr, False)
+        self.assertIn("databaseSecretVersion", condition["conditions"][0]["message"])
+        self.assertNotIn(
+            "DATABASE_PASSWORD",
+            app["spec"]["keyVaultSecretEnvVars"],
+        )
 
     def test_auth_enabled_waits_for_optional_resources_and_outputs(self):
         observed = self.ready_resources(True)
