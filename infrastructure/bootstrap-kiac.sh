@@ -50,7 +50,7 @@ echo "==> Granting Azure role-assignment permissions"
 ensure_role_assignment_permissions "$credentials_file"
 
 subscription_id=$(jq -r .subscriptionId "$credentials_file")
-for provider_namespace in Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL Microsoft.KeyVault; do
+for provider_namespace in Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL Microsoft.KeyVault Microsoft.CognitiveServices; do
   register_azure_provider "$subscription_id" "$provider_namespace"
 done
 

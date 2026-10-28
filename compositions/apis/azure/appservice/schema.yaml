@@ -22,6 +22,10 @@ spec:
     map[string]string
     | description="Plain (non-secret) application settings exposed to the
     container as environment variables."
+  keyVaultSecretEnvVars: >-
+    map[string]string
+    | description="Application settings resolved through App Service Key
+    Vault references."
   systemAssignedIdentity: >-
     boolean | default=false immutable=true
     description="Enable a system-assigned managed identity for the App

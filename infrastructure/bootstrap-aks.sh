@@ -86,7 +86,7 @@ fi
 
 echo "==> Registering Azure resource providers"
 # Microsoft.ContainerService must be registered before az aks create.
-for provider_namespace in Microsoft.ContainerService Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL; do
+for provider_namespace in Microsoft.ContainerService Microsoft.Network Microsoft.Compute Microsoft.Web Microsoft.App Microsoft.DBforPostgreSQL Microsoft.CognitiveServices; do
   register_azure_provider "$subscription_id" "$provider_namespace"
 done
 

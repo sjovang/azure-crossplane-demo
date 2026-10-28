@@ -1,0 +1,47 @@
+---
+# yamllint disable rule:line-length
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XAIBackend
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Logical name of the Azure AI backend."
+  accountName: >-
+    string | required=true immutable=true
+    description="Globally unique Azure AI Services account name."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  appServiceRef:
+    name: >-
+      string | required=true
+      description="XAppService whose system-assigned identity receives inference access."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the AI Services account."
+  deployment:
+    name: >-
+      string | required=true
+      description="Name of the model deployment."
+    model:
+      format: >-
+        string | default="OpenAI"
+        description="Model API format used by the deployment."
+      name: >-
+        string | required=true
+        description="Azure model catalog identifier."
+      version: >-
+        string | required=true
+        description="Pinned Azure model version."
+    sku:
+      name: >-
+        string | default="Standard"
+        description="Azure model deployment SKU."
+      capacity: >-
+        integer | default=1
+        description="Deployment capacity in thousands of tokens per minute."
+status:
+  id: string | description="Azure AI Services account resource ID."
+  endpoint: string | description="Azure AI Services inference endpoint."
+  deploymentName: string | description="Name of the deployed model."

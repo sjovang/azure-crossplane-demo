@@ -1,0 +1,72 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xkeyvaultsecrets.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XKeyVaultSecret
+    plural: xkeyvaultsecrets
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XKeyVaultSecret is the Schema for the XKeyVaultSecret API.
+          properties:
+            spec:
+              properties:
+                keyVaultRef:
+                  description: The XKeyVault that receives the secret.
+                  properties:
+                    name:
+                      description: Logical name of the XKeyVault.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                name:
+                  description: Azure Key Vault secret name.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                valueSecretRef:
+                  description: Kubernetes Secret containing the value.
+                  properties:
+                    key:
+                      description: Key in the source Kubernetes Secret.
+                      type: string
+                    name:
+                      description: Name of the source Kubernetes Secret.
+                      type: string
+                  required:
+                    - key
+                    - name
+                  type: object
+                  x-kubernetes-validations:
+                    - message: valueSecretRef is immutable
+                      rule: self == oldSelf
+              required:
+                - keyVaultRef
+                - name
+                - valueSecretRef
+              type: object
+            status:
+              properties:
+                id:
+                  description: Versioned Azure Key Vault secret ID.
+                  type: string
+                versionlessId:
+                  description: Versionless Azure Key Vault secret ID.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

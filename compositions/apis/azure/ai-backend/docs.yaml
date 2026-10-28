@@ -1,0 +1,28 @@
+---
+summary: >-
+  An Azure AI Services account, a pinned Azure OpenAI model deployment, and
+  account-scoped inference access for an App Service managed identity.
+stability: experimental
+exampleRef: teams/app-hosting-advisor/infrastructure.yaml
+exampleLines: 50-90
+exampleNotes: >-
+  The referenced XAppService must have systemAssignedIdentity enabled. The
+  account name must be globally unique, and the model/version/SKU must be
+  available in the selected region. The advisor uses the account's
+  `services.ai.azure.com` endpoint with Microsoft Entra authentication.
+commonErrors:
+  - symptom: Model deployment is not created.
+    cause: >-
+      The model version or deployment SKU is unavailable in the account's
+      region, or the subscription lacks model quota.
+    fix: >-
+      Choose an available model/version and SKU for the selected Azure region,
+      then verify the subscription's deployment quota.
+  - symptom: The advisor receives an inference authorization error.
+    cause: >-
+      The App Service identity lacks the role assignment, or the assignment
+      has not propagated yet.
+    fix: >-
+      Confirm the identity is enabled and inspect the
+      appServiceRoleAssignment composed resource; allow time for Azure RBAC
+      propagation.

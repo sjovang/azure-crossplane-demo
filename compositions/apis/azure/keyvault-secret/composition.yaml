@@ -1,0 +1,47 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: keyvaultsecrets.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XKeyVaultSecret
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${keyVaultSecret.status.atProvider.id}
+          versionlessId: ${keyVaultSecret.status.atProvider.versionlessId}
+        resources:
+          - id: keyVault
+            externalRef:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XKeyVault
+              metadata:
+                name: ${schema.spec.keyVaultRef.name}
+          - id: keyVaultSecret
+            template:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Secret
+              metadata:
+                annotations:
+                  crossplane.io/external-name: ${schema.spec.name}
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  name: ${schema.spec.name}
+                  keyVaultId: ${keyVault.status.id}
+                  valueSecretRef:
+                    name: ${schema.spec.valueSecretRef.name}
+                    key: ${schema.spec.valueSecretRef.key}
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready

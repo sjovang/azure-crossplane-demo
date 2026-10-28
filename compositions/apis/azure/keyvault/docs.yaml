@@ -1,0 +1,19 @@
+---
+summary: >-
+  An Azure Key Vault with RBAC enabled. The Crossplane provider receives Key
+  Vault Secrets Officer and an optional XAppService identity receives Key Vault
+  Secrets User.
+stability: experimental
+exampleRef: teams/app-hosting-advisor/infrastructure.yaml
+exampleLines: 13-27
+exampleNotes: >-
+  Set appServiceRef when App Service must resolve Key Vault references. The
+  referenced XAppService must enable its system-assigned identity.
+commonErrors:
+  - symptom: The App Service reports unresolved Key Vault references.
+    cause: >-
+      The XAppService identity is not enabled, or its Key Vault Secrets User
+      role assignment has not reconciled.
+    fix: >-
+      Set systemAssignedIdentity to true and inspect the XKeyVault
+      appServiceKeyVaultRoleAssignment composed resource.

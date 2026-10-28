@@ -1,0 +1,14 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: azure-keyvault
+  description: >-
+    An Azure Key Vault with RBAC-enabled access for the platform and an
+    optional App Service identity.
+spec:
+  type: crossplane-xrd
+  lifecycle: experimental
+  owner: group:crd-dev
+  definition:
+    $text: ./definition.yaml

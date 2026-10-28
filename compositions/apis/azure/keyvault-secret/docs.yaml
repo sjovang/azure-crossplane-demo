@@ -1,0 +1,15 @@
+---
+summary: >-
+  Copies one value from a namespaced Kubernetes Secret into an XKeyVault.
+stability: experimental
+exampleRef: teams/app-hosting-advisor/infrastructure.yaml
+exampleLines: 28-49
+exampleNotes: >-
+  Keep the source Kubernetes Secret out of Git. Updating its value creates a
+  new Azure Key Vault secret version.
+commonErrors:
+  - symptom: The managed Secret cannot read the Kubernetes Secret.
+    cause: The source Secret name, key, or namespace is incorrect.
+    fix: >-
+      Confirm valueSecretRef points to a Secret in the XKeyVaultSecret
+      namespace.

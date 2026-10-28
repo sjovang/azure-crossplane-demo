@@ -1,0 +1,22 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Azure Key Vault secret name."
+  keyVaultRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XKeyVault."
+  valueSecretRef:
+    name: >-
+      string | required=true
+      description="Name of the source Kubernetes Secret."
+    key: >-
+      string | required=true
+      description="Key in the source Kubernetes Secret."
+status:
+  id: string | description="Versioned Azure Key Vault secret ID."
+  versionlessId: >-
+    string | description="Versionless Azure Key Vault secret ID."

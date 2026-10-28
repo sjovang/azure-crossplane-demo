@@ -9,3 +9,5 @@ exampleNotes: >-
   example is disabled by default in its kustomization.yaml. Set the optional
   customDomain to add CNAME and asuid TXT records in an existing Azure DNS
   zone, bind the hostname, and issue a free App Service managed certificate.
+  Key Vault secret references may pin a version; changing it updates app
+  settings and forces App Service to refresh the referenced credential.

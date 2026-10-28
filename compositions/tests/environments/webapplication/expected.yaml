@@ -1,25 +1,25 @@
 ---
 # yamllint disable rule:line-length
 resourceIds:
-  - azurePlatformConfig
   - passwordGenerator
   - passwordExternalSecret
   - databaseCredentials
   - resourceGroup
   - database
   - keyVault
-  - crossplaneKeyVaultRoleAssignment
   - keyVaultSecret
   - enterpriseApp
   - entraClientSecret
   - appService
-  - keyVaultRoleAssignment
 appSettings:
   DATABASE_HOST: ${database.status.fqdn}
   DATABASE_NAME: '${schema.spec.?databaseName.orValue(schema.spec.name)}'
   DATABASE_USER: ${schema.spec.databaseAdminUsername}
-  DATABASE_PASSWORD: '@Microsoft.KeyVault(SecretUri=${keyVaultSecret.status.atProvider.versionlessId})'
   APPLICATION_URL: 'https://${schema.spec.?customDomain.?hostname.orValue("app-" + schema.spec.name + ".azurewebsites.net")}'
+keyVaultSecretAppSettings:
+  DATABASE_PASSWORD:
+    vaultName: ${keyVault.spec.vaultName}
+    secretName: ${keyVaultSecret.spec.name}
 customDomain:
   hostname: '${schema.spec.?customDomain.?hostname.orValue("")}'
   dnsZone: '${schema.spec.?customDomain.?dnsZone.orValue("")}'

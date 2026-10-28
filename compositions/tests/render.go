@@ -64,6 +64,10 @@ func main() {
 			values[key] = value
 			return values
 		},
+		"unset": func(values map[string]interface{}, key string) map[string]interface{} {
+			delete(values, key)
+			return values
+		},
 		"deepCopy": func(value interface{}) interface{} {
 			encoded, err := json.Marshal(value)
 			if err != nil {
