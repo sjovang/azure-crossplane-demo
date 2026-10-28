@@ -1,0 +1,431 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: managementsubscriptions.environments.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: environments.platform.example.org/v1alpha1
+    kind: XManagementSubscription
+  mode: Pipeline
+  pipeline:
+    # External lookup and whole-spec copying need Go templates: kro cannot
+    # dynamically select the source GVK or merge a typed ProviderConfig spec.
+    - step: configure-subscription-provider
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $spec := $xr.spec -}}
+            {{- $ref := default (dict) $spec.providerConfigRef -}}
+            {{- $kind := default "ClusterProviderConfig" $ref.kind -}}
+            {{- $sourceName := default "default" $ref.name -}}
+            {{- $providerName := printf "%s-management" $spec.name -}}
+            {{ "\n" }}---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ExtraResources
+            requirements:
+              sourceProvider:
+                apiVersion: azure.m.upbound.io/v1beta1
+                kind: {{ $kind }}
+                matchName: {{ $sourceName | quote }}
+                {{- if eq $kind "ProviderConfig" }}
+                namespace: {{ $xr.metadata.namespace | quote }}
+                {{- end }}
+              {{- if $spec.landingZoneRef }}
+              landingZone:
+                apiVersion: azure.platform.example.org/v1alpha1
+                kind: XLandingZone
+                matchName: {{ $spec.landingZoneRef.name | quote }}
+                namespace: {{ $xr.metadata.namespace | quote }}
+              {{- end }}
+            {{- range $node := list "subscription" "resourceGroup" "workspace" "identity" "vmInsights" "changeTracking" "defenderSql" "diagnosticSetting" -}}
+            {{- $child := getComposedResource $ $node -}}
+            {{- if $child }}
+            {{ "\n" }}---
+            apiVersion: {{ $child.apiVersion }}
+            kind: {{ $child.kind }}
+            metadata:
+              name: {{ $child.metadata.name }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ $node }}
+                gotemplating.fn.crossplane.io/ready: "False"
+            spec: {{ $child.spec | toJson }}
+            {{- end -}}
+            {{- end }}
+            {{- if .extraResources }}
+            {{- $sources := get .extraResources "sourceProvider" -}}
+            {{- if not $sources.items }}{{ fail "source ProviderConfig is missing; refusing fallback or pruning" }}{{ end -}}
+            {{- $source := (index $sources.items 0).resource -}}
+            {{- $groupId := default "" $spec.managementGroupId -}}
+            {{- if $spec.landingZoneRef -}}
+            {{- $zones := get .extraResources "landingZone" -}}
+            {{- if not $zones.items }}{{ fail "landingZoneRef is missing; refusing fallback or pruning" }}{{ end -}}
+            {{- $zone := (index $zones.items 0).resource -}}
+            {{- $groupRef := default (dict) $spec.managementGroupRef -}}
+            {{- $groupName := default "management" $groupRef.name -}}
+            {{- $groups := default (dict) $zone.status.managementGroups -}}
+            {{- $group := default (dict) (get $groups $groupName) -}}
+            {{- $groupId = default "" $group.id -}}
+            {{- if not $groupId }}{{ fail "waiting for landing-zone management group's observed ID (overall Ready is not required)" }}{{ end -}}
+            {{ "\n" }}---
+            apiVersion: protection.crossplane.io/v1beta1
+            kind: Usage
+            metadata:
+              name: {{ printf "%s-landing-zone" $spec.name }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: landingZoneUsage
+            spec:
+              replayDeletion: true
+              of:
+                apiVersion: azure.platform.example.org/v1alpha1
+                kind: XLandingZone
+                resourceRef:
+                  name: {{ $spec.landingZoneRef.name }}
+              by:
+                # The last-lived composed resource, not the owning XR:
+                # by=owner would deadlock foreground garbage collection.
+                apiVersion: azure.m.upbound.io/v1beta1
+                kind: ProviderConfig
+                resourceRef:
+                  name: {{ $providerName }}
+            {{- end -}}
+            {{- $config := deepCopy $source.spec -}}
+            {{- $_ := set $config "subscriptionID" $spec.subscriptionId -}}
+            {{ "\n" }}---
+            apiVersion: azure.m.upbound.io/v1beta1
+            kind: ProviderConfig
+            metadata:
+              name: {{ $providerName }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: managementProviderConfig
+                gotemplating.fn.crossplane.io/ready: "True"
+                management.platform.example.org/group-id: {{ $groupId | quote }}
+            spec: {{ $config | toJson }}
+            {{- end }}
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${subscription.status.id}
+          associationId: ${subscription.status.associationId}
+          managementGroupId: ${subscription.spec.managementGroupId}
+          resourceGroupId: ${resourceGroup.status.id}
+          workspaceId: ${workspace.status.id}
+          identity:
+            id: ${identity.status.id}
+            clientId: ${identity.status.clientId}
+            principalId: ${identity.status.principalId}
+          dataCollectionRuleIds:
+            vmInsights: ${vmInsights.status.id}
+            changeTracking: ${changeTracking.status.id}
+            defenderSql: ${defenderSql.status.id}
+          diagnosticSettingId: ${diagnosticSetting.status.id}
+          providerConfigRef:
+            kind: ${targetProvider.kind}
+            name: ${targetProvider.metadata.name}
+        resources:
+          - id: targetProvider
+            externalRef:
+              apiVersion: azure.m.upbound.io/v1beta1
+              kind: ProviderConfig
+              metadata:
+                name: ${schema.spec.name}-management
+                namespace: ${schema.metadata.namespace}
+          - id: subscription
+            readyWhen:
+              - ${subscription.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${subscription.status.associationId != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XSubscription
+              metadata:
+                name: ${schema.spec.name}-subscription
+              spec:
+                name: ${schema.spec.name}
+                subscriptionId: ${schema.spec.subscriptionId}
+                managementGroupId: ${targetProvider.metadata.annotations["management.platform.example.org/group-id"]}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: resourceGroup
+            readyWhen:
+              - ${resourceGroup.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${resourceGroup.status.id != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XResourceGroup
+              metadata:
+                name: ${schema.spec.name}-monitoring
+              spec:
+                name: ${schema.spec.name}-monitoring
+                location: ${schema.spec.location}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: workspace
+            readyWhen:
+              - ${workspace.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${workspace.status.id != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XLogAnalyticsWorkspace
+              metadata:
+                name: ${schema.spec.name}-workspace
+              spec:
+                name: ${schema.spec.name}-workspace
+                resourceGroupName: ${resourceGroup.status.name}
+                location: ${schema.spec.location}
+                retentionInDays: ${schema.spec.retentionInDays}
+                dailyQuotaGb: ${schema.spec.dailyQuotaGb}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: identity
+            readyWhen:
+              - ${identity.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${identity.status.id != ""}
+              - ${identity.status.clientId != "" && identity.status.principalId != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XUserAssignedIdentity
+              metadata:
+                name: ${schema.spec.name}-ama
+              spec:
+                name: ${schema.spec.name}-ama
+                resourceGroupName: ${resourceGroup.status.name}
+                location: ${schema.spec.location}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: vmInsights
+            readyWhen:
+              - ${vmInsights.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${vmInsights.status.id != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XDataCollectionRule
+              metadata:
+                name: ${schema.spec.name}-vm-insights
+              spec:
+                name: ${schema.spec.name}-vm-insights
+                profile: vmInsights
+                resourceGroupName: ${resourceGroup.status.name}
+                location: ${schema.spec.location}
+                workspaceId: ${workspace.status.id}
+                identityId: ${identity.status.id}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: changeTracking
+            readyWhen:
+              - ${changeTracking.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${changeTracking.status.id != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XDataCollectionRule
+              metadata:
+                name: ${schema.spec.name}-change-tracking
+              spec:
+                name: ${schema.spec.name}-change-tracking
+                profile: changeTracking
+                resourceGroupName: ${resourceGroup.status.name}
+                location: ${schema.spec.location}
+                workspaceId: ${workspace.status.id}
+                identityId: ${identity.status.id}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: defenderSql
+            readyWhen:
+              - ${defenderSql.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${defenderSql.status.id != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XDataCollectionRule
+              metadata:
+                name: ${schema.spec.name}-defender-sql
+              spec:
+                name: ${schema.spec.name}-defender-sql
+                profile: defenderSql
+                resourceGroupName: ${resourceGroup.status.name}
+                location: ${schema.spec.location}
+                workspaceId: ${workspace.status.id}
+                identityId: ${identity.status.id}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+          - id: diagnosticSetting
+            readyWhen:
+              - ${diagnosticSetting.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+              - ${diagnosticSetting.status.id != ""}
+            template:
+              apiVersion: azure.platform.example.org/v1alpha1
+              kind: XDiagnosticSetting
+              metadata:
+                name: ${schema.spec.name}-activity-logs
+              spec:
+                name: ${schema.spec.name}-activity-logs
+                subscriptionId: ${schema.spec.subscriptionId}
+                workspaceId: ${workspace.status.id}
+                providerConfigRef:
+                  kind: ProviderConfig
+                  name: ${targetProvider.metadata.name}
+    - step: sequence-creation-and-deletion
+      functionRef:
+        name: function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        enableDeletionSequencing: true
+        usageVersion: v2
+        replayDeletion: true
+        resetCompositeReadiness: true
+        rules:
+          - sequence: [managementProviderConfig, subscription, resourceGroup]
+          - sequence: [resourceGroup, workspace]
+          - sequence: [resourceGroup, identity]
+          - sequence: [workspace, vmInsights]
+          - sequence: [workspace, changeTracking]
+          - sequence: [workspace, defenderSql]
+          - sequence: [identity, vmInsights]
+          - sequence: [identity, changeTracking]
+          - sequence: [identity, defenderSql]
+          - sequence: [workspace, diagnosticSetting]
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready
+    # Sibling XR ordering is insufficient: child XRs can disappear before
+    # their MRs. Bridge Usages are by the actual nested MR, and their Usage
+    # finalizers preserve protection until Azure cleanup completes.
+    - step: nested-lifecycle-and-readiness
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $complete := true -}}
+            {{- $provider := getComposedResource . "managementProviderConfig" -}}
+            {{- if not $provider -}}
+            {{- $complete = false -}}
+            {{- else if ne $provider.spec.subscriptionID $xr.spec.subscriptionId -}}
+            {{- $complete = false -}}
+            {{- end -}}
+            {{- $kinds := dict -}}
+            {{- $_ := set $kinds "subscription" "ManagementGroupSubscriptionAssociation" -}}
+            {{- $_ := set $kinds "resourceGroup" "ResourceGroup" -}}
+            {{- $_ := set $kinds "workspace" "Workspace" -}}
+            {{- $_ := set $kinds "identity" "UserAssignedIdentity" -}}
+            {{- $_ := set $kinds "vmInsights" "MonitorDataCollectionRule" -}}
+            {{- $_ := set $kinds "changeTracking" "MonitorDataCollectionRule" -}}
+            {{- $_ := set $kinds "defenderSql" "MonitorDataCollectionRule" -}}
+            {{- $_ := set $kinds "diagnosticSetting" "MonitorDiagnosticSetting" -}}
+            {{- $groups := dict -}}
+            {{- $_ := set $groups "subscription" "management.azure.m.upbound.io" -}}
+            {{- $_ := set $groups "resourceGroup" "azure.m.upbound.io" -}}
+            {{- $_ := set $groups "workspace" "operationalinsights.azure.m.upbound.io" -}}
+            {{- $_ := set $groups "identity" "managedidentity.azure.m.upbound.io" -}}
+            {{- range $node, $kind := $kinds -}}
+            {{- $child := getComposedResource $ $node -}}
+            {{- $ready := false -}}
+            {{- if $child -}}
+            {{- range $condition := $child.status.conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") }}{{ $ready = true }}{{ end -}}
+            {{- end -}}
+            {{- if or (not $child.status.id) (not $child.status.managedResourceName) }}{{ $ready = false }}{{ end -}}
+            {{- end -}}
+            {{- if not $ready }}{{ $complete = false }}{{ end -}}
+            {{- $targets := list "managementProviderConfig" -}}
+            {{- if eq $node "resourceGroup" -}}
+            {{- $targets = append $targets "subscription" -}}
+            {{- else if or (eq $node "workspace") (eq $node "identity") -}}
+            {{- $targets = append $targets "resourceGroup" -}}
+            {{- else if or (eq $node "vmInsights") (eq $node "changeTracking") (eq $node "defenderSql") -}}
+            {{- $targets = append (append (append $targets "resourceGroup") "workspace") "identity" -}}
+            {{- else if eq $node "diagnosticSetting" -}}
+            {{- $targets = append (append $targets "resourceGroup") "workspace" -}}
+            {{- end -}}
+            {{- range $targetNode := $targets -}}
+            {{- $target := getComposedResource $ $targetNode -}}
+            {{- $usageName := printf "nested-%s-%s" $node $targetNode -}}
+            {{- $usage := getComposedResource $ $usageName -}}
+            {{- $usageReady := false -}}
+            {{- if $usage -}}
+            {{- range $condition := $usage.status.conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") }}{{ $usageReady = true }}{{ end -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if not $usageReady }}{{ $complete = false }}{{ end -}}
+            {{- if and $child $target $child.status.managedResourceName }}
+            {{ "\n" }}---
+            apiVersion: protection.crossplane.io/v1beta1
+            kind: Usage
+            metadata:
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ $usageName }}
+                gotemplating.fn.crossplane.io/ready: {{ if $usageReady }}"True"{{ else }}"False"{{ end }}
+            spec:
+              replayDeletion: true
+              of:
+                apiVersion: {{ $target.apiVersion }}
+                kind: {{ $target.kind }}
+                resourceRef:
+                  name: {{ $target.metadata.name }}
+              by:
+                apiVersion: {{ default "insights.azure.m.upbound.io" (get $groups $node) }}/v1beta1
+                kind: {{ $kind }}
+                resourceRef:
+                  name: {{ $child.status.managedResourceName }}
+            {{- else if $usage }}
+            {{ "\n" }}---
+            apiVersion: protection.crossplane.io/v1beta1
+            kind: Usage
+            metadata:
+              {{- if $usage.metadata.name }}
+              name: {{ $usage.metadata.name }}
+              {{- end }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ $usageName }}
+                gotemplating.fn.crossplane.io/ready: "False"
+            spec: {{ $usage.spec | toJson }}
+            {{- end -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if $xr.spec.landingZoneRef -}}
+            {{- $usage := getComposedResource . "landingZoneUsage" -}}
+            {{- $ready := false -}}
+            {{- if $usage -}}
+            {{- range $condition := $usage.status.conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") }}{{ $ready = true }}{{ end -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if not $ready }}{{ $complete = false }}{{ end -}}
+            {{- end }}
+            {{ "\n" }}---
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: {{ printf "%s-readiness" $xr.spec.name }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: readinessGate
+                gotemplating.fn.crossplane.io/ready: {{ if $complete }}"True"{{ else }}"False"{{ end }}
+            data:
+              complete: {{ $complete | quote }}

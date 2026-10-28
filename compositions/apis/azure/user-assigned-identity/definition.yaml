@@ -1,0 +1,77 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xuserassignedidentities.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XUserAssignedIdentity
+    plural: xuserassignedidentities
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XUserAssignedIdentity is the Schema for the XUserAssignedIdentity API.
+          properties:
+            spec:
+              properties:
+                location:
+                  minLength: 1
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                name:
+                  maxLength: 63
+                  minLength: 3
+                  pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                providerConfigRef:
+                  default: {}
+                  properties:
+                    kind:
+                      default: ClusterProviderConfig
+                      enum:
+                        - ProviderConfig
+                        - ClusterProviderConfig
+                      type: string
+                    name:
+                      default: default
+                      minLength: 1
+                      type: string
+                  type: object
+                resourceGroupName:
+                  minLength: 1
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+              required:
+                - location
+                - name
+                - resourceGroupName
+              type: object
+            status:
+              properties:
+                clientId:
+                  type: string
+                id:
+                  type: string
+                managedResourceName:
+                  type: string
+                principalId:
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

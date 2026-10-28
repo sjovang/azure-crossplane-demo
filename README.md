@@ -64,6 +64,12 @@ flowchart LR
 - [AKS cluster setup](apps/docs/docs/aks.md) — a real Azure-hosted cluster meeting the [aks-desktop cluster requirements](https://github.com/Azure/aks-desktop/blob/main/docs/cluster-requirements.md).
 - [Working with resources](apps/docs/docs/working-with-resources.md)
 - [Troubleshooting](apps/docs/docs/troubleshooting.md)
+- [ALZ governance](compositions/apis/azure/landingzone/README.md): customizable
+  management groups, audit/deny-only policies, observed group IDs, and imported
+  subscription attachments.
+- [Management subscription](compositions/apis/environments/managementsubscription/README.md):
+  monitoring resources composed from independently reusable resource APIs,
+  with automatic subscription-specific provider configuration.
 
 ## Documentation site
 

@@ -1,0 +1,16 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XManagementSubscription
+metadata:
+  name: operations
+  namespace: platform
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: operations
+  subscriptionId: 11111111-2222-3333-4444-555555555555
+  location: swedencentral
+  managementGroupId: >-
+    /providers/Microsoft.Management/managementGroups/existing-management
+  retentionInDays: 30
+  dailyQuotaGb: -1

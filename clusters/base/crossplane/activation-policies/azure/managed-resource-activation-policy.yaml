@@ -43,3 +43,12 @@ spec:
     - flexibleservers.dbforpostgresql.azure.m.upbound.io
     - flexibleserverdatabases.dbforpostgresql.azure.m.upbound.io
     - flexibleserverfirewallrules.dbforpostgresql.azure.m.upbound.io
+    - managementgroups.management.azure.m.upbound.io
+    - managementgroupsubscriptionassociations.management.azure.m.upbound.io
+    - policydefinitions.authorization.azure.m.upbound.io
+    - policysetdefinitions.authorization.azure.m.upbound.io
+    - managementgrouppolicyassignments.authorization.azure.m.upbound.io
+    - workspaces.operationalinsights.azure.m.upbound.io
+    - userassignedidentities.managedidentity.azure.m.upbound.io
+    - monitordatacollectionrules.insights.azure.m.upbound.io
+    - monitordiagnosticsettings.insights.azure.m.upbound.io

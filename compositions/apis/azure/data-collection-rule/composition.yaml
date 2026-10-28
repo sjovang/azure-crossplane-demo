@@ -1,0 +1,75 @@
+---
+# yamllint disable rule:line-length
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: datacollectionrules.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XDataCollectionRule
+  mode: Pipeline
+  pipeline:
+    - step: kro
+      functionRef:
+        name: function-kro
+      input:
+        apiVersion: kro.fn.crossplane.io/v1alpha1
+        kind: ResourceGraph
+        status:
+          id: ${dataCollectionRule.status.atProvider.id}
+          immutableId: ${dataCollectionRule.status.atProvider.immutableId}
+          managedResourceName: ${dataCollectionRule.metadata.name}
+        resources:
+          - id: dataCollectionRule
+            readyWhen:
+              - ${dataCollectionRule.status.conditions.exists(c, c.type == "Ready" && c.status == "True")}
+            template:
+              apiVersion: insights.azure.m.upbound.io/v1beta1
+              kind: MonitorDataCollectionRule
+              metadata:
+                annotations:
+                  crossplane.io/external-name: ${schema.spec.name}
+              spec:
+                providerConfigRef:
+                  kind: ${schema.spec.?providerConfigRef.?kind.orValue("ClusterProviderConfig")}
+                  name: ${schema.spec.?providerConfigRef.?name.orValue("default")}
+                forProvider:
+                  location: ${schema.spec.location}
+                  resourceGroupName: ${schema.spec.resourceGroupName}
+                  identity:
+                    type: UserAssigned
+                    identityIds:
+                      - ${schema.spec.identityId}
+                  destinations:
+                    logAnalytics:
+                      - name: managementWorkspace
+                        workspaceResourceId: ${schema.spec.workspaceId}
+                  dataSources: >-
+                    ${schema.spec.profile == "vmInsights" ?
+                    {"performanceCounter": [{
+                      "name": "VMInsightsPerfCounters",
+                      "streams": ["Microsoft-InsightsMetrics"],
+                      "counterSpecifiers": ["\\VmInsights\\DetailedMetrics"],
+                      "samplingFrequencyInSeconds": 60
+                    }]} :
+                    {"extension": schema.spec.profile == "changeTracking" ? [
+                      {"name": "changeTrackingWindows", "extensionName": "ChangeTracking-Windows",
+                       "streams": ["Microsoft-ConfigurationChange", "Microsoft-ConfigurationChangeV2", "Microsoft-ConfigurationData"],
+                       "extensionJson": "{\"enableFiles\":true,\"enableSoftware\":true,\"enableRegistry\":true,\"enableServices\":true,\"enableInventory\":true}"},
+                      {"name": "changeTrackingLinux", "extensionName": "ChangeTracking-Linux",
+                       "streams": ["Microsoft-ConfigurationChange", "Microsoft-ConfigurationChangeV2", "Microsoft-ConfigurationData"],
+                       "extensionJson": "{\"enableFiles\":true,\"enableSoftware\":true,\"enableRegistry\":false,\"enableServices\":true,\"enableInventory\":true}"}
+                    ] : [
+                      {"name": "MicrosoftDefenderForSQL", "extensionName": "MicrosoftDefenderForSQL",
+                       "streams": ["Microsoft-DefenderForSqlAlerts", "Microsoft-DefenderForSqlLogins", "Microsoft-DefenderForSqlTelemetry", "Microsoft-DefenderForSqlScanEvents", "Microsoft-DefenderForSqlScanResults"],
+                       "extensionJson": "{\"enableCollectionOfSqlQueriesForSecurityResearch\":false}"}
+                    ]}}
+                  dataFlow:
+                    - destinations:
+                        - managementWorkspace
+                      streams: >-
+                        ${schema.spec.profile == "vmInsights" ? ["Microsoft-InsightsMetrics"] :
+                        schema.spec.profile == "changeTracking" ?
+                        ["Microsoft-ConfigurationChange", "Microsoft-ConfigurationChangeV2", "Microsoft-ConfigurationData"] :
+                        ["Microsoft-DefenderForSqlAlerts", "Microsoft-DefenderForSqlLogins", "Microsoft-DefenderForSqlTelemetry", "Microsoft-DefenderForSqlScanEvents", "Microsoft-DefenderForSqlScanResults"]}

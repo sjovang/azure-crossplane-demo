@@ -1,0 +1,85 @@
+---
+properties:
+  spec:
+    properties:
+      managementGroups:
+        minItems: 1
+        maxItems: 100
+        x-kubernetes-list-type: map
+        x-kubernetes-list-map-keys:
+          - name
+        items:
+          properties:
+            name:
+              type: string
+              maxLength: 32
+              pattern: "^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$"
+            parentRef:
+              required:
+                - name
+              properties:
+                name:
+                  maxLength: 32
+            archetypes:
+              type: array
+              maxItems: 32
+              x-kubernetes-list-type: set
+              items:
+                type: string
+                maxLength: 80
+          x-kubernetes-validations:
+            - rule: "!has(self.parentRef) || self.parentRef.name != self.name"
+              message: A group cannot be its own parent.
+        x-kubernetes-validations:
+          - rule: "self.filter(g, !has(g.parentRef)).size() == 1"
+            message: Exactly one ALZ root group is required.
+          - rule: >-
+              self.all(g, !has(g.parentRef) ||
+              self.exists(p, p.name == g.parentRef.name))
+            message: Every parent reference must identify a group in this list.
+          - rule: >-
+              self.all(g, ('root' in g.archetypes) == !has(g.parentRef))
+            message: Only the ALZ root must have the root archetype.
+      subscriptions:
+        maxItems: 100
+        x-kubernetes-list-type: map
+        x-kubernetes-list-map-keys:
+          - name
+        items:
+          required:
+            - managementGroupRef
+          properties:
+            name:
+              maxLength: 32
+              pattern: "^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$"
+            subscriptionId:
+              maxLength: 36
+              pattern: "^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$"
+            managementGroupRef:
+              properties:
+                name:
+                  maxLength: 32
+      providerConfigRef:
+        default:
+          kind: ClusterProviderConfig
+          name: default
+        required:
+          - name
+          - kind
+    x-kubernetes-validations:
+      - rule: >-
+          oldSelf.managementGroups.all(old,
+          self.managementGroups.exists(g, g.name == old.name &&
+          has(g.parentRef) == has(old.parentRef) &&
+          (!has(old.parentRef) || g.parentRef.name == old.parentRef.name)))
+        message: >-
+          Removing or reparenting managed groups is not supported in v1.
+          Use explicit foreground teardown instead.
+      - rule: >-
+          self.subscriptions.all(s, self.managementGroups.exists(g,
+          g.name == s.managementGroupRef.name))
+        message: Every subscription target must exist in managementGroups.
+      - rule: >-
+          self.subscriptions.all(s, self.subscriptions.filter(other,
+          other.subscriptionId == s.subscriptionId).size() == 1)
+        message: A subscription may only have one attachment in this hierarchy.

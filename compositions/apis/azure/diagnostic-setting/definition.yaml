@@ -1,0 +1,70 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xdiagnosticsettings.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XDiagnosticSetting
+    plural: xdiagnosticsettings
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XDiagnosticSetting is the Schema for the XDiagnosticSetting API.
+          properties:
+            spec:
+              properties:
+                name:
+                  maxLength: 63
+                  minLength: 1
+                  pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                providerConfigRef:
+                  default: {}
+                  properties:
+                    kind:
+                      default: ClusterProviderConfig
+                      enum:
+                        - ProviderConfig
+                        - ClusterProviderConfig
+                      type: string
+                    name:
+                      default: default
+                      minLength: 1
+                      type: string
+                  type: object
+                subscriptionId:
+                  pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                workspaceId:
+                  pattern: ^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.OperationalInsights/workspaces/[^/]+$
+                  type: string
+              required:
+                - name
+                - subscriptionId
+                - workspaceId
+              type: object
+            status:
+              properties:
+                id:
+                  type: string
+                managedResourceName:
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

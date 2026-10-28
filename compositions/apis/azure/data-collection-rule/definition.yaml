@@ -1,0 +1,93 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xdatacollectionrules.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XDataCollectionRule
+    plural: xdatacollectionrules
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XDataCollectionRule is the Schema for the XDataCollectionRule API.
+          properties:
+            spec:
+              properties:
+                identityId:
+                  pattern: ^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.ManagedIdentity/userAssignedIdentities/[^/]+$
+                  type: string
+                location:
+                  minLength: 1
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                name:
+                  maxLength: 63
+                  minLength: 1
+                  pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                profile:
+                  enum:
+                    - vmInsights
+                    - changeTracking
+                    - defenderSql
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                providerConfigRef:
+                  default: {}
+                  properties:
+                    kind:
+                      default: ClusterProviderConfig
+                      enum:
+                        - ProviderConfig
+                        - ClusterProviderConfig
+                      type: string
+                    name:
+                      default: default
+                      minLength: 1
+                      type: string
+                  type: object
+                resourceGroupName:
+                  minLength: 1
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                workspaceId:
+                  pattern: ^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.OperationalInsights/workspaces/[^/]+$
+                  type: string
+              required:
+                - identityId
+                - location
+                - name
+                - profile
+                - resourceGroupName
+                - workspaceId
+              type: object
+            status:
+              properties:
+                id:
+                  type: string
+                immutableId:
+                  type: string
+                managedResourceName:
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

@@ -1,0 +1,2528 @@
+{
+  "package": "xpkg.upbound.io/upbound/provider-azure-insights:v2.7.2",
+  "extractedPackageSHA256": "59d0d4562f67e9d3204017912c60153e48f83670f0145471ea091364495ced74",
+  "crd": {
+    "apiVersion": "apiextensions.k8s.io/v1",
+    "kind": "CustomResourceDefinition",
+    "metadata": {
+      "annotations": {
+        "controller-gen.kubebuilder.io/version": "v0.20.1",
+        "kustomize.config.k8s.io/id": "group: apiextensions.k8s.io\nkind: CustomResourceDefinition\nname: monitordatacollectionrules.insights.azure.m.upbound.io\nversion: v1\n"
+      },
+      "name": "monitordatacollectionrules.insights.azure.m.upbound.io"
+    },
+    "spec": {
+      "group": "insights.azure.m.upbound.io",
+      "names": {
+        "categories": [
+          "crossplane",
+          "managed",
+          "azure"
+        ],
+        "kind": "MonitorDataCollectionRule",
+        "listKind": "MonitorDataCollectionRuleList",
+        "plural": "monitordatacollectionrules",
+        "singular": "monitordatacollectionrule"
+      },
+      "scope": "Namespaced",
+      "versions": [
+        {
+          "name": "v1beta1",
+          "schema": {
+            "openAPIV3Schema": {
+              "properties": {
+                "apiVersion": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "metadata": {
+                  "type": "object"
+                },
+                "spec": {
+                  "properties": {
+                    "forProvider": {
+                      "properties": {
+                        "dataCollectionEndpointId": {
+                          "type": "string"
+                        },
+                        "dataCollectionEndpointIdRef": {
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            },
+                            "policy": {
+                              "properties": {
+                                "resolution": {
+                                  "default": "Required",
+                                  "enum": [
+                                    "Required",
+                                    "Optional"
+                                  ],
+                                  "type": "string"
+                                },
+                                "resolve": {
+                                  "enum": [
+                                    "Always",
+                                    "IfNotPresent"
+                                  ],
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "type": "object"
+                        },
+                        "dataCollectionEndpointIdSelector": {
+                          "properties": {
+                            "matchControllerRef": {
+                              "type": "boolean"
+                            },
+                            "matchLabels": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "type": "object"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            },
+                            "policy": {
+                              "properties": {
+                                "resolution": {
+                                  "default": "Required",
+                                  "enum": [
+                                    "Required",
+                                    "Optional"
+                                  ],
+                                  "type": "string"
+                                },
+                                "resolve": {
+                                  "enum": [
+                                    "Always",
+                                    "IfNotPresent"
+                                  ],
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "dataFlow": {
+                          "items": {
+                            "properties": {
+                              "builtInTransform": {
+                                "type": "string"
+                              },
+                              "destinations": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "outputStream": {
+                                "type": "string"
+                              },
+                              "streams": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "transformKql": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "dataSources": {
+                          "properties": {
+                            "dataImport": {
+                              "properties": {
+                                "eventHubDataSource": {
+                                  "items": {
+                                    "properties": {
+                                      "consumerGroup": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "stream": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "extension": {
+                              "items": {
+                                "properties": {
+                                  "extensionJson": {
+                                    "type": "string"
+                                  },
+                                  "extensionName": {
+                                    "type": "string"
+                                  },
+                                  "inputDataSources": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "iisLog": {
+                              "items": {
+                                "properties": {
+                                  "logDirectories": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "logFile": {
+                              "items": {
+                                "properties": {
+                                  "filePatterns": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "format": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "settings": {
+                                    "properties": {
+                                      "text": {
+                                        "properties": {
+                                          "recordStartTimestampFormat": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "performanceCounter": {
+                              "items": {
+                                "properties": {
+                                  "counterSpecifiers": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "samplingFrequencyInSeconds": {
+                                    "type": "number"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "platformTelemetry": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "prometheusForwarder": {
+                              "items": {
+                                "properties": {
+                                  "labelIncludeFilter": {
+                                    "items": {
+                                      "properties": {
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "syslog": {
+                              "items": {
+                                "properties": {
+                                  "facilityNames": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "logLevels": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "windowsEventLog": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "xPathQueries": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "windowsFirewallLog": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "destinations": {
+                          "properties": {
+                            "azureMonitorMetrics": {
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "eventHub": {
+                              "properties": {
+                                "eventHubId": {
+                                  "type": "string"
+                                },
+                                "eventHubIdRef": {
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "namespace": {
+                                      "type": "string"
+                                    },
+                                    "policy": {
+                                      "properties": {
+                                        "resolution": {
+                                          "default": "Required",
+                                          "enum": [
+                                            "Required",
+                                            "Optional"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "resolve": {
+                                          "enum": [
+                                            "Always",
+                                            "IfNotPresent"
+                                          ],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    }
+                                  },
+                                  "required": [
+                                    "name"
+                                  ],
+                                  "type": "object"
+                                },
+                                "eventHubIdSelector": {
+                                  "properties": {
+                                    "matchControllerRef": {
+                                      "type": "boolean"
+                                    },
+                                    "matchLabels": {
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      },
+                                      "type": "object"
+                                    },
+                                    "namespace": {
+                                      "type": "string"
+                                    },
+                                    "policy": {
+                                      "properties": {
+                                        "resolution": {
+                                          "default": "Required",
+                                          "enum": [
+                                            "Required",
+                                            "Optional"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "resolve": {
+                                          "enum": [
+                                            "Always",
+                                            "IfNotPresent"
+                                          ],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "eventHubDirect": {
+                              "properties": {
+                                "eventHubId": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "logAnalytics": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "workspaceResourceId": {
+                                    "type": "string"
+                                  },
+                                  "workspaceResourceIdRef": {
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "workspaceResourceIdSelector": {
+                                    "properties": {
+                                      "matchControllerRef": {
+                                        "type": "boolean"
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        },
+                                        "type": "object"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "monitorAccount": {
+                              "items": {
+                                "properties": {
+                                  "monitorAccountId": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageBlob": {
+                              "items": {
+                                "properties": {
+                                  "containerName": {
+                                    "type": "string"
+                                  },
+                                  "containerNameRef": {
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "containerNameSelector": {
+                                    "properties": {
+                                      "matchControllerRef": {
+                                        "type": "boolean"
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        },
+                                        "type": "object"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountIdRef": {
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "storageAccountIdSelector": {
+                                    "properties": {
+                                      "matchControllerRef": {
+                                        "type": "boolean"
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        },
+                                        "type": "object"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageBlobDirect": {
+                              "items": {
+                                "properties": {
+                                  "containerName": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageTableDirect": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  },
+                                  "tableName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "identity": {
+                          "properties": {
+                            "identityIds": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array",
+                              "x-kubernetes-list-type": "set"
+                            },
+                            "identityIdsRefs": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "namespace": {
+                                    "type": "string"
+                                  },
+                                  "policy": {
+                                    "properties": {
+                                      "resolution": {
+                                        "default": "Required",
+                                        "enum": [
+                                          "Required",
+                                          "Optional"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "resolve": {
+                                        "enum": [
+                                          "Always",
+                                          "IfNotPresent"
+                                        ],
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "identityIdsSelector": {
+                              "properties": {
+                                "matchControllerRef": {
+                                  "type": "boolean"
+                                },
+                                "matchLabels": {
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  },
+                                  "type": "object"
+                                },
+                                "namespace": {
+                                  "type": "string"
+                                },
+                                "policy": {
+                                  "properties": {
+                                    "resolution": {
+                                      "default": "Required",
+                                      "enum": [
+                                        "Required",
+                                        "Optional"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "resolve": {
+                                      "enum": [
+                                        "Always",
+                                        "IfNotPresent"
+                                      ],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "kind": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        },
+                        "resourceGroupName": {
+                          "type": "string"
+                        },
+                        "resourceGroupNameRef": {
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            },
+                            "policy": {
+                              "properties": {
+                                "resolution": {
+                                  "default": "Required",
+                                  "enum": [
+                                    "Required",
+                                    "Optional"
+                                  ],
+                                  "type": "string"
+                                },
+                                "resolve": {
+                                  "enum": [
+                                    "Always",
+                                    "IfNotPresent"
+                                  ],
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "type": "object"
+                        },
+                        "resourceGroupNameSelector": {
+                          "properties": {
+                            "matchControllerRef": {
+                              "type": "boolean"
+                            },
+                            "matchLabels": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "type": "object"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            },
+                            "policy": {
+                              "properties": {
+                                "resolution": {
+                                  "default": "Required",
+                                  "enum": [
+                                    "Required",
+                                    "Optional"
+                                  ],
+                                  "type": "string"
+                                },
+                                "resolve": {
+                                  "enum": [
+                                    "Always",
+                                    "IfNotPresent"
+                                  ],
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "streamDeclaration": {
+                          "items": {
+                            "properties": {
+                              "column": {
+                                "items": {
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "streamName": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "tags": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object",
+                          "x-kubernetes-map-type": "granular"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "initProvider": {
+                      "properties": {
+                        "dataCollectionEndpointId": {
+                          "type": "string"
+                        },
+                        "dataCollectionEndpointIdRef": {
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            },
+                            "policy": {
+                              "properties": {
+                                "resolution": {
+                                  "default": "Required",
+                                  "enum": [
+                                    "Required",
+                                    "Optional"
+                                  ],
+                                  "type": "string"
+                                },
+                                "resolve": {
+                                  "enum": [
+                                    "Always",
+                                    "IfNotPresent"
+                                  ],
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "type": "object"
+                        },
+                        "dataCollectionEndpointIdSelector": {
+                          "properties": {
+                            "matchControllerRef": {
+                              "type": "boolean"
+                            },
+                            "matchLabels": {
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "type": "object"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            },
+                            "policy": {
+                              "properties": {
+                                "resolution": {
+                                  "default": "Required",
+                                  "enum": [
+                                    "Required",
+                                    "Optional"
+                                  ],
+                                  "type": "string"
+                                },
+                                "resolve": {
+                                  "enum": [
+                                    "Always",
+                                    "IfNotPresent"
+                                  ],
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "dataFlow": {
+                          "items": {
+                            "properties": {
+                              "builtInTransform": {
+                                "type": "string"
+                              },
+                              "destinations": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "outputStream": {
+                                "type": "string"
+                              },
+                              "streams": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "transformKql": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "dataSources": {
+                          "properties": {
+                            "dataImport": {
+                              "properties": {
+                                "eventHubDataSource": {
+                                  "items": {
+                                    "properties": {
+                                      "consumerGroup": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "stream": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "extension": {
+                              "items": {
+                                "properties": {
+                                  "extensionJson": {
+                                    "type": "string"
+                                  },
+                                  "extensionName": {
+                                    "type": "string"
+                                  },
+                                  "inputDataSources": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "iisLog": {
+                              "items": {
+                                "properties": {
+                                  "logDirectories": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "logFile": {
+                              "items": {
+                                "properties": {
+                                  "filePatterns": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "format": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "settings": {
+                                    "properties": {
+                                      "text": {
+                                        "properties": {
+                                          "recordStartTimestampFormat": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "performanceCounter": {
+                              "items": {
+                                "properties": {
+                                  "counterSpecifiers": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "samplingFrequencyInSeconds": {
+                                    "type": "number"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "platformTelemetry": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "prometheusForwarder": {
+                              "items": {
+                                "properties": {
+                                  "labelIncludeFilter": {
+                                    "items": {
+                                      "properties": {
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "syslog": {
+                              "items": {
+                                "properties": {
+                                  "facilityNames": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "logLevels": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "windowsEventLog": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "xPathQueries": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "windowsFirewallLog": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "destinations": {
+                          "properties": {
+                            "azureMonitorMetrics": {
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "eventHub": {
+                              "properties": {
+                                "eventHubId": {
+                                  "type": "string"
+                                },
+                                "eventHubIdRef": {
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "namespace": {
+                                      "type": "string"
+                                    },
+                                    "policy": {
+                                      "properties": {
+                                        "resolution": {
+                                          "default": "Required",
+                                          "enum": [
+                                            "Required",
+                                            "Optional"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "resolve": {
+                                          "enum": [
+                                            "Always",
+                                            "IfNotPresent"
+                                          ],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    }
+                                  },
+                                  "required": [
+                                    "name"
+                                  ],
+                                  "type": "object"
+                                },
+                                "eventHubIdSelector": {
+                                  "properties": {
+                                    "matchControllerRef": {
+                                      "type": "boolean"
+                                    },
+                                    "matchLabels": {
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      },
+                                      "type": "object"
+                                    },
+                                    "namespace": {
+                                      "type": "string"
+                                    },
+                                    "policy": {
+                                      "properties": {
+                                        "resolution": {
+                                          "default": "Required",
+                                          "enum": [
+                                            "Required",
+                                            "Optional"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "resolve": {
+                                          "enum": [
+                                            "Always",
+                                            "IfNotPresent"
+                                          ],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "eventHubDirect": {
+                              "properties": {
+                                "eventHubId": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "logAnalytics": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "workspaceResourceId": {
+                                    "type": "string"
+                                  },
+                                  "workspaceResourceIdRef": {
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "workspaceResourceIdSelector": {
+                                    "properties": {
+                                      "matchControllerRef": {
+                                        "type": "boolean"
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        },
+                                        "type": "object"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "monitorAccount": {
+                              "items": {
+                                "properties": {
+                                  "monitorAccountId": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageBlob": {
+                              "items": {
+                                "properties": {
+                                  "containerName": {
+                                    "type": "string"
+                                  },
+                                  "containerNameRef": {
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "containerNameSelector": {
+                                    "properties": {
+                                      "matchControllerRef": {
+                                        "type": "boolean"
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        },
+                                        "type": "object"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountIdRef": {
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "storageAccountIdSelector": {
+                                    "properties": {
+                                      "matchControllerRef": {
+                                        "type": "boolean"
+                                      },
+                                      "matchLabels": {
+                                        "additionalProperties": {
+                                          "type": "string"
+                                        },
+                                        "type": "object"
+                                      },
+                                      "namespace": {
+                                        "type": "string"
+                                      },
+                                      "policy": {
+                                        "properties": {
+                                          "resolution": {
+                                            "default": "Required",
+                                            "enum": [
+                                              "Required",
+                                              "Optional"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "resolve": {
+                                            "enum": [
+                                              "Always",
+                                              "IfNotPresent"
+                                            ],
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageBlobDirect": {
+                              "items": {
+                                "properties": {
+                                  "containerName": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageTableDirect": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  },
+                                  "tableName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "identity": {
+                          "properties": {
+                            "identityIds": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array",
+                              "x-kubernetes-list-type": "set"
+                            },
+                            "identityIdsRefs": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "namespace": {
+                                    "type": "string"
+                                  },
+                                  "policy": {
+                                    "properties": {
+                                      "resolution": {
+                                        "default": "Required",
+                                        "enum": [
+                                          "Required",
+                                          "Optional"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      "resolve": {
+                                        "enum": [
+                                          "Always",
+                                          "IfNotPresent"
+                                        ],
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "identityIdsSelector": {
+                              "properties": {
+                                "matchControllerRef": {
+                                  "type": "boolean"
+                                },
+                                "matchLabels": {
+                                  "additionalProperties": {
+                                    "type": "string"
+                                  },
+                                  "type": "object"
+                                },
+                                "namespace": {
+                                  "type": "string"
+                                },
+                                "policy": {
+                                  "properties": {
+                                    "resolution": {
+                                      "default": "Required",
+                                      "enum": [
+                                        "Required",
+                                        "Optional"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "resolve": {
+                                      "enum": [
+                                        "Always",
+                                        "IfNotPresent"
+                                      ],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "kind": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        },
+                        "streamDeclaration": {
+                          "items": {
+                            "properties": {
+                              "column": {
+                                "items": {
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "streamName": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "tags": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object",
+                          "x-kubernetes-map-type": "granular"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "managementPolicies": {
+                      "default": [
+                        "*"
+                      ],
+                      "items": {
+                        "enum": [
+                          "Observe",
+                          "Create",
+                          "Update",
+                          "Delete",
+                          "LateInitialize",
+                          "*"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "providerConfigRef": {
+                      "default": {
+                        "kind": "ClusterProviderConfig",
+                        "name": "default"
+                      },
+                      "properties": {
+                        "kind": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "name"
+                      ],
+                      "type": "object"
+                    },
+                    "writeConnectionSecretToRef": {
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "forProvider"
+                  ],
+                  "type": "object",
+                  "x-kubernetes-validations": [
+                    {
+                      "message": "spec.forProvider.dataFlow is a required parameter",
+                      "rule": "!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.dataFlow) || (has(self.initProvider) && has(self.initProvider.dataFlow))"
+                    },
+                    {
+                      "message": "spec.forProvider.destinations is a required parameter",
+                      "rule": "!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.destinations) || (has(self.initProvider) && has(self.initProvider.destinations))"
+                    },
+                    {
+                      "message": "spec.forProvider.location is a required parameter",
+                      "rule": "!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.location) || (has(self.initProvider) && has(self.initProvider.location))"
+                    }
+                  ]
+                },
+                "status": {
+                  "properties": {
+                    "atProvider": {
+                      "properties": {
+                        "dataCollectionEndpointId": {
+                          "type": "string"
+                        },
+                        "dataFlow": {
+                          "items": {
+                            "properties": {
+                              "builtInTransform": {
+                                "type": "string"
+                              },
+                              "destinations": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "outputStream": {
+                                "type": "string"
+                              },
+                              "streams": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "transformKql": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "dataSources": {
+                          "properties": {
+                            "dataImport": {
+                              "properties": {
+                                "eventHubDataSource": {
+                                  "items": {
+                                    "properties": {
+                                      "consumerGroup": {
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "stream": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "extension": {
+                              "items": {
+                                "properties": {
+                                  "extensionJson": {
+                                    "type": "string"
+                                  },
+                                  "extensionName": {
+                                    "type": "string"
+                                  },
+                                  "inputDataSources": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "iisLog": {
+                              "items": {
+                                "properties": {
+                                  "logDirectories": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "logFile": {
+                              "items": {
+                                "properties": {
+                                  "filePatterns": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "format": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "settings": {
+                                    "properties": {
+                                      "text": {
+                                        "properties": {
+                                          "recordStartTimestampFormat": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "type": "object"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "performanceCounter": {
+                              "items": {
+                                "properties": {
+                                  "counterSpecifiers": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "samplingFrequencyInSeconds": {
+                                    "type": "number"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "platformTelemetry": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "prometheusForwarder": {
+                              "items": {
+                                "properties": {
+                                  "labelIncludeFilter": {
+                                    "items": {
+                                      "properties": {
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "syslog": {
+                              "items": {
+                                "properties": {
+                                  "facilityNames": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "logLevels": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "windowsEventLog": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "xPathQueries": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "windowsFirewallLog": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "streams": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "destinations": {
+                          "properties": {
+                            "azureMonitorMetrics": {
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "eventHub": {
+                              "properties": {
+                                "eventHubId": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "eventHubDirect": {
+                              "properties": {
+                                "eventHubId": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "logAnalytics": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "workspaceResourceId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "monitorAccount": {
+                              "items": {
+                                "properties": {
+                                  "monitorAccountId": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageBlob": {
+                              "items": {
+                                "properties": {
+                                  "containerName": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageBlobDirect": {
+                              "items": {
+                                "properties": {
+                                  "containerName": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "storageTableDirect": {
+                              "items": {
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "storageAccountId": {
+                                    "type": "string"
+                                  },
+                                  "tableName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "identity": {
+                          "properties": {
+                            "identityIds": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array",
+                              "x-kubernetes-list-type": "set"
+                            },
+                            "principalId": {
+                              "type": "string"
+                            },
+                            "tenantId": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "immutableId": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "string"
+                        },
+                        "resourceGroupName": {
+                          "type": "string"
+                        },
+                        "streamDeclaration": {
+                          "items": {
+                            "properties": {
+                              "column": {
+                                "items": {
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "streamName": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "tags": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object",
+                          "x-kubernetes-map-type": "granular"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "conditions": {
+                      "items": {
+                        "properties": {
+                          "lastTransitionTime": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "observedGeneration": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "lastTransitionTime",
+                          "reason",
+                          "status",
+                          "type"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array",
+                      "x-kubernetes-list-map-keys": [
+                        "type"
+                      ],
+                      "x-kubernetes-list-type": "map"
+                    },
+                    "lastHandledReconcileAt": {
+                      "type": "string"
+                    },
+                    "observedGeneration": {
+                      "format": "int64",
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "required": [
+                "spec"
+              ],
+              "type": "object"
+            }
+          },
+          "served": true,
+          "storage": true,
+          "subresources": {
+            "status": {}
+          }
+        }
+      ]
+    },
+    "status": {
+      "acceptedNames": {
+        "kind": "",
+        "plural": ""
+      },
+      "conditions": null,
+      "storedVersions": null
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{{- $xr := .observed.composite.resource -}}
+{{- $groups := $xr.spec.managementGroups -}}
+{{- $names := dict -}}
+{{- $roots := 0 -}}
+{{- range $groups -}}
+  {{- if hasKey $names .name -}}{{ fail (printf "Duplicate management group %s" .name) }}{{- end -}}
+  {{- $_ := set $names .name . -}}
+  {{- if not .parentRef -}}{{- $roots = add $roots 1 -}}{{- end -}}
+{{- end -}}
+{{- if ne (int $roots) 1 -}}{{ fail "Exactly one ALZ root is required" }}{{- end -}}
+{{- range $observed := .observed.resources -}}
+  {{- $resource := $observed.resource -}}
+  {{- if eq $resource.kind "ManagementGroup" -}}
+    {{- $logical := trimPrefix (printf "%s-" $xr.spec.name) $resource.metadata.name -}}
+    {{- if not (hasKey $names $logical) -}}{{ fail "Removing existing management groups requires foreground teardown" }}{{- end -}}
+    {{- $group := get $names $logical -}}
+    {{- $oldParent := ($resource.spec.forProvider.parentManagementGroupIdRef | default dict).name | default "" -}}
+    {{- if and $oldParent (ne $oldParent (printf "%s-%s" $xr.spec.name $group.parentRef.name)) -}}{{ fail "Reparenting management groups is not supported in v1" }}{{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- range $group := $groups -}}
+  {{- $current := $group -}}
+  {{- $visited := dict -}}
+  {{- range until 7 -}}
+    {{- if $current -}}
+      {{- if hasKey $visited $current.name -}}{{ fail (printf "Cycle at group %s" $current.name) }}{{- end -}}
+      {{- $_ := set $visited $current.name true -}}
+      {{- if $current.parentRef -}}
+        {{- if not (hasKey $names $current.parentRef.name) -}}{{ fail "Unknown parent management group" }}{{- end -}}
+        {{- $current = get $names $current.parentRef.name -}}
+      {{- else -}}
+        {{- $current = dict -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if or $current (gt (len $visited) 6) -}}{{ fail "Azure supports at most six management-group levels below the tenant root; account for the external parent's depth" }}{{- end -}}
+{{- end -}}

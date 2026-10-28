@@ -1,0 +1,14 @@
+{
+  "sources": {
+    "alz": {
+      "repository": "Azure/azure-landing-zones-library",
+      "release": "platform/alz/2026.10.0",
+      "commit": "4eae565287844360a61545f9799400431adb6d0a"
+    },
+    "builtinPolicies": {
+      "repository": "Azure/azure-policy",
+      "commit": "99313872e9f5095d5da76d22377f01b016da35a6"
+    }
+  },
+  "sha256": "f6ea31da773bb7865f04c084d2514951a45e13e2bd8a30c70d05d77f48c128ce"
+}

@@ -34,6 +34,9 @@ NORMALIZE := ... comments="" | (.. | select(tag == "!!map" and (.required | tag)
 # openAPIV3Schema. Always regenerate: file timestamps cannot detect a deleted
 # xrd-patch.yaml, and generation is fast.
 apis/%/definition.yaml: FORCE
+	@if [[ "$*" == "azure/landingzone" ]]; then \
+		$(PYTHON) apis/azure/landingzone/generate.py; \
+	fi
 	@$(CROSSPLANE) xrd generate --from simpleschema --replace \
 		--path $*/definition.yaml apis/$*/schema.yaml >/dev/null
 	@if [[ -f apis/$*/xrd-patch.yaml ]]; then \
@@ -53,6 +56,7 @@ clean: ## Delete generated definition.yaml files.
 
 .PHONY: check
 check: ## Regenerate and fail if any definition.yaml is out of date.
+	@$(PYTHON) apis/azure/landingzone/generate.py --check
 	@$(MAKE) --no-print-directory generate
 	@if ! git diff --exit-code -- apis \
 		|| [[ -n "$$(git ls-files --others --exclude-standard -- 'apis/*definition.yaml')" ]]; then \

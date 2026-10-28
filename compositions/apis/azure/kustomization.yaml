@@ -10,3 +10,9 @@ resources:
   - appservice
   - containerapp
   - postgresql
+  - landingzone
+  - subscription
+  - log-analytics-workspace
+  - user-assigned-identity
+  - data-collection-rule
+  - diagnostic-setting
