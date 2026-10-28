@@ -20,6 +20,14 @@ On an AKS cluster the site runs in the cluster itself, published at
 
 ## Running locally
 
+In the GitHub Copilot app, review and accept `.github/github-app.yml`, then
+choose **Run docs** from the Run button. It requires
+[`uv`](https://docs.astral.sh/uv/), prepares Python 3.14 and the pinned docs
+dependencies, generates the reference pages, and opens the local preview.
+No cluster or container runtime is needed.
+
+To run it manually with Python 3.10 or later:
+
 ```sh
 cd apps/docs
 python3 -m venv .venv
