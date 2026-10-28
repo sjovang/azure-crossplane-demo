@@ -39,6 +39,10 @@ class AppServiceCompositionTests(unittest.TestCase):
             }
         )
         composition = yaml.safe_load((APP_SERVICE / "composition.yaml").read_text())
+        self.assertEqual(
+            [step["step"] for step in composition["spec"]["pipeline"]],
+            ["render-appservice", "check-appservice-sync", "auto-ready"],
+        )
         template = composition["spec"]["pipeline"][0]["input"]["inline"]["template"]
         expected = list(
             yaml.safe_load_all(
@@ -100,6 +104,94 @@ class AppServiceCompositionTests(unittest.TestCase):
             "@Microsoft.KeyVault(SecretUri=https://kv-appdemo.vault.azure.net/"
             "secrets/client-secret/version-123)",
         )
+
+    def test_synced_children_gate_xappservice_readiness(self):
+        composition = yaml.safe_load((APP_SERVICE / "composition.yaml").read_text())
+        template = composition["spec"]["pipeline"][1]["input"]["inline"]["template"]
+        xr = {
+            "apiVersion": "azure.platform.example.org/v1alpha1",
+            "kind": "XAppService",
+            "metadata": {"name": "demo", "namespace": "demo"},
+            "spec": {},
+        }
+
+        def render(service_plan_synced, linux_web_app_synced):
+            observed = {
+                "servicePlan": {
+                    "resource": {
+                        "status": {
+                            "conditions": [{
+                                "type": "Synced",
+                                "status": service_plan_synced,
+                            }, {
+                                "type": "Ready",
+                                "status": "True",
+                            }],
+                        },
+                    },
+                },
+                "linuxWebApp": {
+                    "resource": {
+                        "status": {
+                            "conditions": [{
+                                "type": "Synced",
+                                "status": linux_web_app_synced,
+                            }, {
+                                "type": "Ready",
+                                "status": "True",
+                            }],
+                        },
+                    },
+                },
+            }
+            result = subprocess.run(
+                ["go", "run", str(RENDER)],
+                input=json.dumps({
+                    "template": template,
+                    "xr": xr,
+                    "observed": observed,
+                }),
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return list(yaml.safe_load_all(result.stdout))
+
+        for service_plan_synced, linux_web_app_synced, pending_resource in (
+            ("False", "True", "servicePlan"),
+            ("True", "False", "linuxWebApp"),
+            (None, "True", "servicePlan"),
+        ):
+            with self.subTest(
+                service_plan_synced=service_plan_synced,
+                linux_web_app_synced=linux_web_app_synced,
+            ):
+                xr_doc, claim_conditions = render(
+                    service_plan_synced,
+                    linux_web_app_synced,
+                )
+                self.assertEqual(
+                    xr_doc["metadata"]["annotations"][
+                        "gotemplating.fn.crossplane.io/ready"
+                    ],
+                    "False",
+                )
+                self.assertEqual(
+                    claim_conditions["conditions"][0]["type"],
+                    "AppServiceSynced",
+                )
+                self.assertEqual(
+                    claim_conditions["conditions"][0]["status"],
+                    "False",
+                )
+                self.assertIn(
+                    pending_resource,
+                    claim_conditions["conditions"][0]["message"],
+                )
+
+        xr_doc, claim_conditions = render("True", "True")
+        self.assertEqual(xr_doc["metadata"]["annotations"], {})
+        self.assertEqual(claim_conditions["conditions"][0]["status"], "True")
 
 
 if __name__ == "__main__":

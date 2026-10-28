@@ -201,6 +201,47 @@ spec:
               identityPrincipalId: {{ $linuxWebApp.status.atProvider.identity.principalId }}
             {{- end }}
             {{- end }}
+    - step: check-appservice-sync
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $pending := list -}}
+            {{- range $key := list "servicePlan" "linuxWebApp" -}}
+            {{- $resource := getComposedResource . $key | default dict -}}
+            {{- $synced := false -}}
+            {{- range (($resource.status | default dict).conditions | default list) -}}
+            {{- if and (eq .type "Synced") (eq .status "True") -}}
+            {{- $synced = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if not $synced -}}
+            {{- $pending = append $pending $key -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $ready := eq (len $pending) 0 -}}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XAppService
+            metadata:
+              {{- if not $ready }}
+              annotations:
+                gotemplating.fn.crossplane.io/ready: "False"
+              {{- else }}
+              annotations: {}
+              {{- end }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: AppServiceSynced
+                status: {{ if $ready }}"True"{{ else }}"False"{{ end }}
+                reason: {{ if $ready }}Synced{{ else }}WaitingForManagedResources{{ end }}
+                message: {{ if $ready }}"The App Service plan and web app are Synced."{{ else }}{{ printf "Waiting for Synced=True from composed resources: %s." (join ", " $pending) | quote }}{{ end }}
     - step: auto-ready
       functionRef:
         name: function-auto-ready
