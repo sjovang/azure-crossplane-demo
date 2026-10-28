@@ -2,6 +2,14 @@
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XSecurityGroup
 metadata:
+  name: crd-dev-access-demo
+spec:
+  name: crd-dev-access-demo
+  membershipMode: External
+---
+apiVersion: entraid.platform.example.org/v1alpha1
+kind: XSecurityGroup
+metadata:
   name: crd-dev
 spec:
   name: crd-dev

@@ -131,7 +131,7 @@ class AccessPackageRenderTests(unittest.TestCase):
             },
         }
 
-    def render(self, api, xr, observed, required=(), failure=False):
+    def render(self, api, xr, observed, required=(), pending=False):
         if api == "accesspackage":
             required = [
                 *required,
@@ -147,12 +147,22 @@ class AccessPackageRenderTests(unittest.TestCase):
             "--crossplane-version", "v2.4.0",
             "--cache-dir", str(self.work / "cache"), "--timeout", "2m",
         ], capture_output=True, text=True, cwd=ROOT.parent, timeout=180)
-        if failure:
-            self.assertNotEqual(result.returncode, 0, result.stdout)
-            self.assertIn("Requested groups must all be registered and Ready", result.stderr)
-            return []
         self.assertEqual(result.returncode, 0, result.stderr)
-        return list(yaml.safe_load_all(result.stdout))
+        rendered = list(yaml.safe_load_all(result.stdout))
+        if pending:
+            self.assert_not_ready(rendered)
+            self.assertTrue(any(
+                c["type"] == "GroupResourcesReady" and c["status"] == "False"
+                for c in rendered[0]["status"]["conditions"]
+            ), rendered)
+            self.assertTrue({
+                r["metadata"]["annotations"]["crossplane.io/composition-resource-name"]
+                for r in observed
+            }.issubset({
+                r["metadata"]["annotations"]["crossplane.io/composition-resource-name"]
+                for r in rendered[1:]
+            }), "Pending references must not prune existing resources")
+        return rendered
 
     def approver_group(self, name, object_id):
         return {
@@ -161,6 +171,161 @@ class AccessPackageRenderTests(unittest.TestCase):
             "metadata": {"name": name, "namespace": "developer-portal"},
             "status": {"objectId": object_id},
         }
+
+    def assert_not_ready(self, rendered):
+        self.assertFalse(any(
+            c["type"] == "Ready" and c["status"] == "True"
+            for c in rendered[0]["status"]["conditions"]
+        ), rendered)
+
+    def test_group_references_resolve_and_fail_closed(self):
+        uid = "11111111-1111-4111-8111-111111111111"
+        catalog = self.xr("accesspackagecatalog", uid)
+        catalog["spec"].update({
+            "groupIds": [GROUPS[0].upper()],
+            "groupRefs": [{"name": "demo"}, {"name": "second-demo"}],
+            "readerGroupIds": [],
+        })
+        groups = [
+            self.approver_group(name, object_id)
+            for name, object_id in zip(("demo", "second-demo"), GROUPS)
+        ]
+        for group in groups:
+            group["status"]["conditions"] = [{"type": "Ready", "status": "True"}]
+        catalog_observed = [self.observed("AccessPackageCatalog", "catalog", "catalog-id")]
+        rendered = self.render("accesspackagecatalog", catalog, catalog_observed, groups)
+        associations = [
+            r for r in rendered if r["kind"] == "AccessPackageResourceCatalogAssociation"
+        ]
+        self.assertEqual(len(associations), 2)
+        self.assertEqual(
+            {a["spec"]["forProvider"]["resourceOriginId"] for a in associations},
+            set(GROUPS),
+        )
+        self.assert_not_ready(rendered)
+        for index, association in enumerate(associations):
+            association["status"] = {
+                "atProvider": {"id": f"association-{index}"},
+                "conditions": [{"type": "Ready", "status": "True"}],
+            }
+        catalog_observed.extend(associations)
+        rendered = self.render("accesspackagecatalog", catalog, catalog_observed, groups)
+        catalog["status"] = rendered[0]["status"]
+        self.assertTrue(all(a["ready"] and a["id"] for a in catalog["status"]["groupAssociations"]))
+        self.assertTrue(any(
+            c["type"] == "Ready" and c["status"] == "True"
+            for c in catalog["status"]["conditions"]
+        ))
+        names = {a["metadata"]["name"] for a in associations}
+        catalog["spec"]["groupRefs"].reverse()
+        catalog["spec"]["groupIds"] = []
+        reordered = self.render("accesspackagecatalog", catalog, catalog_observed, groups)
+        self.assertEqual(names, {
+            r["metadata"]["name"] for r in reordered
+            if r["kind"] == "AccessPackageResourceCatalogAssociation"
+        })
+
+        package = self.xr("accesspackage", uid)
+        package["spec"].update({
+            "groupIds": [GROUPS[0].upper()],
+            "groupRefs": [{"name": "demo"}, {"name": "second-demo"}],
+        })
+        package_observed = [
+            self.observed("AccessPackage", "accessPackage", "package-id"),
+            self.observed("AccessPackageAssignmentPolicy", "assignmentPolicy", "policy-id"),
+        ]
+        rendered = self.render("accesspackage", package, package_observed, [catalog, *groups])
+        package_associations = [
+            r for r in rendered if r["kind"] == "AccessPackageResourcePackageAssociation"
+        ]
+        self.assertEqual(len(package_associations), 2)
+        self.assertFalse(any(
+            r["kind"] == "AccessPackageResourceCatalogAssociation" for r in rendered
+        ))
+        self.assert_not_ready(rendered)
+        for association in package_associations:
+            association["status"] = {
+                "atProvider": {"id": "package-association-id"},
+                "conditions": [{"type": "Ready", "status": "True"}],
+            }
+        package_observed.extend(package_associations)
+        ready = self.render("accesspackage", package, package_observed, [catalog, *groups])
+        package["status"] = ready[0]["status"]
+        self.assertTrue(any(
+            c["type"] == "Ready" and c["status"] == "True"
+            for c in ready[0]["status"]["conditions"]
+        ))
+        # Switching IDs to references keeps the existing composed resource keys.
+        package["spec"]["groupIds"] = []
+        package["spec"]["groupRefs"].reverse()
+        reordered = self.render("accesspackage", package, package_observed, [catalog, *groups])
+        self.assertEqual(
+            {a["metadata"]["name"] for a in package_associations},
+            {r["metadata"]["name"] for r in reordered
+             if r["kind"] == "AccessPackageResourcePackageAssociation"},
+        )
+
+        for state in ("missing", "no-id", "no-status", "unready", "wrong-namespace"):
+            required_groups = copy.deepcopy(groups)
+            if state == "missing":
+                required_groups.pop()
+            elif state == "no-id":
+                required_groups[1]["status"].pop("objectId")
+            elif state == "no-status":
+                required_groups[1].pop("status")
+            elif state == "unready":
+                required_groups[1]["status"]["conditions"][0]["status"] = "False"
+            else:
+                required_groups[1]["metadata"]["namespace"] = "another-team"
+            with self.subTest(state=state):
+                self.render(
+                    "accesspackagecatalog", catalog, catalog_observed,
+                    required_groups, pending=True,
+                )
+                self.render(
+                    "accesspackage", package, package_observed,
+                    [catalog, *required_groups], pending=True,
+                )
+                self.assert_not_ready(self.render(
+                    "accesspackagecatalog", catalog, [], required_groups,
+                ))
+                self.assert_not_ready(self.render(
+                    "accesspackage", package, [], [catalog, *required_groups],
+                ))
+
+        for state in ("missing", "pending", "unready"):
+            required_catalog = copy.deepcopy(catalog)
+            if state == "missing":
+                required_catalog["status"]["groupAssociations"].pop()
+            elif state == "pending":
+                required_catalog["status"]["groupAssociations"][0]["id"] = ""
+            else:
+                required_catalog["status"]["groupAssociations"][0]["ready"] = False
+            with self.subTest(catalog_association=state):
+                self.render(
+                    "accesspackage", package, package_observed,
+                    [required_catalog, *groups], pending=True,
+                )
+        self.render("accesspackage", package, package_observed, groups, pending=True)
+
+        # A dependency recovering restores readiness without changing associations.
+        recovered = self.render("accesspackage", package, package_observed, [catalog, *groups])
+        self.assertTrue(any(
+            c["type"] == "Ready" and c["status"] == "True"
+            for c in recovered[0]["status"]["conditions"]
+        ))
+
+        # Removing the requested reference is intentional, unlike a missing group.
+        package["spec"]["groupRefs"] = [{"name": "demo"}]
+        removed = self.render("accesspackage", package, package_observed, [catalog, *groups])
+        self.assertEqual(sum(
+            r["kind"] == "AccessPackageResourcePackageAssociation" for r in removed
+        ), 1)
+        catalog["spec"]["groupRefs"] = [{"name": "demo"}]
+        removed = self.render("accesspackagecatalog", catalog, catalog_observed, groups)
+        self.assertEqual(sum(
+            r["kind"] == "AccessPackageResourceCatalogAssociation" for r in removed
+        ), 1)
 
     def test_shared_catalog_lifecycle_and_strict_group_selection(self):
         uid = "11111111-1111-4111-8111-111111111111"
@@ -291,7 +456,7 @@ class AccessPackageRenderTests(unittest.TestCase):
                     required["status"]["groupAssociations"].pop()
                 else:
                     required.pop("status")
-                self.render("accesspackage", package, package_observed, [required], failure=True)
+                self.render("accesspackage", package, package_observed, [required], pending=True)
                 package["spec"]["groupIds"] = [GROUPS[0]]
 
         pending_catalog = copy.deepcopy(catalog)

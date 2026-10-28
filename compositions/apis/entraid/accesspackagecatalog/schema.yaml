@@ -2,6 +2,8 @@
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XAccessPackageCatalog
 customTypes:
+  GroupRef:
+    name: string | required=true minLength=1
   GroupAssociation:
     groupId: string | description="Entra group object ID."
     id: string | description="Provider ID of the catalog resource association."
@@ -20,6 +22,10 @@ spec:
     []string | default=[]
     description="Object IDs from XSecurityGroup.status.objectId to register
     once as shared catalog resources. Packages may select any subset."
+  groupRefs: >-
+    []GroupRef | default=[]
+    description="Same-namespace XSecurityGroup names to register once as shared
+    catalog resources. Object IDs are resolved from group status."
   readerGroupIds: >-
     []string | default=[]
     description="Object IDs from XSecurityGroup.status.objectId to grant the

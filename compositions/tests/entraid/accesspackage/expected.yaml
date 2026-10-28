@@ -4,7 +4,6 @@ resourceIds:
   - primaryApproverGroup
   - secondaryApproverGroup
   - accessPackage
-  - groupPackageAssociations
   - assignmentPolicy
 status:
   id: ${accessPackage.status.atProvider.id}
@@ -23,7 +22,3 @@ reviewers:
   - objectId: ${secondaryApproverGroup.status.objectId}
     subjectType: GroupMembers
 accessType: Member
-catalogAssociationId: >-
-  ${catalog.?status.?groupAssociations.orValue([]).filter(a,
-    a.groupId.lowerAscii() == groupId.lowerAscii()
-    && a.id != "" && a.ready)[0].id}

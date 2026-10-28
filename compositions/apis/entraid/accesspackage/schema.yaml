@@ -1,6 +1,9 @@
 ---
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XAccessPackage
+customTypes:
+  GroupRef:
+    name: string | required=true minLength=1
 spec:
   name: >-
     string | required=true minLength=1
@@ -15,7 +18,11 @@ spec:
   groupIds: >-
     []string | default=[]
     description="Object IDs from XSecurityGroup.status.objectId already
-    registered in catalogRef's groupIds to include as package resources."
+    registered in catalogRef to include as package resources."
+  groupRefs: >-
+    []GroupRef | default=[]
+    description="Same-namespace XSecurityGroup names to include as package
+    resources. Register these groups in catalogRef first."
   primaryApproverGroupRef:
     name: >-
       string | required=true minLength=1

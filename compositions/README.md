@@ -93,18 +93,32 @@ To add an API, create the directory, run `make generate`, add a
 ## Entra entitlement management
 
 `apis/entraid/accesspackagecatalog/` creates a catalog and can grant the
-built-in Catalog Reader role to groups. It registers each `groupIds` entry
+built-in Catalog Reader role to groups. It registers each `groupIds` or `groupRefs` entry
 once as a shared catalog resource and publishes its provider ID and readiness
 in `status.groupAssociations`. `apis/entraid/accesspackage/` creates an access
 package and its assignment policy. Set `catalogRef.name` to the catalog's
 Kubernetes name in the **same namespace**, then select any subset of the
-catalog's `groupIds` in the package's `groupIds`. Packages read the catalog
-through read-only kro `externalRef`s; they own only their package-level
+catalog's groups in the package's `groupIds` or `groupRefs`. Packages read the catalog
+through read-only references; they own only their package-level
 associations, not the shared catalog associations. Set
 `primaryApproverGroupRef.name` and `secondaryApproverGroupRef.name` to
 same-namespace `XSecurityGroup` names; the composition resolves their object
-IDs from status. Catalog `readerGroupIds` and catalog/package `groupIds` still
-take `XSecurityGroup.status.objectId` values. Catalog write
+IDs from status. Catalog/package `groupRefs` also resolve same-namespace
+`XSecurityGroup.status.objectId` values, once the group is Ready. For example,
+both catalog and package can select the demo group without a tenant-specific UUID:
+
+```yaml
+---
+spec:
+  groupRefs:
+    - name: crd-dev-access-demo
+```
+
+The complete GitOps example is in [`../teams/crd-dev/`](../teams/crd-dev/).
+Catalog `readerGroupIds` and catalog/package `groupIds` still take object IDs.
+IDs and references can be mixed; duplicate IDs are included only once,
+case-insensitively. Approver references never grant package resources.
+Catalog write
 roles are not assigned because Crossplane manages the catalog. For guest
 requestors, set the catalog's `externallyVisible` to `true` and use
 `AllExternalSubjects`; internal requests use
@@ -118,17 +132,17 @@ See [`examples/entraid-accesspackages.yaml`](examples/entraid-accesspackages.yam
 for one catalog registering a group once and two packages including that same
 group. Replace the example UUIDs with actual `XSecurityGroup.status.objectId`
 values. Apply the catalog first and wait for its `status.groupAssociations`
-entries to have nonempty `id` and `ready: true`. A missing requested group
-fails pipeline validation rather than disappearing silently from the package;
-pending or unready catalog associations keep the package not Ready.
-An empty package `groupIds` is supported.
-The `check-group-resources` step explicitly checks the desired association
-count: kro v0.3.0 otherwise omits a collection with pending entries. Once the
-package has a provider ID, missing entries fail the pipeline before any
-existing associations can be pruned. Initial provisioning instead reports
-`GroupResourcesReady=False` while waiting for dependencies.
+entries to have nonempty `id` and `ready: true`. Missing or unready group
+references and pending catalog associations keep the package not Ready.
+Leaving both package lists empty is supported.
+The association steps use Go templating for dynamic required-resource requests,
+which kro v0.3.0 cannot express as a list of name references. While dependencies
+are pending, they preserve existing resources and report
+`GroupResourcesReady=False`, rather than pruning associations or claiming Ready.
+Existing composed-resource keys and catalog ownership are unchanged; switching
+between an object ID and a reference to the same group needs no migration.
 
-Deleting a package or removing one of its `groupIds` deletes only its
+Deleting a package or removing one of its `groupIds`/`groupRefs` deletes only its
 package-level associations. Before removing a group from the catalog, remove
 it from every package that uses it; deleting the catalog deletes the shared
 associations. Do not create multiple catalogs for the same existing provider

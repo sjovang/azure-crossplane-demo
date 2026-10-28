@@ -37,6 +37,21 @@ spec:
                     type: string
                   type: array
                   x-kubernetes-list-type: set
+                groupRefs:
+                  default: []
+                  description: Same-namespace XSecurityGroup names to register once as shared catalog resources. Object IDs are resolved from group status.
+                  items:
+                    properties:
+                      name:
+                        minLength: 1
+                        type: string
+                    required:
+                      - name
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
                 name:
                   description: Display name of the access package catalog.
                   minLength: 1

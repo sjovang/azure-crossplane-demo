@@ -165,6 +165,16 @@ az ad app permission admin-consent --id "$client_id"
 Use `azure-credentials-kiac.json` for the local cluster. For guest requests,
 the referenced `XAccessPackageCatalog` must also set `externallyVisible: true`.
 
+If `GroupResourcesReady=False`, check that every `groupRefs[].name` names a
+Ready `XSecurityGroup` in the same namespace with `status.objectId`, and that
+the catalog registers every selected package group. Its
+`status.groupAssociations` entries must have a nonempty `id` and `ready: true`.
+Approver groups configure approvals only; they do not grant package resources.
+The `crd-dev-access-demo` group is registered in `crd-dev-access-catalog` and
+granted by `crd-dev-access` through name references. After merging, Flux creates
+the group and associations automatically; do not copy object IDs or apply
+manifests manually.
+
 ## An access-package catalog returns `403 UnAuthorized`
 
 The AKS and kiac bootstrap scripts declare and grant
