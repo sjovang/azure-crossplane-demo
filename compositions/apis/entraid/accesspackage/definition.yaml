@@ -46,12 +46,27 @@ spec:
                   type: integer
                 groupIds:
                   default: []
-                  description: Object IDs from XSecurityGroup.status.objectId already registered in catalogRef's groupIds to include as package resources.
+                  description: Object IDs from XSecurityGroup.status.objectId already registered in catalogRef to include as package resources.
                   items:
                     pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
                     type: string
                   type: array
                   x-kubernetes-list-type: set
+                groupRefs:
+                  default: []
+                  description: Same-namespace XSecurityGroup names to include as package resources. Register these groups in catalogRef first.
+                  items:
+                    properties:
+                      name:
+                        minLength: 1
+                        type: string
+                    required:
+                      - name
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
                 name:
                   description: Display name of the access package and assignment policy.
                   minLength: 1

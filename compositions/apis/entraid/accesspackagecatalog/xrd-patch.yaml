@@ -3,6 +3,10 @@
 properties:
   spec:
     properties:
+      groupRefs:
+        x-kubernetes-list-type: map
+        x-kubernetes-list-map-keys:
+          - name
       groupIds:
         x-kubernetes-list-type: set
         items:

@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -17,13 +18,6 @@ spec:
         kind: ResourceGraph
         status:
           id: ${catalog.status.atProvider.id}
-          groupAssociations: >-
-            ${groupCatalogAssociations.map(a, {
-              "groupId": a.spec.forProvider.resourceOriginId,
-              "id": a.?status.?atProvider.?id.orValue(""),
-              "ready": a.?status.?conditions.orValue([]).exists(c,
-                c.type == "Ready" && c.status == "True")
-            })}
         resources:
           - id: catalog
             template:
@@ -39,25 +33,6 @@ spec:
                   description: ${schema.spec.description}
                   externallyVisible: ${schema.spec.externallyVisible}
                   published: true
-          - id: groupCatalogAssociations
-            forEach:
-              - groupId: ${schema.spec.groupIds}
-            template:
-              apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
-              kind: AccessPackageResourceCatalogAssociation
-              metadata:
-                namespace: ${schema.metadata.namespace}
-                name: >-
-                  ${("catalog-" + schema.metadata.uid
-                  + "." + groupId).lowerAscii()}
-              spec:
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-                forProvider:
-                  catalogId: ${catalog.status.atProvider.id}
-                  resourceOriginId: ${groupId}
-                  resourceOriginSystem: AadGroup
           - id: catalogReaderRoleAssignments
             forEach:
               - groupId: ${schema.spec.readerGroupIds}
@@ -76,6 +51,120 @@ spec:
                   catalogId: ${catalog.status.atProvider.id}
                   principalObjectId: ${groupId}
                   roleId: 44272f93-9762-48e8-af59-1b5351b1d6b3
+    # Dynamic name references need one required-resource request per group.
+    # Preserve the old kro collection keys so existing associations stay owned.
+    - step: group-resources
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $extra := .extraResources | default dict -}}
+            {{- $groups := list -}}
+            {{- $pending := false -}}
+            {{- range $id := $xr.spec.groupIds -}}
+            {{- $groups = append $groups (lower $id) -}}
+            {{- end -}}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ExtraResources
+            requirements:
+            {{- range $ref := $xr.spec.groupRefs }}
+              {{ printf "group-%s" $ref.name }}:
+                apiVersion: entraid.platform.example.org/v1alpha1
+                kind: XSecurityGroup
+                matchName: {{ $ref.name | quote }}
+                namespace: {{ $xr.metadata.namespace | quote }}
+            {{- end -}}
+            {{- range $ref := $xr.spec.groupRefs -}}
+            {{- $items := (get $extra (printf "group-%s" $ref.name) | default dict).items | default list -}}
+            {{- if ne (len $items) 1 -}}
+            {{- $pending = true -}}
+            {{- else -}}
+            {{- $group := (index $items 0).resource -}}
+            {{- $id := ($group.status | default dict).objectId | default "" -}}
+            {{- $ready := false -}}
+            {{- range $condition := ($group.status | default dict).conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") -}}
+            {{- $ready = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if or (not $id) (not $ready) -}}
+            {{- $pending = true -}}
+            {{- else -}}
+            {{- $groups = append $groups (lower $id) -}}
+            {{- end -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $groups = uniq $groups -}}
+            {{- $catalog := getComposedResource . "catalog" | default dict -}}
+            {{- $catalogId := (($catalog.status | default dict).atProvider | default dict).id -}}
+            {{- if $pending -}}
+            {{- range $key, $resource := .observed.resources -}}
+            {{- if not (get $.desired.resources $key) -}}
+            {{- $preserved := deepCopy $resource.resource -}}
+            {{- $_ := set $preserved.metadata.annotations "gotemplating.fn.crossplane.io/composition-resource-name" $key }}
+            ---
+            {{ $preserved | toJson }}
+            {{- end -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $associations := list -}}
+            {{- if and (not $pending) $catalogId -}}
+            {{- range $id := $groups -}}
+            {{- $name := printf "catalog-%s.%s" $xr.metadata.uid $id -}}
+            {{- $key := printf "groupCatalogAssociations-%s" $name -}}
+            {{- $observed := getComposedResource $ $key | default dict -}}
+            {{- $status := $observed.status | default dict -}}
+            {{- $ready := false -}}
+            {{- range $condition := $status.conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") -}}
+            {{- $ready = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $associations = append $associations (dict "groupId" $id "id" (($status.atProvider | default dict).id | default "") "ready" $ready) }}
+            ---
+            apiVersion: identitygovernance.azuread.m.upbound.io/v1beta1
+            kind: AccessPackageResourceCatalogAssociation
+            metadata:
+              name: {{ $name }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                {{ setResourceNameAnnotation $key }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: default
+              forProvider:
+                catalogId: {{ $catalogId | quote }}
+                resourceOriginId: {{ (($observed.spec | default dict).forProvider | default dict).resourceOriginId | default $id | quote }}
+                resourceOriginSystem: AadGroup
+            {{- end -}}
+            {{- end }}
+            ---
+            apiVersion: entraid.platform.example.org/v1alpha1
+            kind: XAccessPackageCatalog
+            metadata:
+            {{- if or $pending (and (gt (len $groups) 0) (not $catalogId)) }}
+              annotations:
+                gotemplating.fn.crossplane.io/ready: "False"
+            {{- else }}
+              {}
+            {{- end }}
+            status:
+              groupAssociations: {{ $associations | toJson }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: GroupResourcesReady
+                status: {{ ternary "False" "True" $pending | quote }}
+                reason: {{ ternary "WaitingForGroups" "Available" $pending }}
+                message: {{ ternary "All requested group references must resolve to Ready groups with object IDs." "All requested group references are resolved." $pending }}
     - step: auto-ready
       functionRef:
         name: function-auto-ready

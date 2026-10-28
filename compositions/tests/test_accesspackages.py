@@ -28,6 +28,7 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
         self.assertFalse(spec["properties"]["externallyVisible"]["default"])
         self.assertEqual(spec["properties"]["readerGroupIds"]["default"], [])
         self.assertEqual(spec["properties"]["groupIds"]["default"], [])
+        assert_group_refs(self, spec)
         self.assertEqual(
             spec["properties"]["groupIds"]["x-kubernetes-list-type"], "set"
         )
@@ -55,10 +56,6 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
                 ),
                 (
                     "identitygovernance.azuread.m.upbound.io/v1beta1",
-                    "AccessPackageResourceCatalogAssociation",
-                ),
-                (
-                    "identitygovernance.azuread.m.upbound.io/v1beta1",
                     "AccessPackageCatalogRoleAssignment",
                 ),
             ],
@@ -68,24 +65,6 @@ class AccessPackageCatalogCompositionTests(unittest.TestCase):
             self.expected["resourceIds"],
         )
         self.assertEqual(graph["status"], self.expected["status"])
-        association = by_id["groupCatalogAssociations"]
-        self.assertEqual(association["forEach"], [{"groupId": "${schema.spec.groupIds}"}])
-        self.assertEqual(
-            association["template"]["metadata"]["name"],
-            '${("catalog-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
-        )
-        self.assertEqual(
-            association["template"]["metadata"]["namespace"],
-            "${schema.metadata.namespace}",
-        )
-        self.assertEqual(
-            association["template"]["spec"]["forProvider"],
-            {
-                "catalogId": "${catalog.status.atProvider.id}",
-                "resourceOriginId": "${groupId}",
-                "resourceOriginSystem": "AadGroup",
-            },
-        )
         self.assertEqual(
             by_id["catalogReaderRoleAssignments"]["forEach"][0]["groupId"],
             "${schema.spec.readerGroupIds}",
@@ -134,6 +113,7 @@ class AccessPackageCompositionTests(unittest.TestCase):
         )
         self.assertNotIn("catalogId", spec["properties"])
         self.assertEqual(spec["properties"]["groupIds"]["default"], [])
+        assert_group_refs(self, spec)
         self.assertEqual(
             spec["properties"]["groupIds"]["x-kubernetes-list-type"], "set"
         )
@@ -168,10 +148,6 @@ class AccessPackageCompositionTests(unittest.TestCase):
                 (
                     "identitygovernance.azuread.m.upbound.io/v1beta1",
                     "AccessPackage",
-                ),
-                (
-                    "identitygovernance.azuread.m.upbound.io/v1beta1",
-                    "AccessPackageResourcePackageAssociation",
                 ),
                 (
                     "identitygovernance.azuread.m.upbound.io/v1beta1",
@@ -260,11 +236,6 @@ class AccessPackageCompositionTests(unittest.TestCase):
             self.expected["reviewers"],
         )
 
-        package_association = by_id["groupPackageAssociations"]
-        self.assertEqual(
-            package_association["forEach"][0]["groupId"],
-            "${schema.spec.groupIds}",
-        )
         self.assertNotIn("groupCatalogAssociations", by_id)
         self.assertEqual(by_id["catalog"], {
             "id": "catalog",
@@ -278,26 +249,6 @@ class AccessPackageCompositionTests(unittest.TestCase):
             by_id["accessPackage"]["template"]["spec"]["forProvider"]["catalogId"],
             "${catalog.status.id}",
         )
-        self.assertIn(
-            'a.id != "" && a.ready)[0].id',
-            package_association["template"]["spec"]["forProvider"][
-                "catalogResourceAssociationId"
-            ],
-        )
-        self.assertEqual(
-            package_association["template"]["spec"]["forProvider"]["accessType"],
-            self.expected["accessType"],
-        )
-        self.assertEqual(
-            package_association["template"]["spec"]["forProvider"][
-                "catalogResourceAssociationId"
-            ],
-            self.expected["catalogAssociationId"],
-        )
-        self.assertEqual(
-            package_association["template"]["metadata"]["name"],
-            '${("package-" + schema.metadata.uid + "." + groupId).lowerAscii()}',
-        )
 
     def test_missing_groups_fail_closed_before_auto_ready(self):
         pipeline = self.composition["spec"]["pipeline"]
@@ -308,11 +259,28 @@ class AccessPackageCompositionTests(unittest.TestCase):
         guard = pipeline[1]
         self.assertEqual(guard["functionRef"]["name"], "function-go-templating")
         template = guard["input"]["inline"]["template"]
-        self.assertIn("len ($xr.spec.groupIds | default list)", template)
+        self.assertIn("$xr.spec.groupIds", template)
+        self.assertIn("$xr.spec.groupRefs", template)
+        self.assertIn("namespace: {{ $xr.metadata.namespace | quote }}", template)
         self.assertIn("AccessPackageResourcePackageAssociation", template)
-        self.assertIn('fail "Requested groups must all be registered and Ready', template)
+        self.assertIn("deepCopy $resource.resource", template)
         self.assertIn('gotemplating.fn.crossplane.io/ready: "False"', template)
         self.assertIn("type: GroupResourcesReady", template)
+
+    def test_team_demo_grants_only_the_external_membership_group(self):
+        team = TESTS.parent.parent / "teams/crd-dev"
+        groups = list(yaml.safe_load_all((team / "entraid.yaml").read_text()))
+        catalog, package = yaml.safe_load_all(
+            (team / "accesspackages.yaml").read_text()
+        )
+        refs = [{"name": "crd-dev-access-demo"}]
+        self.assertEqual(catalog["spec"]["groupRefs"], refs)
+        self.assertEqual(package["spec"]["groupRefs"], refs)
+        group = next(g for g in groups if g["metadata"]["name"] == refs[0]["name"])
+        self.assertEqual(group["spec"]["membershipMode"], "External")
+        self.assertFalse(group["spec"].get("members"))
+        for field in ("primaryApproverGroupRef", "secondaryApproverGroupRef"):
+            self.assertNotEqual(package["spec"][field], refs[0])
 
     def test_shared_catalog_example_registers_the_group_once(self):
         example = list(yaml.safe_load_all(
@@ -397,6 +365,15 @@ def spec_required(xrd):
             "spec"
         ]["required"]
     )
+
+
+def assert_group_refs(test, spec):
+    refs = spec["properties"]["groupRefs"]
+    test.assertEqual(refs["default"], [])
+    test.assertEqual(refs["x-kubernetes-list-type"], "map")
+    test.assertEqual(refs["x-kubernetes-list-map-keys"], ["name"])
+    test.assertEqual(refs["items"]["required"], ["name"])
+    test.assertEqual(refs["items"]["properties"]["name"]["minLength"], 1)
 
 
 if __name__ == "__main__":

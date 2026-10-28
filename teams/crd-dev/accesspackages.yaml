@@ -6,9 +6,9 @@ metadata:
 spec:
   name: crd-dev-access-catalog
   description: Access package catalog for CRD development examples.
+  groupRefs:
+    - name: crd-dev-access-demo
 ---
-# No group resources are assigned in this smoke-test package; add their
-# XSecurityGroup object IDs to both the catalog and package to grant access.
 apiVersion: entraid.platform.example.org/v1alpha1
 kind: XAccessPackage
 metadata:
@@ -18,6 +18,8 @@ spec:
   description: Access package example for CRD development.
   catalogRef:
     name: crd-dev-access-catalog
+  groupRefs:
+    - name: crd-dev-access-demo
   primaryApproverGroupRef:
     name: crd-dev-primary-approvers
   secondaryApproverGroupRef:
