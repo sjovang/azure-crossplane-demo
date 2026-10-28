@@ -1,0 +1,11 @@
+---
+scripts:
+  - name: Run docs
+    command: >-
+      cd apps/docs &&
+      uv run --python 3.14 --with-requirements requirements.txt --
+      sh -c 'python scripts/gen_pages.py &&
+      zensical serve --dev-addr 127.0.0.1:8000'
+
+server_ready_pattern: '(https?://(?:127\.0\.0\.1|localhost):[0-9]+)'
+auto_open_in_browser: true

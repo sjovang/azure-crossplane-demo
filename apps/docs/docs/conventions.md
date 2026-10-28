@@ -50,10 +50,11 @@ Azure is still provisioning.
 
 ## `status.id`
 
-Every composite in this repository exposes the provisioned Azure resource ID
-as `status.id`, populated from the composed managed resource's
-`status.atProvider.id`. This is the value you reference when another resource
-needs a real Azure identifier.
+Every composite in this repository exposes the provisioned resource's provider
+ID as `status.id`, populated from the composed managed resource's
+`status.atProvider.id`. For Azure resources this is the Azure resource ID;
+Entra ID compositions expose their corresponding object or resource ID. Read
+it when inspecting the result or integrating with an external system.
 
 ```sh
 kubectl get xnetworkmanageripampool my-pool -n my-team \
@@ -71,12 +72,14 @@ spec:
     name: my-team        # the metadata.name of an XResourceGroup
 ```
 
-The referenced composite must live in the same namespace.
+The referenced composite must live in the same namespace. Use this name
+reference instead of copying `status.id` into another composite; check the
+individual reference page for APIs with other reference types.
 
-## Naming in Azure
+## Examples of Azure naming
 
-Composite names are prefixed when they reach Azure, so the Kubernetes name and
-the Azure name are related but not identical:
+Some compositions add a prefix to the Azure resource name, so it may differ
+from the Kubernetes composite name:
 
 | Composite | Azure name |
 | --- | --- |
@@ -85,6 +88,8 @@ the Azure name are related but not identical:
 | `XNetworkManagerIPAMPool` | `ipam-<spec.name>` |
 | `XVirtualNetwork` | `vnet-<spec.name>` |
 | `XVirtualMachine` | `vm-<spec.name>` |
+
+See each composition's reference page for its Azure naming behavior.
 
 ## Immutability
 
