@@ -60,7 +60,8 @@ files into `docs/reference/`:
 | `xrdoc/schema.py` | Walk `openAPIV3Schema` into flat field rows and CEL rules |
 | `xrdoc/render.py` | Render `templates/reference.md.j2` |
 
-The sidebar comes from a generated `SUMMARY.md` via `literate-nav`.
+The sidebar comes from a generated `SUMMARY.md` via `literate-nav`. The
+reference index uses the same vendor categories and composition order.
 
 `docs/reference/` and `docs/SUMMARY.md` are build output, regenerated on every
 build and gitignored. Zensical does not support `mkdocs-gen-files`, which is
