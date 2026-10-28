@@ -24,6 +24,7 @@ spec:
             {{- $storageMb := 32768 -}}
             {{- if eq $xr.spec.size "medium" }}{{ $skuName = "GP_Standard_D2s_v3" }}{{ $storageMb = 131072 }}{{ end -}}
             {{- if eq $xr.spec.size "large" }}{{ $skuName = "GP_Standard_D4s_v3" }}{{ $storageMb = 262144 }}{{ end -}}
+            {{- if $xr.spec.skuName }}{{ $skuName = $xr.spec.skuName }}{{ end -}}
             {{- $databaseName := $xr.spec.name -}}
             {{- if $xr.spec.databaseName }}{{ $databaseName = $xr.spec.databaseName }}{{ end -}}
             ---

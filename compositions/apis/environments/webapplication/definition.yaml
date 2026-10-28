@@ -62,6 +62,11 @@ spec:
                     - medium
                     - large
                   type: string
+                databaseSkuName:
+                  default: ""
+                  description: Optional PostgreSQL compute SKU override passed to XDatabase.skuName. Empty uses databaseSize; storage still follows databaseSize. Check regional support and capacity before changing.
+                  pattern: ^((B|GP|MO)_Standard_[A-Za-z0-9_]+)?$
+                  type: string
                 entraIdAuth:
                   default: {}
                   description: Optional Microsoft Entra ID authentication for the application. When enabled, an XEnterpriseApp and rotating client credential are provisioned automatically.

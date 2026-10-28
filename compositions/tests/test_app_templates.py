@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 import subprocess
 import unittest
 from pathlib import Path
@@ -20,6 +21,49 @@ CASES = {
 
 
 class AppTemplateTests(unittest.TestCase):
+    def test_postgresql_compute_override_preserves_storage_and_region(self):
+        folder = APIS / "azure/postgresql"
+        composition = yaml.safe_load((folder / "composition.yaml").read_text())
+        template = composition["spec"]["pipeline"][0]["input"]["inline"]["template"]
+        xr = copy.deepcopy(next(doc for doc in EXAMPLES if doc.get("kind") == "XDatabase"))
+        xr["spec"].update({
+            "location": "swedencentral", "postgresVersion": "16",
+            "skuName": "B_Standard_B2s",
+        })
+        for size, storage in (("small", 32768), ("medium", 131072), ("large", 262144)):
+            with self.subTest(size=size):
+                xr["spec"]["size"] = size
+                result = subprocess.run(
+                    ["go", "run", str(RENDER)],
+                    input=json.dumps({"template": template, "xr": xr}),
+                    text=True, capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                server = list(yaml.safe_load_all(result.stdout))[0]["spec"]["forProvider"]
+                self.assertEqual(server["skuName"], "B_Standard_B2s")
+                self.assertEqual(server["storageMb"], storage)
+                self.assertEqual(server["location"], "swedencentral")
+
+    def test_postgresql_sku_overrides_share_validated_optional_contract(self):
+        fields = []
+        for api, field in (
+            ("azure/postgresql", "skuName"),
+            ("environments/webapplication", "databaseSkuName"),
+        ):
+            xrd = yaml.safe_load((APIS / api / "definition.yaml").read_text())
+            spec = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
+                "properties"
+            ]["spec"]
+            self.assertNotIn(field, spec["required"])
+            schema = spec["properties"][field]
+            self.assertEqual(schema["default"], "")
+            fields.append(schema["pattern"])
+            for value in ("", "B_Standard_B2s", "GP_Standard_D2ds_v5"):
+                self.assertIsNotNone(re.fullmatch(schema["pattern"], value), value)
+            for value in ("Standard_B2s", "invalid", "B_Standard_"):
+                self.assertIsNone(re.fullmatch(schema["pattern"], value), value)
+        self.assertEqual(*fields)
+
     def test_team_examples(self):
         for directory, kind in CASES.items():
             with self.subTest(kind=kind):
@@ -65,6 +109,7 @@ class AppTemplateTests(unittest.TestCase):
                         {"name": "DEMO", "value": "enabled"}
                     ]
                 else:
+                    alternate["spec"].pop("skuName", None)
                     alternate["spec"]["databaseName"] = "alternate"
                     alternate["spec"]["allowAzureServices"] = True
                     alternate_expected[0]["spec"]["forProvider"]["skuName"] = "GP_Standard_D2s_v3"

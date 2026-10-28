@@ -165,6 +165,32 @@ az ad app permission admin-consent --id "$client_id"
 Use `azure-credentials-kiac.json` for the local cluster. For guest requests,
 the referenced `XAccessPackageCatalog` must also set `externallyVisible: true`.
 
+## An access-package catalog returns `403 UnAuthorized`
+
+The AKS and kiac bootstrap scripts declare and grant
+`EntitlementManagement.ReadWrite.All`, but a configured app permission alone
+does not prove tenant admin consent. Inspect the Crossplane service principal's
+Microsoft Graph application-role assignments and confirm that this role is
+assigned to the Microsoft Graph service principal. Re-run the matching
+bootstrap as a Global Administrator or Privileged Role Administrator to grant
+missing permissions. Catalog creation also requires a Microsoft Entra ID P2
+or Microsoft Entra ID Governance license.
+
+## PostgreSQL reports `RegionalAllocationFailed`
+
+`RegionalAllocationFailed` means Azure could not allocate the requested
+compute SKU in the selected region; an SKU listed as region-supported is not
+a capacity guarantee. Try a supported SKU or region and check current quota
+and availability before retrying. Changing region moves the server and its
+environment resources and can affect networking and cost.
+
+The `XDatabase.spec.skuName` and `XWebApplication.spec.databaseSkuName`
+overrides select the provider-format compute SKU while the existing
+`size`/`databaseSize` continues to determine storage. For example, the
+`crd-dev` lab explicitly selects `B_Standard_B2s` with `small` (32 GiB)
+storage in Sweden Central. This is a higher compute cost than `B1ms`; it is a
+capacity mitigation, not a guarantee that Azure will allocate the server.
+
 ## The documentation site is unavailable
 
 The site is public only on AKS. The local kiac cluster has no Gateway,

@@ -26,10 +26,8 @@ class SecurityGroupCompositionTests(unittest.TestCase):
             "spec.members.exists",
             group["template"]["spec"]["forProvider"]["members"],
         )
-        self.assertIn(
-            "membershipMode == 'External' ? [",
-            group["template"]["spec"]["managementPolicies"],
-        )
+        self.assertNotIn("managementPolicies", group["template"]["spec"])
+        self.assertNotIn("membershipMode", group["template"]["spec"]["forProvider"]["members"])
 
     def test_external_membership_is_unmanaged_and_rejects_declared_members(self):
         version = self.xrd["spec"]["versions"][0]
@@ -37,24 +35,26 @@ class SecurityGroupCompositionTests(unittest.TestCase):
             "x-kubernetes-validations"
         ]
         group = self.composition["spec"]["pipeline"][0]["input"]["resources"][1]
+        membership = self.composition["spec"]["pipeline"][1]
+        template = membership["input"]["inline"]["template"]
 
+        self.assertEqual(
+            membership["functionRef"]["name"], "function-go-templating"
+        )
+        self.assertIn('membershipMode "External"', template)
+        self.assertIn('unset $group.spec.forProvider "members"', template)
         self.assertIn(
-            "External' ? null",
-            group["template"]["spec"]["forProvider"]["members"],
+            '(list "Observe" "Create" "Update" "Delete")',
+            template,
         )
-        self.assertIn(
-            "['Observe', 'Create', 'Update', 'Delete']",
-            group["template"]["spec"]["managementPolicies"],
-        )
-        self.assertNotIn(
-            "LateInitialize",
-            group["template"]["spec"]["managementPolicies"],
-        )
+        self.assertNotIn("LateInitialize", template)
         self.assertEqual(
             validations[0]["rule"],
             "self.membershipMode != 'External' || !has(self.members) || size(self.members) == 0",
         )
         self.assertNotIn("initProvider", group["template"]["spec"])
+        self.assertNotIn("? null", str(group["template"]))
+        self.assertNotIn(": null", str(group["template"]))
 
 
 if __name__ == "__main__":

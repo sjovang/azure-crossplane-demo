@@ -83,6 +83,11 @@ spec:
                     - medium
                     - large
                   type: string
+                skuName:
+                  default: ""
+                  description: Optional provider-format compute SKU override, e.g. B_Standard_B2s. Empty uses size. Storage still follows size. Regional support does not guarantee allocation capacity.
+                  pattern: ^((B|GP|MO)_Standard_[A-Za-z0-9_]+)?$
+                  type: string
               required:
                 - adminPasswordSecretRef
                 - name

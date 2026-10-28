@@ -6,12 +6,14 @@ summary: >-
   automatically managed enterprise application and rotating client secret.
 stability: experimental
 exampleRef: teams/crd-dev/webapplication.yaml
-exampleLines: 1-12
+exampleLines: 1-13
 exampleNotes: >-
   The platform generates the database password and exposes it to App Service
   through an Azure Key Vault reference. PostgreSQL permits Azure service IPs
   so the public App Service can connect. The app receives its public URL in
-  APPLICATION_URL. Set the optional customDomain to serve the app on a
+  APPLICATION_URL. databaseSkuName optionally overrides database compute
+  while databaseSize continues to determine storage. Set the optional
+  customDomain to serve the app on a
   hostname in an existing Azure DNS zone with a managed certificate. Set
   entraIdAuth.enabled to create an XEnterpriseApp; its client secret rotates
   every 30 days and is copied into the environment Key Vault. Disabling

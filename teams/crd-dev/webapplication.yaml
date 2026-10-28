@@ -9,4 +9,5 @@ spec:
   location: swedencentral
   appSize: small
   databaseSize: small
+  databaseSkuName: B_Standard_B2s
   port: 80

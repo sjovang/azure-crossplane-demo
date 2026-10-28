@@ -15,10 +15,14 @@ on:
       - main
     paths:
       - compositions/**
+      - infrastructure/lib/common.sh
+      - infrastructure/tests/**
       - .github/workflows/compositions.yaml
   pull_request:
     paths:
       - compositions/**
+      - infrastructure/lib/common.sh
+      - infrastructure/tests/**
       - .github/workflows/compositions.yaml
 
 permissions: {}
@@ -73,3 +77,6 @@ jobs:
 
       - name: Run composition tests
         run: make -C compositions test
+
+      - name: Run bootstrap permission tests
+        run: python -m unittest discover -s infrastructure/tests

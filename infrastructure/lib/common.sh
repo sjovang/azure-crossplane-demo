@@ -246,6 +246,31 @@ GRAPH_APP_ROLES=(
   "User.Read.All=df021288-bdef-4463-88db-98f22de89214"
 )
 
+# verify_graph_permissions <credentials_file>
+# Read-only: configured API permissions are not proof of admin consent.
+verify_graph_permissions() {
+  local credentials_file="$1"
+  local client_id sp_id graph_sp_id assignments entry name role_id
+  local missing=0
+  client_id=$(jq -er .clientId "$credentials_file") || return 1
+  sp_id=$(az ad sp show --id "$client_id" --query id -o tsv) || return 1
+  graph_sp_id=$(az ad sp show --id "$GRAPH_APP_ID" --query id -o tsv) || return 1
+  assignments=$(az rest --method GET \
+    --url "https://graph.microsoft.com/v1.0/servicePrincipals/$sp_id/appRoleAssignments" \
+    -o json) || return 1
+
+  for entry in "${GRAPH_APP_ROLES[@]}"; do
+    name="${entry%%=*}" role_id="${entry#*=}"
+    if ! jq -e --arg resource "$graph_sp_id" --arg role "$role_id" \
+      'any(.value[]; .resourceId == $resource and .appRoleId == $role)' \
+      >/dev/null <<< "$assignments"; then
+      echo "WARNING: missing Microsoft Graph application grant: $name ($role_id)." >&2
+      missing=1
+    fi
+  done
+  return "$missing"
+}
+
 # ensure_graph_permissions <credentials_file>
 # Idempotently grants the service principal the GRAPH_APP_ROLES, with admin
 # consent. Runs on every bootstrap so reused service principals get upgraded
@@ -257,8 +282,8 @@ ensure_graph_permissions() {
   local failed=0
   client_id=$(jq -r .clientId "$credentials_file")
 
-  sp_id=$(az ad sp show --id "$client_id" --query id -o tsv 2>/dev/null) || sp_id=""
-  graph_sp_id=$(az ad sp show --id "$GRAPH_APP_ID" --query id -o tsv 2>/dev/null) || graph_sp_id=""
+  sp_id=$(az ad sp show --id "$client_id" --query id -o tsv) || sp_id=""
+  graph_sp_id=$(az ad sp show --id "$GRAPH_APP_ID" --query id -o tsv) || graph_sp_id=""
   if [[ -z "$sp_id" || -z "$graph_sp_id" ]]; then
     failed=1
   fi
@@ -270,7 +295,7 @@ ensure_graph_permissions() {
     # Declared on the app registration so the portal lists it as configured.
     declared=$(az ad app show --id "$client_id" \
       --query "requiredResourceAccess[?resourceAppId=='$GRAPH_APP_ID'].resourceAccess[] | [?id=='$role_id'] | [0].id" \
-      -o tsv 2>/dev/null) || declared=""
+      -o tsv) || { failed=1; continue; }
     if [[ -z "$declared" ]]; then
       az ad app permission add --id "$client_id" --api "$GRAPH_APP_ID" \
         --api-permissions "$role_id=Role" --only-show-errors || failed=1
@@ -279,7 +304,8 @@ ensure_graph_permissions() {
     # The app role assignment is the admin consent.
     assigned=$(az rest --method GET \
       --url "https://graph.microsoft.com/v1.0/servicePrincipals/$sp_id/appRoleAssignments" \
-      --query "value[?appRoleId=='$role_id'] | [0].id" -o tsv 2>/dev/null) || assigned=""
+      --query "value[?resourceId=='$graph_sp_id' && appRoleId=='$role_id'] | [0].id" \
+      -o tsv) || { failed=1; continue; }
     if [[ -z "$assigned" ]]; then
       echo "Granting Microsoft Graph $name to service principal $client_id"
       az rest --method POST \
@@ -289,6 +315,10 @@ ensure_graph_permissions() {
         --output none || failed=1
     fi
   done
+
+  if ! verify_graph_permissions "$credentials_file"; then
+    failed=1
+  fi
 
   if [[ "$failed" -ne 0 ]]; then
     local permissions=""

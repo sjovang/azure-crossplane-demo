@@ -19,6 +19,12 @@ spec:
   databaseSize: >-
     string | required=true enum="small,medium,large"
     description="PostgreSQL t-shirt size."
+  databaseSkuName: >-
+    string | default=""
+    pattern="^((B|GP|MO)_Standard_[A-Za-z0-9_]+)?$"
+    description="Optional PostgreSQL compute SKU override passed to
+    XDatabase.skuName. Empty uses databaseSize; storage still follows
+    databaseSize. Check regional support and capacity before changing."
   port: >-
     integer | default=8080 minimum=1 maximum=65535
     description="Port the application container listens on."

@@ -138,6 +138,8 @@ cd compositions
 # Set DOCKER_HOST to your Docker context endpoint if needed (e.g. Colima).
 RUN_ACCESSPACKAGE_RENDER=1 python3 -m unittest discover \
   -s tests -p test_accesspackages_render.py
+RUN_SECURITYGROUP_RENDER=1 python3 -m unittest discover \
+  -s tests -p test_securitygroup_render.py
 ```
 
 For a group whose membership is granted through an access package, set

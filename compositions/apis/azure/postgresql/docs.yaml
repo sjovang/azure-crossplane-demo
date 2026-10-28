@@ -1,10 +1,11 @@
 ---
 summary: >-
   An Azure PostgreSQL Flexible Server and database with a password supplied
-  by a Kubernetes Secret.
+  by a Kubernetes Secret. An optional skuName overrides compute while size
+  still determines storage; regional SKU support does not guarantee capacity.
 stability: experimental
 exampleRef: teams/crd-dev/apps.yaml
-exampleLines: 66-79
+exampleLines: 66-80
 exampleNotes: >-
   Create the referenced XResourceGroup and password Secret before creating
   the database. The team example is disabled by default in its
