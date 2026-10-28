@@ -37,6 +37,12 @@ class KeyVaultCompositionTests(unittest.TestCase):
             spec["properties"]["name"]["x-kubernetes-validations"][0]["rule"],
             "self == oldSelf",
         )
+        self.assertIn(
+            "metadata.name",
+            spec["properties"]["appServiceRef"]["properties"]["name"][
+                "description"
+            ],
+        )
         self.assertIn("id", status["properties"])
 
     def test_resource_graph_snapshot(self):

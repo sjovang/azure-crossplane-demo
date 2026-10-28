@@ -28,10 +28,10 @@ spec:
                     - message: field is immutable
                       rule: self == oldSelf
                 appServiceRef:
-                  description: App Service identity that receives inference access.
+                  description: XAppService selected by Kubernetes metadata.name whose identity receives inference access.
                   properties:
                     name:
-                      description: XAppService whose system-assigned identity receives inference access.
+                      description: Kubernetes metadata.name of the XAppService whose system-assigned identity receives inference access.
                       type: string
                   required:
                     - name

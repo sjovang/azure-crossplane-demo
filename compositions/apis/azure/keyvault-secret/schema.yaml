@@ -8,7 +8,7 @@ spec:
   keyVaultRef:
     name: >-
       string | required=true
-      description="Logical name of the XKeyVault."
+      description="Kubernetes metadata.name of the namespaced XKeyVault."
   valueSecretRef:
     name: >-
       string | required=true

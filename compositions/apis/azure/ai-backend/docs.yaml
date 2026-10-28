@@ -6,9 +6,11 @@ stability: experimental
 exampleRef: teams/app-hosting-advisor/infrastructure.yaml
 exampleLines: 50-90
 exampleNotes: >-
-  The referenced XAppService must have systemAssignedIdentity enabled. The
-  account name must be globally unique, and the model/version/SKU must be
-  available in the selected region. The advisor uses the account's
+  appServiceRef.name is the referenced XAppService's Kubernetes metadata.name,
+  which may differ from spec.name. The XAppService must have
+  systemAssignedIdentity enabled. The account name must be globally unique,
+  and the model/version/SKU must be available in the selected region. The
+  advisor uses the account's
   `services.ai.azure.com` endpoint with Microsoft Entra authentication.
 commonErrors:
   - symptom: Model deployment is not created.

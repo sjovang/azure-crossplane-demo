@@ -22,10 +22,10 @@ spec:
             spec:
               properties:
                 appServiceRef:
-                  description: Optional XAppService whose system-assigned identity receives the Key Vault Secrets User role.
+                  description: Optional XAppService selected by Kubernetes metadata.name whose system-assigned identity receives the Key Vault Secrets User role.
                   properties:
                     name:
-                      description: Logical name of the XAppService.
+                      description: Kubernetes metadata.name of the XAppService.
                       type: string
                   required:
                     - name

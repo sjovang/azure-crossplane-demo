@@ -8,7 +8,9 @@ exampleRef: teams/app-hosting-advisor/infrastructure.yaml
 exampleLines: 13-27
 exampleNotes: >-
   Set appServiceRef when App Service must resolve Key Vault references. The
-  referenced XAppService must enable its system-assigned identity.
+  value is the referenced XAppService's Kubernetes metadata.name, which may
+  differ from spec.name. The XAppService must enable its system-assigned
+  identity.
 commonErrors:
   - symptom: The App Service reports unresolved Key Vault references.
     cause: >-

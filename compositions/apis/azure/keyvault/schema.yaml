@@ -13,7 +13,10 @@ spec:
       string | required=true
       description="Logical name of the XResourceGroup."
   appServiceRef:
-    name: string
+    name: >-
+      string |
+      description="Kubernetes metadata.name of the XAppService whose
+      identity receives Key Vault access."
   location: >-
     string | default="swedencentral"
     description="Azure region for the Key Vault."

@@ -35,6 +35,12 @@ class AIBackendCompositionTests(unittest.TestCase):
             set(spec["properties"]["deployment"]["properties"]["model"]["required"]),
             {"name", "version"},
         )
+        self.assertIn(
+            "metadata.name",
+            spec["properties"]["appServiceRef"]["properties"]["name"][
+                "description"
+            ],
+        )
         self.assertEqual(
             set(status),
             {"id", "endpoint", "deploymentName"},

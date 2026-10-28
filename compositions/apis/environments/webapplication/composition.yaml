@@ -110,7 +110,7 @@ spec:
                 resourceGroupRef:
                   name: ${resourceGroup.spec.name}
                 appServiceRef:
-                  name: ${schema.spec.name}
+                  name: ${schema.metadata.name}
                 location: ${schema.spec.location}
           - id: keyVaultSecret
             template:
@@ -121,7 +121,7 @@ spec:
               spec:
                 name: database-password
                 keyVaultRef:
-                  name: ${keyVault.spec.name}
+                  name: ${keyVault.metadata.name}
                 valueSecretRef:
                   name: ${databaseCredentials.metadata.name}
                   key: password
@@ -149,7 +149,7 @@ spec:
               spec:
                 name: entra-client-secret
                 keyVaultRef:
-                  name: ${keyVault.spec.name}
+                  name: ${keyVault.metadata.name}
                 valueSecretRef:
                   name: ${enterpriseApp.status.connectionSecretName}
                   key: value
@@ -158,7 +158,7 @@ spec:
               apiVersion: azure.platform.example.org/v1alpha1
               kind: XAppService
               metadata:
-                name: ${schema.spec.name}
+                name: ${schema.metadata.name}
               spec:
                 name: ${schema.spec.name}
                 resourceGroupRef:
