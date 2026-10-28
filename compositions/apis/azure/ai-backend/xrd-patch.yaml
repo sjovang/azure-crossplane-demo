@@ -1,0 +1,21 @@
+---
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+      - appServiceRef
+      - deployment
+    properties:
+      resourceGroupRef:
+        description: Resource group hosting the Azure AI Services account.
+      appServiceRef:
+        description: >-
+          XAppService selected by Kubernetes metadata.name whose identity
+          receives inference access.
+      deployment:
+        description: Model deployment configuration.
+        required:
+          - model
+        properties:
+          model:
+            description: Model catalog configuration.

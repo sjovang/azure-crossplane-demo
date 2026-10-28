@@ -137,8 +137,6 @@ def render_index(docs: List[CompositionDoc]) -> str:
     lines = [
         "---",
         "icon: lucide/boxes",
-        "hide:",
-        "  - toc",
         "---",
         "",
         "# Composition reference",
@@ -147,15 +145,24 @@ def render_index(docs: List[CompositionDoc]) -> str:
         "directly from the `CompositeResourceDefinition` manifests in",
         "`compositions/`, so they always match what is deployed.",
         "",
-        "| Composition | Vendor | Summary |",
-        "| --- | --- | --- |",
     ]
+    current_vendor = None
     for doc in docs:
+        if doc.cloud != current_vendor:
+            if current_vendor is not None:
+                lines.append("")
+            current_vendor = doc.cloud
+            lines.extend(
+                [
+                    "## {0}".format(current_vendor.capitalize()),
+                    "",
+                    "| Composition | Summary |",
+                    "| --- | --- |",
+                ]
+            )
         summary = doc.sidecar.summary.replace("\n", " ").strip() or "—"
         lines.append(
-            "| [{0}]({1}.md) | {2} | {3} |".format(
-                doc.kind, doc.slug, doc.cloud.capitalize(), summary
-            )
+            "| [{0}]({1}.md) | {2} |".format(doc.kind, doc.slug, summary)
         )
     lines.append("")
     return "\n".join(lines)

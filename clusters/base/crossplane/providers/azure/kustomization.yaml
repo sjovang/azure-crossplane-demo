@@ -13,6 +13,7 @@ resources:
   - deployment-runtime-config.yaml
   - provider-network.yaml
   - provider-compute.yaml
+  - provider-cognitiveservices.yaml
   - provider-web.yaml
   - provider-keyvault.yaml
   - provider-authorization.yaml

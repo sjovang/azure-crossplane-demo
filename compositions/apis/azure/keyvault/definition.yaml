@@ -1,0 +1,84 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xkeyvaults.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XKeyVault
+    plural: xkeyvaults
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XKeyVault is the Schema for the XKeyVault API.
+          properties:
+            spec:
+              properties:
+                appServiceRef:
+                  description: Optional XAppService selected by Kubernetes metadata.name whose system-assigned identity receives the Key Vault Secrets User role.
+                  properties:
+                    name:
+                      description: Kubernetes metadata.name of the XAppService.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                location:
+                  default: swedencentral
+                  description: Azure region for the Key Vault.
+                  type: string
+                name:
+                  description: Logical name of the Key Vault.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                resourceGroupRef:
+                  description: Resource group hosting the Key Vault.
+                  properties:
+                    name:
+                      description: Logical name of the XResourceGroup.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                vaultName:
+                  description: Globally unique Azure Key Vault name.
+                  maxLength: 24
+                  minLength: 3
+                  pattern: ^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+              required:
+                - name
+                - resourceGroupRef
+                - vaultName
+              type: object
+            status:
+              properties:
+                id:
+                  description: Azure resource ID of the Key Vault.
+                  type: string
+                tenantId:
+                  description: Microsoft Entra tenant ID of the Key Vault.
+                  type: string
+                vaultName:
+                  description: Azure Key Vault name.
+                  type: string
+                vaultUri:
+                  description: Versionless Azure Key Vault URI.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

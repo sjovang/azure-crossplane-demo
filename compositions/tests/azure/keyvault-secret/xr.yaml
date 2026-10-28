@@ -1,0 +1,13 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: appdemo-client-secret
+  namespace: crd-dev
+spec:
+  name: appdemo-client-secret
+  keyVaultRef:
+    name: appdemo01
+  valueSecretRef:
+    name: appdemo-oauth
+    key: client-secret

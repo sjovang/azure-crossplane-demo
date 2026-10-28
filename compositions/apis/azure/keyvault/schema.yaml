@@ -1,0 +1,28 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+spec:
+  name: >-
+    string | required=true immutable=true
+    description="Logical name of the Key Vault."
+  vaultName: >-
+    string | required=true immutable=true
+    description="Globally unique Azure Key Vault name."
+  resourceGroupRef:
+    name: >-
+      string | required=true
+      description="Logical name of the XResourceGroup."
+  appServiceRef:
+    name: >-
+      string |
+      description="Kubernetes metadata.name of the XAppService whose
+      identity receives Key Vault access."
+  location: >-
+    string | default="swedencentral"
+    description="Azure region for the Key Vault."
+status:
+  id: string | description="Azure resource ID of the Key Vault."
+  vaultName: string | description="Azure Key Vault name."
+  vaultUri: string | description="Versionless Azure Key Vault URI."
+  tenantId: >-
+    string | description="Microsoft Entra tenant ID of the Key Vault."

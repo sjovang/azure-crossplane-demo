@@ -1,0 +1,119 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xaibackends.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XAIBackend
+    plural: xaibackends
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XAIBackend is the Schema for the XAIBackend API.
+          properties:
+            spec:
+              properties:
+                accountName:
+                  description: Globally unique Azure AI Services account name.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                appServiceRef:
+                  description: XAppService selected by Kubernetes metadata.name whose identity receives inference access.
+                  properties:
+                    name:
+                      description: Kubernetes metadata.name of the XAppService whose system-assigned identity receives inference access.
+                      type: string
+                  required:
+                    - name
+                  type: object
+                deployment:
+                  description: Model deployment configuration.
+                  properties:
+                    model:
+                      description: Model catalog configuration.
+                      properties:
+                        format:
+                          default: OpenAI
+                          description: Model API format used by the deployment.
+                          type: string
+                        name:
+                          description: Azure model catalog identifier.
+                          type: string
+                        version:
+                          description: Pinned Azure model version.
+                          type: string
+                      required:
+                        - name
+                        - version
+                      type: object
+                    name:
+                      description: Name of the model deployment.
+                      type: string
+                    sku:
+                      default: {}
+                      properties:
+                        capacity:
+                          default: 1
+                          description: Deployment capacity in thousands of tokens per minute.
+                          type: integer
+                        name:
+                          default: Standard
+                          description: Azure model deployment SKU.
+                          type: string
+                      type: object
+                  required:
+                    - model
+                    - name
+                  type: object
+                location:
+                  default: swedencentral
+                  description: Azure region for the AI Services account.
+                  type: string
+                name:
+                  description: Logical name of the Azure AI backend.
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                resourceGroupRef:
+                  description: Resource group hosting the Azure AI Services account.
+                  properties:
+                    name:
+                      description: Logical name of the XResourceGroup.
+                      type: string
+                  required:
+                    - name
+                  type: object
+              required:
+                - accountName
+                - appServiceRef
+                - deployment
+                - name
+                - resourceGroupRef
+              type: object
+            status:
+              properties:
+                deploymentName:
+                  description: Name of the deployed model.
+                  type: string
+                endpoint:
+                  description: Azure AI Services inference endpoint.
+                  type: string
+                id:
+                  description: Azure AI Services account resource ID.
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

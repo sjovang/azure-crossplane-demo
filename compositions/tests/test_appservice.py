@@ -30,6 +30,12 @@ class AppServiceCompositionTests(unittest.TestCase):
                     "dnsZone": "demo.example.org",
                     "dnsZoneResourceGroup": "rg-dns",
                 },
+                "keyVaultSecretEnvVars": {
+                    "CLIENT_SECRET": {
+                        "vaultName": "kv-appdemo",
+                        "secretName": "client-secret",
+                    }
+                },
             }
         )
         composition = yaml.safe_load((APP_SERVICE / "composition.yaml").read_text())
@@ -83,6 +89,17 @@ class AppServiceCompositionTests(unittest.TestCase):
         self.assertEqual([doc["kind"] for doc in rendered], kinds + ["XAppService"])
         self.assertEqual(rendered[:-1], expected)
         self.assertEqual(rendered[-1]["status"]["url"], "https://portal.demo.example.org")
+
+        xr["spec"]["keyVaultSecretEnvVars"]["CLIENT_SECRET"][
+            "secretVersion"
+        ] = "version-123"
+        versioned = render(observed)
+        linux_web_app = next(doc for doc in versioned if doc["kind"] == "LinuxWebApp")
+        self.assertEqual(
+            linux_web_app["spec"]["forProvider"]["appSettings"]["CLIENT_SECRET"],
+            "@Microsoft.KeyVault(SecretUri=https://kv-appdemo.vault.azure.net/"
+            "secrets/client-secret/version-123)",
+        )
 
 
 if __name__ == "__main__":

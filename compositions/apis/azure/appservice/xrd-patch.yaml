@@ -10,6 +10,28 @@ properties:
       envVars:
         nullable: true
         default: null
+      keyVaultSecretEnvVars:
+        nullable: true
+        default: null
+        description: >-
+          Application settings resolved through App Service Key Vault
+          references. The XAppService identity must have Key Vault Secrets
+          User on each referenced vault.
+        additionalProperties:
+          type: object
+          properties:
+            vaultName:
+              type: string
+              description: Azure Key Vault name.
+            secretName:
+              type: string
+              description: Azure Key Vault secret name.
+            secretVersion:
+              type: string
+              description: Optional Azure Key Vault secret version.
+          required:
+            - vaultName
+            - secretName
       customDomain:
         description: >-
           Optional custom hostname with a free App Service managed

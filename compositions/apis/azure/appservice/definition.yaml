@@ -49,6 +49,26 @@ spec:
                 image:
                   description: Container image reference to run, e.g. docker.io/library/nginx:latest.
                   type: string
+                keyVaultSecretEnvVars:
+                  additionalProperties:
+                    properties:
+                      secretName:
+                        description: Azure Key Vault secret name.
+                        type: string
+                      secretVersion:
+                        description: Optional Azure Key Vault secret version.
+                        type: string
+                      vaultName:
+                        description: Azure Key Vault name.
+                        type: string
+                    required:
+                      - secretName
+                      - vaultName
+                    type: object
+                  default: null
+                  description: Application settings resolved through App Service Key Vault references. The XAppService identity must have Key Vault Secrets User on each referenced vault.
+                  nullable: true
+                  type: object
                 location:
                   default: swedencentral
                   description: Azure region for the App Service.

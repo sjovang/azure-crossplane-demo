@@ -137,7 +137,7 @@ class VirtualMachineRenderTests(unittest.TestCase):
         secret = {
             "apiVersion": "v1", "kind": "Secret",
             "metadata": {"name": "demo-ssh", "namespace": "demo"},
-            "data": {"id_ed25519.pub": "c3NoLWVkMjU1MTkgdGVzdC1wdWJsaWMta2V5"},
+            "data": {"pub": "c3NoLWVkMjU1MTkgdGVzdC1wdWJsaWMta2V5"},
         }
         for os_name, key, kind in (
             ("linux", "linuxVm", "LinuxVirtualMachine"),
@@ -158,7 +158,7 @@ class VirtualMachineRenderTests(unittest.TestCase):
                         "virtualNetworkRef": {"name": "demo", "subnet": "workload"},
                         **({
                             "sshPublicKeySecretRef": {
-                                "name": "demo-ssh", "key": "id_ed25519.pub",
+                                "name": "demo-ssh", "key": "pub",
                             },
                         } if os_name == "linux" else {
                             "adminPasswordSecretRef": {"name": "demo-password", "key": "password"},
@@ -187,7 +187,7 @@ class VirtualMachineRenderTests(unittest.TestCase):
                         self.condition(missing_secret, "VirtualMachineReady")["reason"],
                         "WaitingForDependencies",
                     )
-                    self.assertIn("Secret demo-ssh key id_ed25519.pub", str(missing_secret))
+                    self.assertIn("Secret demo-ssh key pub", str(missing_secret))
                     self.assertEqual(missing_secret[0]["status"]["id"], "")
                     wrong_key = copy.deepcopy(secret)
                     wrong_key["data"] = {}

@@ -21,7 +21,7 @@ class VirtualMachineReadinessTests(unittest.TestCase):
             "spec": {
                 "os": "linux",
                 "virtualNetworkRef": {"name": "demo", "subnet": "workload"},
-                "sshPublicKeySecretRef": {"name": "demo-ssh", "key": "id_ed25519.pub"},
+                "sshPublicKeySecretRef": {"name": "demo-ssh", "key": "pub"},
             },
             "metadata": {"namespace": "demo"},
         }

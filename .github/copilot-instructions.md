@@ -116,6 +116,9 @@ following the chain across several files:
    dependent `teams` Kustomization
    (`clusters/base/teams-kustomization.yaml`, `path: ./teams`), which
    `dependsOn` **both** `flux-system` and `crossplane-compositions`.
+   Keep each team's `catalog-info.yaml` in Git for Backstage's Git discovery,
+   but do not include it in the team's Kubernetes Kustomization: Backstage
+   entity kinds such as `Group` and `System` are not Kubernetes resources.
 
 ### Composition XRD scope must match the composed resource's scope
 
@@ -201,7 +204,10 @@ informers and crash (`Deployment does not have minimum availability`).
 `activation-policies/azure/managed-resource-activation-policy.yaml` is the
 **only** activation source: when a composition composes a new managed
 resource kind, add its MRD name (`<plural>.<group>`) there, or its CRD is
-never created.
+never created. Its Flux Kustomization depends on `flux-system` (Crossplane
+core), not the Azure provider: activation must be applied before the provider's
+health gate can pass, because an inactive provider runtime reports
+`Healthy=True, reason=AwaitingActivation`.
 
 ### CRD-dependency deadlock (real bug, already fixed once — don't reintroduce)
 

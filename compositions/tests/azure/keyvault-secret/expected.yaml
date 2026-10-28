@@ -1,0 +1,7 @@
+---
+resourceIds:
+  - keyVault
+  - keyVaultSecret
+status:
+  id: ${keyVaultSecret.status.atProvider.id}
+  versionlessId: ${keyVaultSecret.status.atProvider.versionlessId}

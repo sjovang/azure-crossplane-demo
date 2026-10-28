@@ -1,0 +1,15 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - keyVaultRef
+      - valueSecretRef
+    properties:
+      keyVaultRef:
+        description: XKeyVault selected by Kubernetes metadata.name.
+      valueSecretRef:
+        description: Kubernetes Secret containing the value.
+        x-kubernetes-validations:
+          - rule: self == oldSelf
+            message: valueSecretRef is immutable

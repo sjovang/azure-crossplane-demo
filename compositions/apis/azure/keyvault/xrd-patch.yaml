@@ -1,0 +1,22 @@
+---
+# Merged into the generated openAPIV3Schema by `make generate`.
+properties:
+  spec:
+    required:
+      - resourceGroupRef
+    properties:
+      vaultName:
+        minLength: 3
+        maxLength: 24
+        pattern: "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$"
+      resourceGroupRef:
+        description: Resource group hosting the Key Vault.
+      appServiceRef:
+        description: >-
+          Optional XAppService selected by Kubernetes metadata.name whose
+          system-assigned identity receives the Key Vault Secrets User role.
+        required:
+          - name
+        properties:
+          name:
+            description: Kubernetes metadata.name of the XAppService.

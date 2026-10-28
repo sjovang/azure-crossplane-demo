@@ -1,4 +1,6 @@
 ---
+# Apply the MRAP after Crossplane core establishes its CRD, but before the
+# provider health gate waits on runtimes that need those activations.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -14,4 +16,4 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: crossplane-azure-provider
+    - name: flux-system
