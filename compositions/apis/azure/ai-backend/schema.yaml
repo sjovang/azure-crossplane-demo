@@ -16,7 +16,8 @@ spec:
   appServiceRef:
     name: >-
       string | required=true
-      description="XAppService whose system-assigned identity receives inference access."
+      description="Kubernetes metadata.name of the XAppService whose
+      system-assigned identity receives inference access."
   location: >-
     string | default="swedencentral"
     description="Azure region for the AI Services account."

@@ -22,10 +22,10 @@ spec:
             spec:
               properties:
                 keyVaultRef:
-                  description: The XKeyVault that receives the secret.
+                  description: XKeyVault selected by Kubernetes metadata.name.
                   properties:
                     name:
-                      description: Logical name of the XKeyVault.
+                      description: Kubernetes metadata.name of the namespaced XKeyVault.
                       type: string
                   required:
                     - name

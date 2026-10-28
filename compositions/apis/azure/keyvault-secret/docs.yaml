@@ -6,8 +6,16 @@ exampleRef: teams/app-hosting-advisor/infrastructure.yaml
 exampleLines: 28-49
 exampleNotes: >-
   Keep the source Kubernetes Secret out of Git. Updating its value creates a
-  new Azure Key Vault secret version.
+  new Azure Key Vault secret version. keyVaultRef.name is the referenced
+  XKeyVault's Kubernetes metadata.name, which may differ from spec.name.
 commonErrors:
+  - symptom: The composite is Ready but has no Azure secret ID.
+    cause: >-
+      The referenced XKeyVault was not found or the managed secret has not
+      produced its Azure resource ID.
+    fix: >-
+      Set keyVaultRef.name to the XKeyVault's Kubernetes metadata.name and
+      wait for the managed Key Vault secret to become Ready.
   - symptom: The managed Secret cannot read the Kubernetes Secret.
     cause: The source Secret name, key, or namespace is incorrect.
     fix: >-

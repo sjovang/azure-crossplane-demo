@@ -13,10 +13,10 @@ properties:
         description: Resource group hosting the Key Vault.
       appServiceRef:
         description: >-
-          Optional XAppService whose system-assigned identity receives the
-          Key Vault Secrets User role.
+          Optional XAppService selected by Kubernetes metadata.name whose
+          system-assigned identity receives the Key Vault Secrets User role.
         required:
           - name
         properties:
           name:
-            description: Logical name of the XAppService.
+            description: Kubernetes metadata.name of the XAppService.

@@ -7,7 +7,7 @@ properties:
       - valueSecretRef
     properties:
       keyVaultRef:
-        description: The XKeyVault that receives the secret.
+        description: XKeyVault selected by Kubernetes metadata.name.
       valueSecretRef:
         description: Kubernetes Secret containing the value.
         x-kubernetes-validations:

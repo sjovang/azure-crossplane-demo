@@ -106,7 +106,47 @@ class WebApplicationCompositionTests(unittest.TestCase):
         )
         self.assertEqual(
             by_id["keyVault"]["template"]["spec"]["appServiceRef"]["name"],
+            "${schema.metadata.name}",
+        )
+        self.assertEqual(
+            by_id["appService"]["template"]["metadata"]["name"],
+            "${schema.metadata.name}",
+        )
+        self.assertEqual(
+            by_id["keyVaultSecret"]["template"]["spec"]["keyVaultRef"]["name"],
+            "${keyVault.metadata.name}",
+        )
+        self.assertEqual(
+            by_id["entraClientSecret"]["template"]["spec"]["keyVaultRef"]["name"],
+            "${keyVault.metadata.name}",
+        )
+        self.assertEqual(
+            by_id["appService"]["template"]["spec"]["name"],
             "${schema.spec.name}",
+        )
+
+    def test_kubernetes_reference_names_can_differ_from_logical_name(self):
+        xr = copy.deepcopy(self.xr)
+        xr["metadata"]["name"] = "webdemo01-generated"
+        xr["spec"]["name"] = "webdemo01"
+        self.assertNotEqual(xr["metadata"]["name"], xr["spec"]["name"])
+        resources = {
+            resource["id"]: resource
+            for resource in self.composition["spec"]["pipeline"][0]["input"][
+                "resources"
+            ]
+        }
+        self.assertEqual(
+            resources["appService"]["template"]["metadata"]["name"],
+            "${schema.metadata.name}",
+        )
+        self.assertEqual(
+            resources["keyVault"]["template"]["spec"]["appServiceRef"]["name"],
+            "${schema.metadata.name}",
+        )
+        self.assertEqual(
+            resources["keyVaultSecret"]["template"]["spec"]["keyVaultRef"]["name"],
+            "${keyVault.metadata.name}",
         )
 
     def test_example_supplies_required_fields(self):

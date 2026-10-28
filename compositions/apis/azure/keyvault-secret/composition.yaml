@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -42,6 +43,62 @@ spec:
                   valueSecretRef:
                     name: ${schema.spec.valueSecretRef.name}
                     key: ${schema.spec.valueSecretRef.key}
+    - step: check-key-vault-secret
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $secret := getComposedResource . "keyVaultSecret" | default dict -}}
+            {{- $desiredSecret := get .desired.resources "keyVaultSecret" | default dict -}}
+            {{- $desiredResource := get $desiredSecret "resource" | default dict -}}
+            {{- $desiredSpec := get $desiredResource "spec" | default dict -}}
+            {{- $forProvider := get $desiredSpec "forProvider" | default dict -}}
+            {{- $keyVaultID := get $forProvider "keyVaultId" | default "" -}}
+            {{- $secretStatus := $secret.status | default dict -}}
+            {{- $atProvider := $secretStatus.atProvider | default dict -}}
+            {{- $id := $atProvider.id | default "" -}}
+            {{- $versionlessID := $atProvider.versionlessId | default "" -}}
+            {{- $secretReady := false -}}
+            {{- range $condition := $secretStatus.conditions -}}
+            {{- if and (eq $condition.type "Ready") (eq $condition.status "True") -}}
+            {{- $secretReady = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- $ready := and $desiredSecret $keyVaultID $id $secretReady -}}
+            {{- $reason := "WaitingForDependencies" -}}
+            {{- $message := "Waiting for the referenced XKeyVault and managed Key Vault secret to be observed with an Azure resource ID." -}}
+            {{- if not $keyVaultID -}}
+            {{- $reason = "WaitingForKeyVault" -}}
+            {{- $message = printf "Waiting for XKeyVault %s to provide an Azure resource ID." .observed.composite.resource.spec.keyVaultRef.name -}}
+            {{- else if not $id -}}
+            {{- $reason = "WaitingForSecretID" -}}
+            {{- $message = "Waiting for the managed Key Vault secret to be Ready with an Azure resource ID." -}}
+            {{- end }}
+            ---
+            apiVersion: azure.platform.example.org/v1alpha1
+            kind: XKeyVaultSecret
+            metadata:
+              {{- if not $ready }}
+              annotations:
+                gotemplating.fn.crossplane.io/ready: "False"
+              {{- else }}
+              annotations: {}
+              {{- end }}
+            status:
+              id: {{ $id | quote }}
+              versionlessId: {{ $versionlessID | quote }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ClaimConditions
+            conditions:
+              - type: KeyVaultSecretReady
+                status: {{ if $ready }}"True"{{ else }}"False"{{ end }}
+                reason: {{ if $ready }}Available{{ else }}{{ $reason }}{{ end }}
+                message: {{ if $ready }}"The Key Vault secret has an Azure resource ID."{{ else }}{{ $message | quote }}{{ end }}
     - step: auto-ready
       functionRef:
         name: function-auto-ready
