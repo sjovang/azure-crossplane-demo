@@ -71,6 +71,7 @@ metadata:
 spec:
   name: dbdemo01
   size: small
+  skuName: B_Standard_B2s
   resourceGroupRef:
     name: crd-dev-apps
   adminUsername: pgadmin

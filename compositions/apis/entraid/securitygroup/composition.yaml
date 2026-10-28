@@ -51,9 +51,32 @@ spec:
                   securityEnabled: true
                   mailEnabled: false
                   preventDuplicateNames: true
-                  members: "${schema.spec.membershipMode == 'External' ? null : compositeResource.?status.?resolvedMembers.orValue([]).filter(u, schema.spec.members.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}"
+                  members: ${compositeResource.?status.?resolvedMembers.orValue([]).filter(u, schema.spec.members.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}
                   owners: ${compositeResource.?status.?resolvedOwners.orValue([]).filter(u, schema.spec.owners.exists(m, m.lowerAscii() == u.userPrincipalName.lowerAscii())).map(u, u.id)}
-                managementPolicies: "${schema.spec.membershipMode == 'External' ? ['Observe', 'Create', 'Update', 'Delete'] : null}"
+    # kro's omit() requires an experimental runtime gate in v0.3.0. Remove
+    # the field after kro instead, keeping the same composed resource key.
+    - step: configure-membership
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- if eq .observed.composite.resource.spec.membershipMode "External" -}}
+            {{- $desired := get .desired.resources "securityGroup" | default dict -}}
+            {{- if $desired -}}
+            {{- $group := deepCopy $desired.resource -}}
+            {{- $_ := unset $group.spec.forProvider "members" -}}
+            {{- $_ := set $group.spec "managementPolicies" (list "Observe" "Create" "Update" "Delete") -}}
+            {{- $annotations := $group.metadata.annotations | default dict -}}
+            {{- $_ := set $annotations "gotemplating.fn.crossplane.io/composition-resource-name" "securityGroup" -}}
+            {{- $_ := set $group.metadata "annotations" $annotations }}
+            ---
+            {{ $group | toJson }}
+            {{- end -}}
+            {{- end }}
     - step: resolve-members
       functionRef:
         name: function-msgraph

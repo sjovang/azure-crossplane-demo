@@ -35,6 +35,7 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertEqual(
             spec["properties"]["databaseAdminUsername"]["default"], "pgadmin"
         )
+        self.assertEqual(spec["properties"]["databaseSkuName"]["default"], "")
 
     def test_resource_graph_snapshot(self):
         graph = self.composition["spec"]["pipeline"][0]["input"]
@@ -59,6 +60,10 @@ class WebApplicationCompositionTests(unittest.TestCase):
         )
         self.assertTrue(
             by_id["database"]["template"]["spec"]["allowAzureServices"]
+        )
+        self.assertEqual(
+            by_id["database"]["template"]["spec"]["skuName"],
+            '${schema.spec.?databaseSkuName.orValue("")}',
         )
         self.assertEqual(
             by_id["keyVaultSecret"]["template"]["spec"]["forProvider"][
@@ -131,6 +136,10 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertTrue(all(field in self.xr["spec"] for field in required))
         self.assertTrue(all(field in self.auth_xr["spec"] for field in required))
         self.assertTrue(self.auth_xr["spec"]["entraIdAuth"]["enabled"])
+        team_xr = yaml.safe_load(
+            (TESTS.parents[1] / "teams/crd-dev/webapplication.yaml").read_text()
+        )
+        self.assertEqual(team_xr["spec"]["databaseSkuName"], "B_Standard_B2s")
 
     def test_unconditional_resources_do_not_depend_on_optional_auth(self):
         resources = self.composition["spec"]["pipeline"][0]["input"]["resources"]

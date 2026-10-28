@@ -12,7 +12,7 @@ spec:
   forProvider:
     location: swedencentral
     resourceGroupName: rg-crd-dev-apps
-    skuName: B_Standard_B1ms
+    skuName: B_Standard_B2s
     storageMb: 32768
     version: "16"
     administratorLogin: pgadmin

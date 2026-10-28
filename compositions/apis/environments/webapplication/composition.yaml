@@ -97,6 +97,7 @@ spec:
                 resourceGroupRef:
                   name: ${resourceGroup.spec.name}
                 size: ${schema.spec.databaseSize}
+                skuName: '${schema.spec.?databaseSkuName.orValue("")}'
                 adminUsername: ${schema.spec.databaseAdminUsername}
                 adminPasswordSecretRef:
                   name: ${databaseCredentials.metadata.name}

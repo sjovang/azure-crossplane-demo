@@ -13,6 +13,12 @@ spec:
     string | enum="small,medium,large" default="small"
     description="T-shirt size: small = B_Standard_B1ms/32GB,
     medium = GP_Standard_D2s_v3/128GB, large = GP_Standard_D4s_v3/256GB."
+  skuName: >-
+    string | default=""
+    pattern="^((B|GP|MO)_Standard_[A-Za-z0-9_]+)?$"
+    description="Optional provider-format compute SKU override, e.g.
+    B_Standard_B2s. Empty uses size. Storage still follows size.
+    Regional support does not guarantee allocation capacity."
   postgresVersion: >-
     string | enum="13,14,15,16" default="16"
     description="PostgreSQL major version."
