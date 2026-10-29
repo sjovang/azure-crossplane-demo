@@ -51,30 +51,15 @@ Select the intended `kubectl` context and wait for the `app-hosting-advisor`
 namespace to exist. These are Kubernetes credentials, not GitHub Actions
 secrets: do not use `gh secret set`.
 
-**Run in Bash** (`bash` on macOS, not the default zsh). The prompt hides input
-and keeps the value out of shell history; the subshell disables tracing and
-discards the variable on failure. This idempotently creates or updates the
-namespaced Secret without putting the client secret in command arguments:
+Run from the repository root (including from zsh on macOS):
 
-```bash
-(
-  set +x
-  set -euo pipefail
-  read -rs -p 'OAuth client secret: ' CLIENT_SECRET
-  printf '\n'
-  if [[ -z "$CLIENT_SECRET" ]]; then
-    printf 'OAuth client secret must not be empty.\n' >&2
-    exit 1
-  fi
-  kubectl --namespace app-hosting-advisor create secret generic \
-    appadvisor-github-oauth \
-    --from-literal=client-id=Ov23lizwbt9OQknZcGRW \
-    --from-file=client-secret=<(printf '%s' "$CLIENT_SECRET") \
-    --dry-run=client -o yaml |
-    kubectl --namespace app-hosting-advisor apply -f -
-  unset CLIENT_SECRET
-)
+```sh
+./teams/app-hosting-advisor/setup-github-oauth.sh
 ```
+
+The script runs in Bash, disables tracing, and prompts with hidden input so
+the secret stays out of shell history and command arguments. It rejects empty
+input and idempotently creates or updates the namespaced Secret.
 
 `XKeyVaultSecret` copies both values into Azure Key Vault. `XAppService` uses
 Key Vault references, and `XKeyVault` grants its system-assigned identity the
