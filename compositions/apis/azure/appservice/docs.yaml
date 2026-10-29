@@ -13,3 +13,7 @@ exampleNotes: >-
   settings and forces App Service to refresh the referenced credential.
   XAppService readiness also waits for both the Service Plan and web app to
   report Synced=True; inspect their events for transient Azure API errors.
+  With a custom domain, all required resources must report Synced=True and
+  Ready=True, including both DNS records, the hostname binding, the managed
+  certificate, and the SNI binding. Missing verification data keeps the app
+  unready rather than reporting the custom hostname as available.

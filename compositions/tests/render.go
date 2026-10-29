@@ -27,8 +27,16 @@ func main() {
 		"setResourceNameAnnotation": func(name string) string {
 			return "gotemplating.fn.crossplane.io/composition-resource-name: " + name
 		},
-		"getComposedResource": func(_ interface{}, name string) interface{} {
-			if observed, ok := input.Observed[name].(map[string]interface{}); ok {
+		"getComposedResource": func(req map[string]interface{}, name string) interface{} {
+			observedState, ok := req["observed"].(map[string]interface{})
+			if !ok {
+				return nil
+			}
+			resources, ok := observedState["resources"].(map[string]interface{})
+			if !ok {
+				return nil
+			}
+			if observed, ok := resources[name].(map[string]interface{}); ok {
 				return observed["resource"]
 			}
 			return nil
