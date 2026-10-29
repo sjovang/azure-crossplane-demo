@@ -210,16 +210,28 @@ spec:
         source: Inline
         inline:
           template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $hasCustomDomain := and $xr.spec.customDomain $xr.spec.customDomain.hostname -}}
+            {{- $required := list "servicePlan" "linuxWebApp" -}}
+            {{- $conditions := "Synced=True" -}}
+            {{- if $hasCustomDomain -}}
+            {{- $required = list "servicePlan" "linuxWebApp" "dnsCnameRecord" "dnsTxtRecord" "customHostnameBinding" "managedCertificate" "certificateBinding" -}}
+            {{- $conditions = "Synced=True and Ready=True" -}}
+            {{- end -}}
             {{- $pending := list -}}
-            {{- range $key := list "servicePlan" "linuxWebApp" -}}
-            {{- $resource := getComposedResource . $key | default dict -}}
+            {{- range $key := $required -}}
+            {{- $resource := getComposedResource $ $key | default dict -}}
             {{- $synced := false -}}
+            {{- $available := not $hasCustomDomain -}}
             {{- range (($resource.status | default dict).conditions | default list) -}}
             {{- if and (eq .type "Synced") (eq .status "True") -}}
             {{- $synced = true -}}
             {{- end -}}
+            {{- if and (eq .type "Ready") (eq .status "True") -}}
+            {{- $available = true -}}
             {{- end -}}
-            {{- if not $synced -}}
+            {{- end -}}
+            {{- if not (and $synced $available) -}}
             {{- $pending = append $pending $key -}}
             {{- end -}}
             {{- end -}}
@@ -241,7 +253,7 @@ spec:
               - type: AppServiceSynced
                 status: {{ if $ready }}"True"{{ else }}"False"{{ end }}
                 reason: {{ if $ready }}Synced{{ else }}WaitingForManagedResources{{ end }}
-                message: {{ if $ready }}"The App Service plan and web app are Synced."{{ else }}{{ printf "Waiting for Synced=True from composed resources: %s." (join ", " $pending) | quote }}{{ end }}
+                message: {{ if $ready }}{{ printf "All required App Service resources report %s." $conditions | quote }}{{ else }}{{ printf "Waiting for %s from composed resources: %s." $conditions (join ", " $pending) | quote }}{{ end }}
     - step: auto-ready
       functionRef:
         name: function-auto-ready

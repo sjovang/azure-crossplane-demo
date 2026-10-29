@@ -26,6 +26,18 @@ make check    # regenerate and fail if anything changed
 make test     # run tests/
 ```
 
+App Service custom-domain regression tests run the pinned go-templating and
+auto-ready functions locally. They cover missing verification data, staged
+DNS/TLS provisioning, stable resource identities and readiness failures.
+They require Docker and `crossplane`, but no cluster access:
+
+```sh
+cd compositions
+# Set DOCKER_HOST to your Docker context endpoint if needed (e.g. Colima).
+RUN_APPSERVICE_RENDER=1 \
+  python3 -m unittest discover -s tests -p test_appservice_render.py
+```
+
 VM readiness regression tests run the pinned kro, go-templating and
 auto-ready functions locally. They reproduce the NIC-only false-ready case
 and cover missing dependencies, pending/ready VMs and both OS branches.
