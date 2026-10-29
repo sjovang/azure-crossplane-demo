@@ -263,9 +263,29 @@ class AccessPackageCompositionTests(unittest.TestCase):
         self.assertIn("$xr.spec.groupRefs", template)
         self.assertIn("namespace: {{ $xr.metadata.namespace | quote }}", template)
         self.assertIn("AccessPackageResourcePackageAssociation", template)
-        self.assertIn("deepCopy $resource.resource", template)
         self.assertIn('gotemplating.fn.crossplane.io/ready: "False"', template)
         self.assertIn("type: GroupResourcesReady", template)
+
+    def test_pending_resources_exclude_observed_runtime_fields(self):
+        for api in ("accesspackagecatalog", "accesspackage"):
+            with self.subTest(api=api):
+                composition = yaml.safe_load(
+                    (APIS / api / "composition.yaml").read_text()
+                )
+                template = composition["spec"]["pipeline"][1]["input"]["inline"][
+                    "template"
+                ]
+                self.assertIn(
+                    'pick $resource.resource "apiVersion" "kind" "spec"', template
+                )
+                self.assertIn(
+                    'pick $resource.resource.metadata "name" "namespace"', template
+                )
+                self.assertIn(
+                    'dict "gotemplating.fn.crossplane.io/composition-resource-name" $key',
+                    template,
+                )
+                self.assertNotIn("deepCopy $resource.resource", template)
 
     def test_team_demo_grants_only_the_external_membership_group(self):
         team = TESTS.parent.parent / "teams/crd-dev"

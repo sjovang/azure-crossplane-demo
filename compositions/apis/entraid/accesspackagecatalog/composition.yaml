@@ -53,6 +53,7 @@ spec:
                   roleId: 44272f93-9762-48e8-af59-1b5351b1d6b3
     # Dynamic name references need one required-resource request per group.
     # Preserve the old kro collection keys so existing associations stay owned.
+    # Pending resources retain identity/spec, never observed UID or status.
     - step: group-resources
       functionRef:
         name: function-go-templating
@@ -106,8 +107,9 @@ spec:
             {{- if $pending -}}
             {{- range $key, $resource := .observed.resources -}}
             {{- if not (get $.desired.resources $key) -}}
-            {{- $preserved := deepCopy $resource.resource -}}
-            {{- $_ := set $preserved.metadata.annotations "gotemplating.fn.crossplane.io/composition-resource-name" $key }}
+            {{- $preserved := pick $resource.resource "apiVersion" "kind" "spec" -}}
+            {{- $_ := set $preserved "metadata" (pick $resource.resource.metadata "name" "namespace") -}}
+            {{- $_ := set $preserved.metadata "annotations" (dict "gotemplating.fn.crossplane.io/composition-resource-name" $key) }}
             ---
             {{ $preserved | toJson }}
             {{- end -}}

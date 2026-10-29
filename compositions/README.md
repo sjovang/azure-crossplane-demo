@@ -188,3 +188,14 @@ This omits the provider's `members` configuration and disables late
 initialization for that managed Group, so Crossplane does not reclaim members
 added through entitlement assignments. The default `Declared` mode continues
 to manage members from `spec.members`.
+
+When group references are unavailable, catalogs and packages retain existing
+associations and report `GroupResourcesReady=False`. This fallback must emit
+only resource identity and spec, not observed status or server/provider-owned
+metadata: copying `metadata.uid` into desired resources makes Crossplane emit
+invalid `spec.crossplane.resourceRefs`, blocking reconciliation.
+
+If a managed Group reports a duplicate-name error after losing
+`crossplane.io/external-name`, verify its `status.atProvider.id` against the
+existing Entra group and restore that annotation on the managed Group.
+Do not delete the group or disable duplicate-name protection to recover it.
