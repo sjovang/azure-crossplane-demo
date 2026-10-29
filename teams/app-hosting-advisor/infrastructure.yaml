@@ -66,7 +66,7 @@ spec:
       version: "2025-04-14"
     sku:
       name: Standard
-      capacity: 1
+      capacity: 10
 ---
 # The image tag is updated by the app-hosting-advisor workflow on main.
 apiVersion: azure.platform.example.org/v1alpha1

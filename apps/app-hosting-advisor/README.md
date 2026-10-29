@@ -31,6 +31,17 @@ Advisor sessions expire after one hour, are periodically removed from process
 memory, and are limited to 1,000 concurrent sessions. Conversation history is
 limited to 40 messages and 64 KiB per session.
 
+The checked-in AI deployment uses Standard capacity 10. The current Azure
+deployment reports 1 request/minute and 1,000 tokens/minute per capacity unit,
+so this targets approximately 10 requests/minute and 10,000 tokens/minute.
+Azure enforces the subscription's regional model quota; confirm the deployed
+`rateLimits` after Flux reconciles because capacity can only increase if that
+quota remains available. On HTTP 429, the advisor honors `retry-after-ms` or
+`Retry-After`, retries at most twice with no more than three seconds of total
+automatic wait, and returns a user-facing retry message plus `Retry-After`
+when a longer wait is required. Failed turns do not enter conversation
+history, and the browser retains the text so the user can retry it.
+
 The deployment provides `AI_ENDPOINT` and `AI_DEPLOYMENT_NAME`; `/ready`
 returns HTTP 503 until both are set. For local development, set these values
 and authenticate through `DefaultAzureCredential` (for example, with Azure

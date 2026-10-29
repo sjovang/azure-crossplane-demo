@@ -14,7 +14,13 @@ from fastapi import Cookie, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
-from .advisor import AIBackendUnavailable, AdvisorError, Session, interview
+from .advisor import (
+    AIBackendThrottled,
+    AIBackendUnavailable,
+    AdvisorError,
+    Session,
+    interview,
+)
 from .catalog import load_catalog
 from .github import GitHubError, GitHubOAuth, GitHubPublisher
 from .render import RenderError, render_team
@@ -276,6 +282,13 @@ async def chat(
             ai_deployment_name,
             ai_credential,
         )
+    except AIBackendThrottled as error:
+        headers = (
+            {"Retry-After": str(error.retry_after_seconds)}
+            if error.retry_after_seconds is not None
+            else None
+        )
+        raise HTTPException(429, str(error), headers=headers) from error
     except AIBackendUnavailable as error:
         raise HTTPException(503, str(error)) from error
     except AdvisorError as error:

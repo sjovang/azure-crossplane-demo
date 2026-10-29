@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+from math import ceil, isfinite
 from typing import Any
 
 from azure.core.credentials import TokenCredential
@@ -63,6 +66,7 @@ class Session:
     github_access_token: str | None = None
     github_login: str | None = None
     expires_at: float = 0
+    interview_lock: asyncio.Lock | None = field(default=None, repr=False)
 
 
 class AdvisorError(Exception):
@@ -73,8 +77,25 @@ class AIBackendUnavailable(AdvisorError):
     pass
 
 
+class AIBackendThrottled(AIBackendUnavailable):
+    def __init__(self, retry_after_seconds: int | None = None):
+        self.retry_after_seconds = retry_after_seconds
+        retry_guidance = (
+            f" Please try again in about {retry_after_seconds} seconds."
+            if retry_after_seconds is not None
+            else " Please try again shortly."
+        )
+        super().__init__(
+            "The AI service is temporarily rate-limiting requests. "
+            "Your message was not added to the conversation."
+            + retry_guidance
+        )
+
+
 MAX_CONVERSATION_MESSAGES = 40
 MAX_CONVERSATION_CHARS = 64 * 1024
+MAX_AI_429_RETRIES = 2
+MAX_AI_RETRY_WAIT_SECONDS = 3.0
 
 
 def _append_message(session: Session, role: str, content: str) -> None:
@@ -85,6 +106,68 @@ def _append_message(session: Session, role: str, content: str) -> None:
     ):
         raise AdvisorError("Conversation limit reached. Start a new advisor session.")
     session.messages.append({"role": role, "content": content})
+
+
+def _retry_after_seconds(response: httpx.Response) -> float | None:
+    retry_after_ms = response.headers.get("retry-after-ms")
+    if retry_after_ms is not None:
+        try:
+            seconds = float(retry_after_ms) / 1000
+        except ValueError:
+            pass
+        else:
+            if isfinite(seconds):
+                return max(0.0, seconds)
+
+    retry_after = response.headers.get("retry-after")
+    if retry_after is None:
+        return None
+    try:
+        seconds = float(retry_after)
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(retry_after)
+            if retry_at.tzinfo is None:
+                retry_at = retry_at.replace(tzinfo=timezone.utc)
+            return max(
+                0.0,
+                (retry_at - datetime.now(timezone.utc)).total_seconds(),
+            )
+        except (TypeError, ValueError, OverflowError):
+            return None
+    return max(0.0, seconds) if isfinite(seconds) else None
+
+
+async def _post_with_throttling(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    headers: dict[str, str],
+    json: dict[str, Any],
+) -> httpx.Response:
+    retry_waited = 0.0
+    for attempt in range(MAX_AI_429_RETRIES + 1):
+        response = await client.post(url, headers=headers, json=json)
+        try:
+            response.raise_for_status()
+            return response
+        except httpx.HTTPStatusError as error:
+            if error.response.status_code != 429:
+                raise
+
+            server_delay = _retry_after_seconds(error.response)
+            retry_after = ceil(server_delay) if server_delay is not None else None
+            if attempt >= MAX_AI_429_RETRIES:
+                raise AIBackendThrottled(retry_after) from error
+
+            delay = server_delay if server_delay is not None else 0.5 * (2**attempt)
+            remaining_wait = MAX_AI_RETRY_WAIT_SECONDS - retry_waited
+            if delay > remaining_wait:
+                raise AIBackendThrottled(retry_after) from error
+            await asyncio.sleep(delay)
+            retry_waited += delay
+
+    raise AssertionError("The bounded AI retry loop exited without a response.")
 
 
 def _extract_json(content: str) -> dict[str, Any]:
@@ -128,7 +211,7 @@ def validate_recommendation(value: dict[str, Any]) -> dict[str, Any]:
     return value
 
 
-async def interview(
+async def _interview_mutating(
     session: Session,
     user_message: str,
     catalog: str,
@@ -166,7 +249,8 @@ async def interview(
 
     try:
         async with httpx.AsyncClient(timeout=90) as client:
-            response = await client.post(
+            response = await _post_with_throttling(
+                client,
                 url,
                 headers={
                     "Authorization": f"Bearer {token.token}",
@@ -174,7 +258,6 @@ async def interview(
                 },
                 json=payload,
             )
-            response.raise_for_status()
     except httpx.HTTPStatusError as error:
         raise AIBackendUnavailable(
             f"The AI backend returned HTTP {error.response.status_code}."
@@ -212,3 +295,32 @@ async def interview(
         "message": summary,
         "recommendation": recommendation,
     }
+
+
+async def interview(
+    session: Session,
+    user_message: str,
+    catalog: str,
+    endpoint: str,
+    deployment: str,
+    credential: TokenCredential,
+) -> dict[str, Any]:
+    lock = session.interview_lock
+    if lock is None:
+        lock = session.interview_lock = asyncio.Lock()
+    async with lock:
+        pending = Session(
+            messages=[dict(message) for message in session.messages],
+            recommendation=session.recommendation,
+        )
+        answer = await _interview_mutating(
+            pending,
+            user_message,
+            catalog,
+            endpoint,
+            deployment,
+            credential,
+        )
+        session.messages = pending.messages
+        session.recommendation = pending.recommendation
+        return answer
