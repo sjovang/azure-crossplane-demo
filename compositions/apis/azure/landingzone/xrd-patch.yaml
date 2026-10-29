@@ -134,7 +134,7 @@ properties:
           properties:
             name:
               maxLength: 32
-              pattern: ^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$
+              pattern: ^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$
             subscriptionId:
               maxLength: 36
               pattern: ^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$

@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 import os
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -187,6 +188,26 @@ class ProjectionTests(unittest.TestCase):
         self.assertIn("status | default dict).managedResourceName", status_template)
         self.assertIn("and $ready $associationName", status_template)
         self.assertNotIn('gotemplating.fn.crossplane.io/ready: "True"', status_template)
+
+    def test_attachment_names_satisfy_child_subscription_contract(self):
+        xrd = yaml.safe_load((API / "definition.yaml").read_text())
+        parent = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
+            "properties"
+        ]["spec"]["properties"]["subscriptions"]["items"]["properties"]["name"]
+        child_xrd = yaml.safe_load(
+            (API.parent / "subscription/definition.yaml").read_text()
+        )
+        child = child_xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
+            "properties"
+        ]["spec"]["properties"]["name"]
+        for name in ("a", "team-prod", "team1-prod2", "a" * 32):
+            with self.subTest(name=name):
+                self.assertRegex(name, parent["pattern"])
+                self.assertRegex(name, child["pattern"])
+                self.assertLessEqual(len(name), child["maxLength"])
+        for name in ("team--prod", "-team", "team-", "Team", ""):
+            with self.subTest(name=name):
+                self.assertIsNone(re.fullmatch(parent["pattern"], name))
 
 
 @unittest.skipUnless(os.environ.get("ALZ_RENDER_SCHEMAS"), "Opt-in pinned-function gRPC tests")
