@@ -3749,6 +3749,8 @@ spec:
                   policyDefinitionId: ${initiativefd6df3696120.status.atProvider.id}
                   displayName: Deny virtual machines and virtual machine scale sets that do not use managed disk (audit/deny only)
                   enforce: true
+                  overrides:
+                    - value: Deny
                   nonComplianceMessage:
                     - content: Virtual machines and virtual machine scales sets must use a managed disk.
             forEach:
@@ -8241,7 +8243,7 @@ spec:
               metadata:
                 name: ${schema.spec.name + "-" + subscription.name}
               spec:
-                name: ${schema.spec.name + "-" + subscription.name}
+                name: ${subscription.name}
                 subscriptionId: ${subscription.subscriptionId}
                 managementGroupId: '${schema.spec.managementGroups.filter(g, g.name == subscription.managementGroupRef.name)[0].?parentRef.hasValue() ? managementGroups.filter(g, g.metadata.name == schema.spec.name + "-" + subscription.managementGroupRef.name)[0].status.atProvider.id : rootGroups[0].status.atProvider.id}'
                 providerConfigRef: *id001
@@ -8888,6 +8890,7 @@ spec:
             {{- $subscriptionsReady := true -}}
             {{- $rootId := "" -}}
             {{- $edges := list -}}
+            {{- $emittedUsages := dict -}}
             {{- range $group := $xr.spec.managementGroups -}}
               {{- $prefix := "rootGroups" -}}
               {{- if $group.parentRef -}}{{- $prefix = "managementGroups" -}}{{- end -}}
@@ -8932,30 +8935,46 @@ spec:
             {{- range $subscription := $xr.spec.subscriptions -}}
               {{- $key := printf "subscriptions-%s-%s" $xr.spec.name $subscription.name -}}
               {{- $resource := getComposedResource $ $key | default dict -}}
+              {{- $associationName := (($resource.status | default dict).managedResourceName | default "") -}}
               {{- $ready := false -}}
               {{- range ($resource.status | default dict).conditions -}}
                 {{- if and (eq .type "Ready") (eq .status "True") -}}{{- $ready = true -}}{{- end -}}
               {{- end -}}
-              {{- if not $ready -}}{{- $subscriptionsReady = false -}}{{- end -}}
+              {{- if not (and $ready $associationName) -}}{{- $subscriptionsReady = false -}}{{- end -}}
               {{- range $group := $xr.spec.managementGroups -}}
                 {{- if eq $group.name $subscription.managementGroupRef.name -}}
                   {{- $prefix := "managementGroups" -}}
                   {{- if not $group.parentRef -}}{{- $prefix = "rootGroups" -}}{{- end -}}
-                  {{- $edges = append $edges (dict "of" (printf "%s-%s-%s" $prefix $xr.spec.name $group.name) "by" $key) -}}
+                  {{- if $associationName -}}
+                    {{- $edges = append $edges (dict
+                      "of" (printf "%s-%s-%s" $prefix $xr.spec.name $group.name)
+                      "byResource" (dict
+                        "apiVersion" "management.azure.m.upbound.io/v1beta1"
+                        "kind" "ManagementGroupSubscriptionAssociation"
+                        "metadata" (dict "name" $associationName))) -}}
+                  {{- end -}}
                 {{- end -}}
               {{- end -}}
             {{- end -}}
             {{- range $edge := $edges -}}
               {{- $of := getComposedResource $ $edge.of | default dict -}}
-              {{- $by := getComposedResource $ $edge.by | default dict -}}
+              {{- $by := dict -}}
+              {{- $byName := $edge.by | default "" -}}
+              {{- if $edge.by -}}
+                {{- $by = getComposedResource $ $edge.by | default dict -}}
+              {{- else -}}
+                {{- $by = $edge.byResource | default dict -}}
+                {{- $byName = $by.metadata.name | default "" -}}
+              {{- end -}}
               {{- if and $of.metadata $by.metadata }}
+              {{- $usageName := printf "usage-%s-%s" $edge.of $byName -}}
+              {{- $_ := set $emittedUsages $usageName true }}
             ---
             apiVersion: protection.crossplane.io/v1beta1
             kind: Usage
             metadata:
               annotations:
-                {{ setResourceNameAnnotation (printf "usage-%s-%s" $edge.of $edge.by) }}
-                gotemplating.fn.crossplane.io/ready: "True"
+                {{ setResourceNameAnnotation $usageName }}
             spec:
               replayDeletion: true
               of:
@@ -8968,6 +8987,20 @@ spec:
                 kind: {{ $by.kind }}
                 resourceRef:
                   name: {{ $by.metadata.name }}
+              {{- end -}}
+            {{- end }}
+            {{- range $name, $observed := .observed.resources -}}
+              {{- $usage := $observed.resource -}}
+              {{- if and (eq $usage.kind "Usage") (eq ($usage.spec.by.kind | default "") "ManagementGroupSubscriptionAssociation") (not (hasKey $emittedUsages $name)) }}
+            ---
+            apiVersion: protection.crossplane.io/v1beta1
+            kind: Usage
+            metadata:
+              name: {{ $usage.metadata.name }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                {{ setResourceNameAnnotation $name }}
+            spec: {{ $usage.spec | toJson }}
               {{- end -}}
             {{- end }}
             ---
@@ -9000,7 +9033,7 @@ spec:
               - type: SubscriptionsReady
                 status: {{ ternary "True" "False" $subscriptionsReady | quote }}
                 reason: {{ ternary "Available" "WaitingForSubscriptionAttachments" $subscriptionsReady }}
-                message: Every declared subscription attachment must be Ready.
+                message: Every declared subscription attachment must be Ready and expose its association resource name.
     - step: auto-ready
       functionRef:
         name: function-auto-ready

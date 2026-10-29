@@ -1237,6 +1237,11 @@
     },
     {
       "assignment": "Deny-UnmanagedDisk",
+      "effect": "Deny",
+      "action": "assignment-policy-effect-override-retained"
+    },
+    {
+      "assignment": "Deny-UnmanagedDisk",
       "policy": "policyDefinitions/06a78e20-9358-41c9-923c-fb736d382a4d",
       "effect": "Audit",
       "action": "retained"

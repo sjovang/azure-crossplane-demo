@@ -76,7 +76,7 @@ class RealManagementFunctions(unittest.TestCase):
                 "subscriptionID": "bootstrap", "tenantID": "tenant",
                 "environment": "usgovernment",
                 "credentials": {"source": "Secret", "secretRef": {
-                    "name": "azure-secret", "namespace": "crossplane-system", "key": "creds",
+                    "name": "azure-secret", "namespace": "platform", "key": "creds",
                 }},
             },
         }
@@ -152,6 +152,52 @@ class RealManagementFunctions(unittest.TestCase):
         request["requiredResources"]["sourceProvider"] = {"items": []}
         with self.assertRaisesRegex(AssertionError, "refusing fallback or pruning"):
             self.full_pipeline(request)
+
+    def test_cross_namespace_secret_reference_fails_before_target_provider(self):
+        request = self.full_request()
+        source_provider = request["requiredResources"]["sourceProvider"]["items"][0][
+            "resource"
+        ]
+        source_provider["spec"]["credentials"]["secretRef"]["namespace"] = (
+            "crossplane-system"
+        )
+        with self.assertRaisesRegex(AssertionError, "Secret namespace"):
+            self.full_pipeline(request)
+
+    def test_namespaced_source_accepts_local_secret_without_namespace(self):
+        request = self.full_request()
+        source_provider = request["requiredResources"]["sourceProvider"]["items"][0][
+            "resource"
+        ]
+        source_provider["kind"] = "ProviderConfig"
+        source_provider["metadata"]["namespace"] = "platform"
+        request["observed"]["composite"]["resource"]["spec"]["providerConfigRef"] = {
+            "kind": "ProviderConfig", "name": "default"
+        }
+        del source_provider["spec"]["credentials"]["secretRef"]["namespace"]
+        result = self.full_pipeline(request)
+        self.assertEqual(
+            result["resources"]["managementProviderConfig"]["resource"]["spec"][
+                "credentials"
+            ],
+            source_provider["spec"]["credentials"],
+        )
+
+    def test_namespace_independent_authentication_accepts_cluster_source(self):
+        request = self.full_request()
+        source_provider = request["requiredResources"]["sourceProvider"]["items"][0][
+            "resource"
+        ]
+        source_provider["spec"]["credentials"] = {
+            "source": "SystemAssignedManagedIdentity"
+        }
+        result = self.full_pipeline(request)
+        self.assertEqual(
+            result["resources"]["managementProviderConfig"]["resource"]["spec"][
+                "credentials"
+            ],
+            source_provider["spec"]["credentials"],
+        )
 
     def test_missing_target_provider_preserves_existing_children_not_ready(self):
         request = self.full_request()

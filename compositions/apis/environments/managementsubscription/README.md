@@ -61,6 +61,19 @@ is resolved in the same namespace. The composition copies its entire **spec**
 `subscriptionID`, and creates the namespaced
 `ProviderConfig/<spec.name>-management`. It never reads/copies Secret data,
 creates credentials, or falls back to the bootstrap subscription after failure.
+For `credentials.source: Secret`, the source's effective Secret namespace must
+equal the `XManagementSubscription` namespace: a namespaced `ProviderConfig`
+uses its own namespace, while a `ClusterProviderConfig` requires an explicit
+`secretRef.namespace`. The composed managed resources are
+namespaced with the XR, and Crossplane's local Secret-reference enrichment
+targets that MR namespace; a cross-namespace reference would otherwise point to
+the wrong Secret. The composition fails reconciliation before creating the
+target ProviderConfig when the namespaces differ. For example, the default
+`ClusterProviderConfig/default` that references `crossplane-system/azure-secret`
+cannot be used by an XR in `platform` as-is: securely provision the required
+credential Secret in `platform` and configure the source reference for that
+namespace, or use namespace-independent authentication. Secret data is never
+copied by this composition.
 Credential authentication and imported-subscription access are verified by the
 provider when reconciling the subscription association and resources.
 

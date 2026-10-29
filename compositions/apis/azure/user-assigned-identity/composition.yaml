@@ -32,9 +32,6 @@ spec:
                 fromFieldPath: spec.name
                 toFieldPath: spec.forProvider.name
               - type: FromCompositeFieldPath
-                fromFieldPath: spec.name
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-              - type: FromCompositeFieldPath
                 fromFieldPath: spec.resourceGroupName
                 toFieldPath: spec.forProvider.resourceGroupName
               - type: FromCompositeFieldPath

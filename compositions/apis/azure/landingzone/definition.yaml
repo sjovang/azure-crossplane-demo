@@ -246,7 +246,7 @@ spec:
                 - message: Every subscription target must exist in managementGroups.
                   rule: self.subscriptions.all(s, self.managementGroups.exists(g, g.name == s.managementGroupRef.name))
                 - message: A subscription may only have one attachment in this hierarchy.
-                  rule: self.subscriptions.all(s, self.subscriptions.filter(other, other.subscriptionId == s.subscriptionId).size() == 1)
+                  rule: self.subscriptions.all(s, self.subscriptions.filter(other, other.subscriptionId.lowerAscii() == s.subscriptionId.lowerAscii()) .size() == 1)
             status:
               properties:
                 id:

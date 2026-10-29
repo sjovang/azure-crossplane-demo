@@ -9,8 +9,9 @@ It never creates or deletes a subscription.
 - `spec.managementGroupId`: full target management-group ARM ID.
 - `spec.providerConfigRef`: `{kind, name}`, defaults to
   `ClusterProviderConfig/default`; `ProviderConfig` is same-namespace.
-- `status.id`: `/subscriptions/<uuid>`, from the observed association's
-  subscription ID. `status.associationId`: observed association ID.
+- The input UUID is formatted as `/subscriptions/<uuid>` for the provider's
+  association resource. `status.id` copies the provider's observed subscription
+  ARM ID unchanged; `status.associationId` is the observed association ID.
 - `status.managedResourceName`: observed Kubernetes MR name for nested
   cleanup protection.
 

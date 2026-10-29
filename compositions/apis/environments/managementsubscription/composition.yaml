@@ -64,6 +64,15 @@ spec:
             {{- $sources := get .extraResources "sourceProvider" -}}
             {{- if not $sources.items }}{{ fail "source ProviderConfig is missing; refusing fallback or pruning" }}{{ end -}}
             {{- $source := (index $sources.items 0).resource -}}
+            {{- $credentials := default (dict) $source.spec.credentials -}}
+            {{- $secretRef := default (dict) $credentials.secretRef -}}
+            {{- $secretNamespace := default "" $secretRef.namespace -}}
+            {{- if eq $source.kind "ProviderConfig" -}}
+            {{- $secretNamespace = default $xr.metadata.namespace $source.metadata.namespace -}}
+            {{- end -}}
+            {{- if and (eq (default "" $credentials.source) "Secret") (ne $secretNamespace $xr.metadata.namespace) -}}
+            {{- fail (printf "source ProviderConfig Secret namespace %q must match XManagementSubscription namespace %q; provision the credential Secret in the XR namespace or use namespace-independent authentication" $secretNamespace $xr.metadata.namespace) -}}
+            {{- end -}}
             {{- $groupId := default "" $spec.managementGroupId -}}
             {{- if $spec.landingZoneRef -}}
             {{- $zones := get .extraResources "landingZone" -}}

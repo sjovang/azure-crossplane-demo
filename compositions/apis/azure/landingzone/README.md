@@ -87,6 +87,8 @@ Only one XR may own a subscription attachment. Do not list the management
 subscription here if `XManagementSubscription` owns it. A subscription referenced
 by an association remains an existing subscription; deleting the association
 detaches it but never cancels or deletes it.
+The attachment's logical `name` is passed to the child `XSubscription`; the
+landing-zone prefix is used only for that child's Kubernetes metadata name.
 
 ## Policy effects and required values
 
@@ -99,6 +101,9 @@ Microsoft built-in definitions remain untouched; referenced versions are pinned
 to the reviewed built-in snapshot.
 Upstream `DoNotEnforce` assignments remain non-enforcing; filtering never
 promotes them into enforced denies. Supported non-compliance messages are kept.
+Supported assignment-level `policyEffect` overrides are retained for `Audit`,
+`AuditIfNotExists`, and `Deny`; unsupported override kinds or effects fail
+generation rather than silently changing policy behavior.
 
 The pinned built-in snapshot includes newer Kubernetes policy versions than
 some ALZ references. Unsupported deny effects become a supported audit effect;
@@ -142,6 +147,8 @@ IDs become available before all policy assignments are ready.
 Use `function-sequencer` and Crossplane v2 Usages with explicit foreground
 deletion. Dynamic Usages protect each child/parent and assignment/target-group
 edge; sequencer rules protect definition and initiative dependencies.
+Subscription Usages reference the nested association MR directly and preserve
+observed protection after its child XR disappears, until Usage finalizers finish.
 
 First remove the management environment, then the landing zone:
 

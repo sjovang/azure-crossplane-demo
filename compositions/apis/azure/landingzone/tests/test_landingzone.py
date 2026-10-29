@@ -89,6 +89,44 @@ class ProjectionTests(unittest.TestCase):
             )
             self.assertNotIn("{enforcementMode}", json.dumps(desired))
 
+    def test_supported_assignment_effect_overrides_are_preserved(self):
+        source = copy.deepcopy(self.source)
+        definitions, initiatives, assignments, report = generator.compile_profile(source)
+        assignment = assignments["Deny-UnmanagedDisk"]
+        self.assertEqual(assignment["overrides"], [{"value": "Deny"}])
+        self.assertTrue(any(
+            item.get("assignment") == "Deny-UnmanagedDisk"
+            and item.get("action") == "assignment-policy-effect-override-retained"
+            for item in report
+        ))
+        node_id = "assignment" + generator.token("Deny-UnmanagedDisk")
+        node = next(
+            resource for resource in self.composition["spec"]["pipeline"][1]["input"]["resources"]
+            if resource["id"] == node_id
+        )
+        self.assertEqual(
+            node["template"]["spec"]["forProvider"]["overrides"], [{"value": "Deny"}],
+        )
+        self.assertEqual(
+            source["assignments"]["Deny-UnmanagedDisk"]["properties"]["overrides"][0]["value"],
+            "Deny",
+        )
+        self.assertIn("safe-", next(iter(initiatives)))
+        self.assertTrue(definitions)
+
+    def test_unsupported_assignment_effect_overrides_fail_closed(self):
+        for override in (
+            {"kind": "unknown", "value": "Deny"},
+            {"kind": "policyEffect", "value": "DeployIfNotExists"},
+            {"kind": "policyEffect", "value": "Deny", "selectors": []},
+        ):
+            source = copy.deepcopy(self.source)
+            source["assignments"]["Deny-UnmanagedDisk"]["properties"]["overrides"] = [override]
+            with self.subTest(override=override), self.assertRaisesRegex(
+                ValueError, "unsupported"
+            ):
+                generator.compile_profile(source)
+
     def test_unknown_effect_and_expression_fail_closed(self):
         with self.assertRaisesRegex(ValueError, "Unknown policy effect"):
             generator.selected_effect({"policyRule": {"then": {"effect": "futureEffect"}}}, {})
@@ -117,6 +155,9 @@ class ProjectionTests(unittest.TestCase):
         properties = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
             "properties"
         ]["spec"]["properties"]
+        validations = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
+            "properties"
+        ]["spec"]["x-kubernetes-validations"]
         self.assertEqual(properties["providerConfigRef"]["default"], {
             "kind": "ClusterProviderConfig", "name": "default",
         })
@@ -130,6 +171,7 @@ class ProjectionTests(unittest.TestCase):
         self.assertEqual(
             properties["subscriptions"]["items"]["properties"]["subscriptionId"]["maxLength"], 36,
         )
+        self.assertTrue(any("lowerAscii" in rule["rule"] for rule in validations))
 
     def test_foreground_sequencer_and_explicit_dynamic_usages(self):
         pipeline = self.composition["spec"]["pipeline"]
@@ -140,7 +182,11 @@ class ProjectionTests(unittest.TestCase):
         self.assertTrue(sequencing["resetCompositeReadiness"])
         for rule in sequencing["rules"]:
             self.assertEqual(len(rule["sequence"]), 2)
-        self.assertIn("protection.crossplane.io/v1beta1", (API / "status.gotmpl").read_text())
+        status_template = (API / "status.gotmpl").read_text()
+        self.assertIn("protection.crossplane.io/v1beta1", status_template)
+        self.assertIn("status | default dict).managedResourceName", status_template)
+        self.assertIn("and $ready $associationName", status_template)
+        self.assertNotIn('gotemplating.fn.crossplane.io/ready: "True"', status_template)
 
 
 @unittest.skipUnless(os.environ.get("ALZ_RENDER_SCHEMAS"), "Opt-in pinned-function gRPC tests")
@@ -181,6 +227,20 @@ class RuntimeTests(unittest.TestCase):
 
     def render(self, xr, observed=None):
         return run_pipeline(self.composition, xr, self.schemas, self.endpoints, observed)
+
+    def settled(self, xr):
+        observed = {}
+        for _ in range(6):
+            state = self.render(xr, observed)
+            next_observed = observe(state)
+            for item in next_observed.values():
+                resource = item["resource"]
+                if resource["kind"] == "XSubscription":
+                    resource["status"]["managedResourceName"] = (
+                        "association-" + resource["spec"]["name"]
+                    )
+            observed.update(next_observed)
+        return state, observed
 
     def test_default_hierarchy_initially_publishes_only_root(self):
         rendered = self.render(self.xr())
@@ -290,7 +350,14 @@ class RuntimeTests(unittest.TestCase):
         observed = {}
         for _ in range(4):
             state = self.render(xr, observed)
-            observed.update(observe(state))
+            next_observed = observe(state)
+            for item in next_observed.values():
+                resource = item["resource"]
+                if resource["kind"] == "XSubscription":
+                    resource["status"]["managedResourceName"] = (
+                        "association-" + resource["spec"]["name"]
+                    )
+            observed.update(next_observed)
         groups = state["composite"]["resource"]["status"]["managementGroups"]
         attachments = [
             item["resource"] for item in state["resources"].values()
@@ -299,7 +366,33 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(len(attachments), 2)
         for attachment in attachments:
             target = attachment["metadata"]["name"].removeprefix("example-")
+            self.assertEqual(attachment["spec"]["name"], target)
             self.assertEqual(attachment["spec"]["managementGroupId"], groups[target]["id"])
+        usages = [
+            item["resource"] for item in state["resources"].values()
+            if item["resource"]["kind"] == "Usage"
+            and item["resource"]["spec"]["by"]["kind"]
+            == "ManagementGroupSubscriptionAssociation"
+        ]
+        self.assertEqual(len(usages), 2)
+        for usage in usages:
+            self.assertEqual(
+                usage["spec"]["by"]["apiVersion"], "management.azure.m.upbound.io/v1beta1",
+            )
+            self.assertEqual(
+                usage["spec"]["by"]["kind"], "ManagementGroupSubscriptionAssociation",
+            )
+            self.assertFalse(
+                usage["metadata"]["annotations"].get("gotemplating.fn.crossplane.io/ready")
+            )
+        self.assertEqual(
+            {
+                usage["spec"]["by"]["resourceRef"]["name"] for usage in usages
+            },
+            {
+                "association-" + attachment["spec"]["name"] for attachment in attachments
+            },
+        )
 
     def test_full_default_profile_and_missing_input_readiness(self):
         xr = self.xr()
@@ -327,6 +420,73 @@ class RuntimeTests(unittest.TestCase):
             r["resource"]["kind"] == "ManagementGroupPolicyAssignment"
             for r in complete["resources"].values()
         ))
+
+    def test_association_usage_survives_disappearing_subscription_xr(self):
+        xr = self.xr([{"name": "root", "displayName": "Root", "archetypes": ["root"]}])
+        xr["spec"]["subscriptions"] = [{
+            "name": "attachment",
+            "subscriptionId": "11111111-1111-4111-8111-111111111111",
+            "managementGroupRef": {"name": "root"},
+        }]
+        _, observed = self.settled(xr)
+        usage_name = next(
+            name for name, item in observed.items()
+            if item["resource"]["kind"] == "Usage"
+            and item["resource"]["spec"]["by"]["kind"]
+            == "ManagementGroupSubscriptionAssociation"
+        )
+        usage = observed[usage_name]["resource"]
+        for name in list(observed):
+            if observed[name]["resource"]["kind"] == "XSubscription":
+                del observed[name]
+        xr["spec"]["subscriptions"] = []
+        state = self.render(xr, observed)
+        preserved = state["resources"][usage_name]["resource"]
+        self.assertEqual(preserved["spec"], usage["spec"])
+        self.assertEqual(preserved["metadata"]["name"], usage["metadata"]["name"])
+        del observed[usage_name]
+        self.assertNotIn(usage_name, self.render(xr, observed)["resources"])
+
+    def test_hierarchy_usage_readiness_is_observed_not_forced(self):
+        xr = self.xr([
+            {"name": "root", "displayName": "Root", "archetypes": ["root"]},
+            {"name": "child", "displayName": "Child", "archetypes": [],
+             "parentRef": {"name": "root"}},
+        ])
+        inputs = json.loads((API / "profile.json").read_text())["requiredInputs"]
+        xr["spec"]["policyDefaults"] = {name: "/synthetic/input" for name in inputs}
+        _, observed = self.settled(xr)
+        usage_name = "usage-rootGroups-example-root-managementGroups-example-child"
+        observed[usage_name]["resource"]["status"]["conditions"] = [
+            {"type": "Ready", "status": "False"},
+        ]
+        pending = self.render(xr, observed)
+        self.assertNotEqual(pending["composite"].get("ready"), "READY_TRUE")
+        self.assertNotEqual(pending["resources"][usage_name].get("ready"), "READY_TRUE")
+        observed[usage_name]["resource"]["status"]["conditions"][0]["status"] = "True"
+        ready = self.render(xr, observed)
+        self.assertNotEqual(ready["composite"].get("ready"), "READY_FALSE")
+        self.assertTrue(all(
+            item.get("ready") == "READY_TRUE" for item in ready["resources"].values()
+        ))
+
+    def test_maximum_prefix_and_attachment_names_keep_child_spec_within_limit(self):
+        xr = self.xr([{"name": "root", "displayName": "Root", "archetypes": ["root"]}])
+        xr["spec"]["name"] = "a" * 20
+        xr["spec"]["subscriptions"] = [{
+            "name": "b" * 32,
+            "subscriptionId": "11111111-1111-4111-8111-111111111111",
+            "managementGroupRef": {"name": "root"},
+        }]
+        state = self.render(xr)
+        state = self.render(xr, observe(state))
+        child = next(
+            item["resource"] for item in state["resources"].values()
+            if item["resource"]["kind"] == "XSubscription"
+        )
+        self.assertEqual(child["spec"]["name"], "b" * 32)
+        self.assertEqual(child["metadata"]["name"], "a" * 20 + "-" + "b" * 32)
+        self.assertLessEqual(len(child["spec"]["name"]), 40)
 
     def test_removal_of_observed_groups_fails_without_pruning(self):
         xr = self.xr([

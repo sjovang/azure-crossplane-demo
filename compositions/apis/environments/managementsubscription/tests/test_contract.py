@@ -116,19 +116,44 @@ class PrimitiveContracts(unittest.TestCase):
         self.assertEqual([r["base"]["kind"] for r in resources], [
             "ManagementGroupSubscriptionAssociation"
         ])
+        patches = resources[0]["patches"]
+        subscription_input = next(
+            p for p in patches
+            if p["type"] == "FromCompositeFieldPath"
+            and p["fromFieldPath"] == "spec.subscriptionId"
+        )
+        self.assertEqual(
+            subscription_input["toFieldPath"], "spec.forProvider.subscriptionId"
+        )
+        self.assertEqual(
+            subscription_input["transforms"][0]["string"]["fmt"],
+            "/subscriptions/%s",
+        )
         outputs = {
-            p["toFieldPath"]: p for p in resources[0]["patches"]
+            p["toFieldPath"]: p for p in patches
             if p["type"] == "ToCompositeFieldPath"
         }
         self.assertEqual(
             outputs["status.id"]["fromFieldPath"], "status.atProvider.subscriptionId"
         )
+        self.assertNotIn("transforms", outputs["status.id"])
         self.assertEqual(
             outputs["status.associationId"]["fromFieldPath"], "status.atProvider.id"
         )
-        self.assertEqual(
-            outputs["status.id"]["transforms"][0]["string"]["fmt"], "/subscriptions/%s"
+
+    def test_user_assigned_identity_uses_name_without_external_id_annotation(self):
+        composition = load(AZURE / "user-assigned-identity/composition.yaml")
+        resource = composition["spec"]["pipeline"][0]["input"]["resources"][0]
+        name_patch = next(
+            p for p in resource["patches"]
+            if p["type"] == "FromCompositeFieldPath"
+            and p["fromFieldPath"] == "spec.name"
         )
+        self.assertEqual(name_patch["toFieldPath"], "spec.forProvider.name")
+        self.assertFalse(any(
+            p.get("toFieldPath") == "metadata.annotations[crossplane.io/external-name]"
+            for p in resource["patches"]
+        ))
 
     def test_resource_group_default_and_provider_override_are_compatible(self):
         resource = load(AZURE / "resourcegroup/composition.yaml")["spec"]["pipeline"][
@@ -202,7 +227,7 @@ class ManagementContracts(unittest.TestCase):
                 "environment": "usgovernment",
                 "clientID": "client",
                 "credentials": {"source": "Secret", "secretRef": {
-                    "namespace": "crossplane-system", "name": "azure-secret", "key": "creds"
+                    "namespace": "platform", "name": "azure-secret", "key": "creds"
                 }},
                 "features": {"postgreSQLFlexibleServer": {
                     "restartServerOnConfigurationValueChange": False
@@ -266,6 +291,36 @@ class ManagementContracts(unittest.TestCase):
         }}]}
         self.assertIn("observed ID",
                       render(self.preflight, xr, extra=self.extra, succeeds=False))
+
+    def test_cross_namespace_secret_reference_fails_fast(self):
+        self.source["spec"]["credentials"]["secretRef"]["namespace"] = "crossplane-system"
+        error = render(self.preflight, self.xr, extra=self.extra, succeeds=False)
+        self.assertIn("Secret namespace", error)
+        self.assertIn("must match XManagementSubscription namespace", error)
+        self.assertIn("namespace-independent authentication", error)
+
+    def test_namespaced_source_accepts_local_secret_without_namespace(self):
+        self.source["kind"] = "ProviderConfig"
+        self.source["metadata"]["namespace"] = "platform"
+        self.xr["spec"]["providerConfigRef"] = {
+            "kind": "ProviderConfig", "name": "default"
+        }
+        del self.source["spec"]["credentials"]["secretRef"]["namespace"]
+        resources = resource_map(render(self.preflight, self.xr, extra=self.extra))
+        self.assertEqual(
+            resources["managementProviderConfig"]["spec"]["credentials"],
+            self.source["spec"]["credentials"],
+        )
+
+    def test_namespace_independent_authentication_accepts_cluster_source(self):
+        self.source["spec"]["credentials"] = {
+            "source": "SystemAssignedManagedIdentity"
+        }
+        resources = resource_map(render(self.preflight, self.xr, extra=self.extra))
+        self.assertEqual(
+            resources["managementProviderConfig"]["spec"]["credentials"],
+            self.source["spec"]["credentials"],
+        )
 
     def test_sequencer_and_explicit_expected_readiness(self):
         sequence = self.steps[2]["input"]

@@ -191,6 +191,18 @@ def compile_profile(source):
         properties = assignment["properties"]
         definition = policies[policy_key(properties["policyDefinitionId"])]
         defaults = parameter_values(definition["properties"], properties.get("parameters", {}))
+        assignment_overrides = []
+        for override in properties.get("overrides", []):
+            if set(override) - {"kind", "value"} or override.get("kind") != "policyEffect":
+                raise ValueError(f"{name}: unsupported assignment override {override}")
+            effect = override.get("value")
+            if not isinstance(effect, str) or effect.lower() not in SAFE:
+                raise ValueError(f"{name}: unsupported policyEffect override {effect}")
+            assignment_overrides.append({"value": SAFE[effect.lower()]})
+            report.append({
+                "assignment": name, "effect": SAFE[effect.lower()],
+                "action": "assignment-policy-effect-override-retained",
+            })
         for parameter, value in list(defaults.items()):
             field = default_mapping.get((name, parameter))
             if field:
@@ -261,6 +273,8 @@ def compile_profile(source):
                     if name in archetype["policy_assignments"]
                 ),
             }
+            if assignment_overrides:
+                assignments[name]["overrides"] = assignment_overrides
         else:
             report.append({"assignment": name, "action": "empty-initiative-omitted"})
     return definitions, initiatives, assignments, report
@@ -419,6 +433,8 @@ def generate():
             "displayName": projected_display_name(assignment["displayName"]),
             "enforce": assignment["enforce"],
         })
+        if assignment.get("overrides"):
+            node["template"]["spec"]["forProvider"]["overrides"] = assignment["overrides"]
         if assignment["nonComplianceMessage"]:
             node["template"]["spec"]["forProvider"]["nonComplianceMessage"] = (
                 assignment["nonComplianceMessage"]
@@ -438,7 +454,7 @@ def generate():
             "apiVersion": GROUP, "kind": "XSubscription",
             "metadata": {"name": expr('schema.spec.name + "-" + subscription.name')},
             "spec": {
-                "name": expr('schema.spec.name + "-" + subscription.name'),
+                "name": expr("subscription.name"),
                 "subscriptionId": expr("subscription.subscriptionId"),
                 "managementGroupId": expr(
                     'schema.spec.managementGroups.filter(g, g.name == subscription.managementGroupRef.name)'
