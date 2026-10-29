@@ -81,7 +81,8 @@ following the chain across several files:
    `infrastructure/bootstrap-aks.sh` (see below).
 5. `clusters/base/crossplane/functions/` — Composition `Function` packages
    (`function-patch-and-transform`, `function-go-templating`,
-   `function-kro`, `function-auto-ready`, `function-msgraph`), applied by the dependent
+   `function-kro`, `function-auto-ready`, `function-azure-vm-sku`,
+   `function-msgraph`), applied by the dependent
    `crossplane-functions` Kustomization (`dependsOn: flux-system`, same
    `wait` + `healthCheckExprs` pattern as the providers) because
    `functions.pkg.crossplane.io` only exists once Crossplane core has
@@ -189,6 +190,13 @@ step reads the msgraph results persisted in the XR's own status via an
 after it. kro `status` expressions can't reference `schema`, and optional
 fields need `.?x.orValue(...)`. Prefer `function-kro` over `function-go-templating` whenever
 `function-patch-and-transform` is insufficient.
+
+The experimental `XVirtualMachine.spec.azureVmSku` override is checked by the
+Go `function-azure-vm-sku` Composition Function before the VM resources are
+composed. It reads the bootstrap-created `azure-secret` `creds` key through
+its `DeploymentRuntimeConfig`; the secret is not committed. The function checks
+subscription/region SKU listing, not deployment capacity, and blocks
+reconciliation on lookup failures.
 
 `XEnterpriseApp` creates the application registration, tenant-local
 `Principal` shown under Enterprise applications, and a rotating `Password`.

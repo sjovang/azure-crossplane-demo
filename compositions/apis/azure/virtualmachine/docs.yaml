@@ -7,11 +7,26 @@ exampleRef: teams/crd-dev/virtualmachines.yaml
 exampleLines: 19-34
 exampleNotes: >-
   Pick the operating system with `spec.os` and the sizing with the
-  `spec.size` t-shirt size; the composition maps that to an Azure SKU. Linux
+  `spec.size` t-shirt size; the composition maps that to an Azure SKU.
+  Experimental: `spec.azureVmSku` accepts an exact Azure SKU and overrides
+  `spec.size`. Crossplane checks the effective SKU against the configured
+  subscription and region during reconciliation; this does not guarantee
+  capacity at deployment time. Linux
   machines authenticate with an SSH public key, Windows machines with an
   administrator password, each read from a Secret in the same namespace. The
   Azure resource is named `vm-<spec.name>`.
 commonErrors:
+  - symptom: >-
+      The virtual machine is not created and `AzureVmSkuReady` reports that the
+      requested SKU is unavailable.
+    cause: >-
+      The exact SKU is not listed as available for virtual machines in
+      `spec.location` for the configured Azure subscription, or Azure's SKU
+      API could not be queried.
+    fix: >-
+      Check `spec.azureVmSku` (or the SKU mapped from `spec.size`), the region,
+      Azure credentials, and Compute SKU API access. Availability can change
+      and does not guarantee deployment capacity.
   - symptom: >-
       The XR is rejected on apply with "linux virtual machines require
       sshPublicKeySecretRef".

@@ -210,9 +210,10 @@ register_azure_provider() {
 # Kept at <credentials_file> (gitignored, never deleted) so re-running
 # bootstrap after a cluster recreate reuses the same service principal
 # instead of minting a new one every time. The same JSON is stored twice:
-# `creds` for the Crossplane providers and `credentials` for function-msgraph,
-# which only reads that key. Non-secret Azure identifiers are also exposed in
-# azure-platform-config for Compositions that need them.
+# `creds` for the Crossplane providers and the VM SKU Function, and
+# `credentials` for function-msgraph, which only reads that key. Non-secret
+# Azure identifiers are also exposed in azure-platform-config for Compositions
+# that need them.
 apply_azure_secret() {
   local ctx="$1" credentials_file="$2"
   local client_id principal_id

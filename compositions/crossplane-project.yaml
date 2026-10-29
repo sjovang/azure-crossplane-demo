@@ -43,6 +43,12 @@ spec:
       xpkg:
         apiVersion: pkg.crossplane.io/v1
         kind: Function
+        package: ghcr.io/sjovang/azure-crossplane-demo/function-azure-vm-sku
+        version: "v0.1.0"
+    - type: xpkg
+      xpkg:
+        apiVersion: pkg.crossplane.io/v1
+        kind: Function
         package: xpkg.upbound.io/upbound/function-msgraph
         version: "v0.8.0"
     - type: xpkg

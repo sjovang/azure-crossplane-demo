@@ -1,0 +1,25 @@
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: azure-vm-sku-function
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              env:
+                - name: AZURE_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: azure-secret
+                      key: creds
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi

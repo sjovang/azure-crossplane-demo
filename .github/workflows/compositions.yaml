@@ -15,12 +15,14 @@ on:
       - main
     paths:
       - compositions/**
+      - functions/azure-vm-sku/**
       - infrastructure/lib/common.sh
       - infrastructure/tests/**
       - .github/workflows/compositions.yaml
   pull_request:
     paths:
       - compositions/**
+      - functions/azure-vm-sku/**
       - infrastructure/lib/common.sh
       - infrastructure/tests/**
       - .github/workflows/compositions.yaml
@@ -77,6 +79,10 @@ jobs:
 
       - name: Run composition tests
         run: make -C compositions test
+
+      - name: Test Azure VM SKU function
+        working-directory: functions/azure-vm-sku
+        run: go test ./...
 
       - name: Run bootstrap permission tests
         run: python -m unittest discover -s infrastructure/tests

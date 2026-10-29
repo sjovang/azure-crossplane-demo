@@ -14,7 +14,11 @@ API = ROOT / "apis/azure/virtualmachine"
 class VirtualMachineReadinessTests(unittest.TestCase):
     def setUp(self):
         self.composition = yaml.safe_load((API / "composition.yaml").read_text())
-        self.template = self.composition["spec"]["pipeline"][1]["input"]["inline"][
+        readiness_step = next(
+            step for step in self.composition["spec"]["pipeline"]
+            if step["step"] == "check-virtual-machine"
+        )
+        self.template = readiness_step["input"]["inline"][
             "template"
         ]
         self.xr = {
@@ -40,12 +44,40 @@ class VirtualMachineReadinessTests(unittest.TestCase):
     def test_pipeline_and_resource_keys_are_preserved(self):
         pipeline = self.composition["spec"]["pipeline"]
         self.assertEqual([step["step"] for step in pipeline], [
-            "kro", "check-virtual-machine", "auto-ready",
+            "validate-azure-vm-sku", "kro", "check-virtual-machine", "auto-ready",
         ])
         self.assertEqual(
-            [r["id"] for r in pipeline[0]["input"]["resources"]],
+            pipeline[0]["functionRef"]["name"], "function-azure-vm-sku",
+        )
+        vm_resources = pipeline[1]["input"]["resources"]
+        linux_vm = next(r for r in vm_resources if r["id"] == "linuxVm")
+        windows_vm = next(r for r in vm_resources if r["id"] == "windowsVm")
+        self.assertIn(
+            "schema.spec.?azureVmSku.orValue",
+            linux_vm["template"]["spec"]["forProvider"]["size"],
+        )
+        self.assertEqual(
+            linux_vm["template"]["spec"]["forProvider"]["size"],
+            windows_vm["template"]["spec"]["forProvider"]["size"],
+        )
+        self.assertEqual(
+            [r["id"] for r in vm_resources],
             ["virtualNetwork", "sshPublicKey", "networkInterface", "linuxVm", "windowsVm"],
         )
+
+    def test_azure_vm_sku_is_experimental_and_optional(self):
+        definition = yaml.safe_load((API / "definition.yaml").read_text())
+        properties = definition["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
+            "properties"
+        ]["spec"]["properties"]
+        azure_sku = properties["azureVmSku"]
+        self.assertIn("Experimental", azure_sku["description"])
+        self.assertEqual(azure_sku["type"], "string")
+        self.assertEqual(azure_sku["maxLength"], 64)
+        self.assertNotIn("enum", azure_sku)
+        self.assertNotIn("azureVmSku", definition["spec"]["versions"][0]["schema"][
+            "openAPIV3Schema"
+        ]["properties"]["spec"].get("required", []))
 
     def test_selected_vm_must_be_desired_observed_ready_and_have_id(self):
         for os, key, other in (
