@@ -82,3 +82,20 @@ spec:
   adminPasswordSecretRef:
     name: windemo01-admin
     key: password
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XVirtualMachine
+metadata:
+  name: windemo02
+spec:
+  name: windemo02
+  os: windows
+  size: small
+  resourceGroupRef:
+    name: crd-dev-virtualmachines
+  virtualNetworkRef:
+    name: crd-dev
+    subnet: management
+  adminPasswordSecretRef:
+    name: windemo01-admin
+    key: password
