@@ -196,10 +196,21 @@ environment resources and can affect networking and cost.
 
 The `XDatabase.spec.skuName` and `XWebApplication.spec.databaseSkuName`
 overrides select the provider-format compute SKU while the existing
-`size`/`databaseSize` continues to determine storage. For example, the
-`crd-dev` lab explicitly selects `B_Standard_B2s` with `small` (32 GiB)
-storage in Sweden Central. This is a higher compute cost than `B1ms`; it is a
-capacity mitigation, not a guarantee that Azure will allocate the server.
+`size`/`databaseSize` continues to determine storage. In `crd-dev`, only
+`webdemo02` selects `GP_Standard_D2ds_v5`: General Purpose, 2 vCPUs and 8 GiB
+RAM, retaining `small` (32 GiB) storage and Sweden Central. Azure's
+subscription-scoped `az postgres flexible-server list-skus --location
+swedencentral` listed `Standard_D2ds_v5` on 2026-10-29; the provider requires
+the `GP_` tier prefix. This moves off the allocation-failing B2s compute
+family without adding vCPUs, at a higher compute cost. `webdemo01` and
+`dbdemo01` retain `B_Standard_B2s`; shared sizing defaults are unchanged.
+
+Supported SKUs are not a real-time capacity check. Confirm allocation and
+the server's Ready/Synced conditions after rollout; database and firewall
+reference warnings can persist until the server has an Azure ID. Do not
+delete or recreate existing servers to address those downstream warnings.
+See Azure's [compute options](https://learn.microsoft.com/azure/postgresql/configure-maintain/concepts-compute)
+and [capacity guidance](https://learn.microsoft.com/azure/postgresql/troubleshoot/how-to-resolve-capacity-errors).
 
 ## The documentation site is unavailable
 
