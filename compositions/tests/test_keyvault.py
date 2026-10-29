@@ -34,6 +34,10 @@ class KeyVaultCompositionTests(unittest.TestCase):
             "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$",
         )
         self.assertEqual(
+            spec["properties"]["vaultName"]["x-kubernetes-validations"][0]["rule"],
+            "self == oldSelf",
+        )
+        self.assertEqual(
             spec["properties"]["name"]["x-kubernetes-validations"][0]["rule"],
             "self == oldSelf",
         )
@@ -80,6 +84,91 @@ class KeyVaultCompositionTests(unittest.TestCase):
             by_id["appService"]["includeWhen"],
             ['${schema.spec.?appServiceRef.?name.orValue("") != ""}'],
         )
+
+    def test_replacements_are_additive_and_reuse_existing_credentials(self):
+        teams = ROOT.parent / "teams"
+        expected = {
+            "app-hosting-advisor": {
+                "appadvisor-github-client-id-next": (
+                    "appadvisor-next", "appadvisor-github-oauth", "client-id",
+                ),
+                "appadvisor-github-client-secret-next": (
+                    "appadvisor-next", "appadvisor-github-oauth", "client-secret",
+                ),
+            },
+            "crd-dev": {
+                "keyvault-demo-value-next": (
+                    "crd-dev-keyvault-next", "keyvault-demo-value", "password",
+                ),
+                "webdemo01-database-password-next": (
+                    "webdemo01-keyvault-next", "webdemo01-database-admin", "password",
+                ),
+            },
+        }
+        vault_names = set()
+        for team, secrets in expected.items():
+            folder = teams / team
+            kustomization = yaml.safe_load(
+                (folder / "kustomization.yaml").read_text()
+            )
+            self.assertIn("keyvault-replacement.yaml", kustomization["resources"])
+            documents = list(yaml.safe_load_all(
+                (folder / "keyvault-replacement.yaml").read_text()
+            ))
+            vaults = {
+                doc["metadata"]["name"]: doc for doc in documents
+                if doc["kind"] == "XKeyVault"
+            }
+            copies = {
+                doc["metadata"]["name"]: doc for doc in documents
+                if doc["kind"] == "XKeyVaultSecret"
+            }
+            self.assertEqual(set(copies), set(secrets))
+            self.assertEqual(len(documents), len(vaults) + len(copies))
+            for name, (vault, source, key) in secrets.items():
+                self.assertEqual(copies[name]["spec"]["keyVaultRef"]["name"], vault)
+                self.assertEqual(
+                    copies[name]["spec"]["valueSecretRef"],
+                    {"name": source, "key": key},
+                )
+                self.assertIn(vault, vaults)
+            for doc in documents:
+                self.assertEqual(
+                    doc["metadata"]["annotations"][
+                        "kustomize.toolkit.fluxcd.io/prune"
+                    ],
+                    "disabled",
+                )
+            for vault in vaults.values():
+                name = vault["spec"]["vaultName"]
+                self.assertNotIn(name, vault_names)
+                vault_names.add(name)
+                self.assertLessEqual(len(name), 24)
+                self.assertRegex(name, "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$")
+            if team == "app-hosting-advisor":
+                self.assertIn("infrastructure.yaml", kustomization["resources"])
+                self.assertEqual(
+                    vaults["appadvisor-next"]["spec"]["appServiceRef"]["name"],
+                    "appadvisor",
+                )
+                original = list(yaml.safe_load_all(
+                    (folder / "infrastructure.yaml").read_text()
+                ))
+                original_vault = next(d for d in original if d["kind"] == "XKeyVault")
+                app = next(d for d in original if d["kind"] == "XAppService")
+                self.assertEqual(
+                    original_vault["spec"]["vaultName"], "kv-appadvisor-lsdev",
+                )
+                for setting in app["spec"]["keyVaultSecretEnvVars"].values():
+                    self.assertEqual(setting["vaultName"], "kv-appadvisor-lsdev")
+            else:
+                self.assertIn("keyvault.yaml", kustomization["resources"])
+                self.assertIn("webapplication.yaml", kustomization["resources"])
+                self.assertEqual(
+                    vaults["webdemo01-keyvault-next"]["spec"]["appServiceRef"]["name"],
+                    "webdemo01",
+                )
+        self.assertEqual(len(vault_names), 3)
 
 
 if __name__ == "__main__":

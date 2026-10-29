@@ -30,9 +30,7 @@ spec:
             template:
               apiVersion: keyvault.azure.m.upbound.io/v1beta1
               kind: Secret
-              metadata:
-                annotations:
-                  crossplane.io/external-name: ${schema.spec.name}
+              metadata: {}
               spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
@@ -62,6 +60,32 @@ spec:
             {{- $atProvider := $secretStatus.atProvider | default dict -}}
             {{- $id := $atProvider.id | default "" -}}
             {{- $versionlessID := $atProvider.versionlessId | default "" -}}
+            {{- if $desiredSecret -}}
+            {{- $resource := deepCopy $desiredResource -}}
+            {{- $annotations := $resource.metadata.annotations | default dict -}}
+            {{- $observedAnnotations := $secret.metadata.annotations | default dict -}}
+            {{- $externalName := get $observedAnnotations "crossplane.io/external-name" | default "" -}}
+            {{- $namePrefix := printf "%s/" $forProvider.name -}}
+            {{- $version := trimPrefix $namePrefix $externalName -}}
+            {{- $hasVersion := and (ne $version $externalName) (regexFind "^[a-zA-Z0-9-]+$" $version) -}}
+            {{- /* Upjet owns name/version; recover older bare-name annotations only from this vault's observed ID. */ -}}
+            {{- if not $hasVersion -}}
+            {{- $vaultName := regexFind "[^/]+$" $keyVaultID -}}
+            {{- $idPrefix := printf "https://%s.vault.azure.net/secrets/%s/" $vaultName $forProvider.name -}}
+            {{- $version = trimPrefix $idPrefix $id -}}
+            {{- if and $keyVaultID (ne $version $id) (regexFind "^[a-zA-Z0-9-]+$" $version) -}}
+            {{- $externalName = printf "%s%s" $namePrefix $version -}}
+            {{- $hasVersion = true -}}
+            {{- end -}}
+            {{- end -}}
+            {{- if $hasVersion -}}
+            {{- $_ := set $annotations "crossplane.io/external-name" $externalName -}}
+            {{- end -}}
+            {{- $_ := set $annotations "gotemplating.fn.crossplane.io/composition-resource-name" "keyVaultSecret" -}}
+            {{- $_ := set $resource.metadata "annotations" $annotations }}
+            ---
+            {{ $resource | toJson }}
+            {{- end -}}
             {{- $secretReady := false -}}
             {{- range $condition := $secretStatus.conditions -}}
             {{- if and (eq $condition.type "Ready") (eq $condition.status "True") -}}

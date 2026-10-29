@@ -1,0 +1,44 @@
+---
+# Retain the active vault, secrets and app URIs until a verified cutover.
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+metadata:
+  name: appadvisor-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: appadvisor-next
+  vaultName: kv-advisor-261029-297651
+  resourceGroupRef:
+    name: app-hosting-advisor
+  appServiceRef:
+    name: appadvisor
+  location: swedencentral
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: appadvisor-github-client-id-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: github-oauth-client-id
+  keyVaultRef:
+    name: appadvisor-next
+  valueSecretRef:
+    name: appadvisor-github-oauth
+    key: client-id
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: appadvisor-github-client-secret-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: github-oauth-client-secret
+  keyVaultRef:
+    name: appadvisor-next
+  valueSecretRef:
+    name: appadvisor-github-oauth
+    key: client-secret

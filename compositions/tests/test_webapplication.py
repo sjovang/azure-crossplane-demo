@@ -156,8 +156,11 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertTrue(all(field in self.xr["spec"] for field in required))
         self.assertTrue(all(field in self.auth_xr["spec"] for field in required))
         self.assertTrue(self.auth_xr["spec"]["entraIdAuth"]["enabled"])
-        team_xr = yaml.safe_load(
-            (TESTS.parents[1] / "teams/crd-dev/webapplication.yaml").read_text()
+        team_xr = next(
+            xr for xr in yaml.safe_load_all(
+                (TESTS.parents[1] / "teams/crd-dev/webapplication.yaml").read_text()
+            )
+            if xr["metadata"]["name"] == "webdemo01"
         )
         self.assertEqual(team_xr["spec"]["databaseSkuName"], "B_Standard_B2s")
 
