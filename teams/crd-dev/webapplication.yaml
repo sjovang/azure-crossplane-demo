@@ -11,3 +11,16 @@ spec:
   databaseSize: small
   databaseSkuName: B_Standard_B2s
   port: 80
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XWebApplication
+metadata:
+  name: webdemo02
+spec:
+  name: webdemo02
+  image: docker.io/library/nginx:latest
+  location: swedencentral
+  appSize: small
+  databaseSize: small
+  databaseSkuName: B_Standard_B2s
+  port: 80
