@@ -122,7 +122,15 @@ class AccessPackageRenderTests(unittest.TestCase):
             "metadata": {
                 "name": key.removeprefix("groupCatalogAssociations-").lower(),
                 "namespace": "developer-portal",
-                "annotations": {"crossplane.io/composition-resource-name": key},
+                "uid": "33333333-3333-4333-8333-333333333333",
+                "resourceVersion": "12345",
+                "creationTimestamp": "2026-10-28T17:05:06Z",
+                "finalizers": ["finalizer.managedresource.crossplane.io"],
+                "annotations": {
+                    "crossplane.io/composition-resource-name": key,
+                    "crossplane.io/external-name": provider_id,
+                    "crossplane.io/external-create-succeeded": "2026-10-28T17:05:06Z",
+                },
             },
             "spec": {"forProvider": spec or {}},
             "status": {
@@ -162,6 +170,13 @@ class AccessPackageRenderTests(unittest.TestCase):
                 r["metadata"]["annotations"]["crossplane.io/composition-resource-name"]
                 for r in rendered[1:]
             }), "Pending references must not prune existing resources")
+            for resource in rendered[1:]:
+                self.assertNotIn("status", resource)
+                for field in ("uid", "resourceVersion", "creationTimestamp", "finalizers"):
+                    self.assertNotIn(field, resource["metadata"])
+                annotations = resource["metadata"].get("annotations", {})
+                self.assertNotIn("crossplane.io/external-name", annotations)
+                self.assertNotIn("crossplane.io/external-create-succeeded", annotations)
         return rendered
 
     def approver_group(self, name, object_id):

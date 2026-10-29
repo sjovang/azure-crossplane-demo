@@ -92,6 +92,7 @@ spec:
                         subjectType: GroupMembers
                     accessReviewTimeoutBehavior: removeAccess
     # Resolve dynamic group names and fail closed before pruning associations.
+    # Pending resources retain identity/spec, never observed UID or status.
     - step: check-group-resources
       functionRef:
         name: function-go-templating
@@ -168,8 +169,9 @@ spec:
             {{- if $pending -}}
             {{- range $key, $resource := .observed.resources -}}
             {{- if not (get $.desired.resources $key) -}}
-            {{- $preserved := deepCopy $resource.resource -}}
-            {{- $_ := set $preserved.metadata.annotations "gotemplating.fn.crossplane.io/composition-resource-name" $key }}
+            {{- $preserved := pick $resource.resource "apiVersion" "kind" "spec" -}}
+            {{- $_ := set $preserved "metadata" (pick $resource.resource.metadata "name" "namespace") -}}
+            {{- $_ := set $preserved.metadata "annotations" (dict "gotemplating.fn.crossplane.io/composition-resource-name" $key) }}
             ---
             {{ $preserved | toJson }}
             {{- end -}}
