@@ -26,13 +26,17 @@ class AppTemplateTests(unittest.TestCase):
         composition = yaml.safe_load((folder / "composition.yaml").read_text())
         template = composition["spec"]["pipeline"][0]["input"]["inline"]["template"]
         xr = copy.deepcopy(next(doc for doc in EXAMPLES if doc.get("kind") == "XDatabase"))
-        xr["spec"].update({
-            "location": "swedencentral", "postgresVersion": "16",
-            "skuName": "B_Standard_B2s",
-        })
-        for size, storage in (("small", 32768), ("medium", 131072), ("large", 262144)):
-            with self.subTest(size=size):
-                xr["spec"]["size"] = size
+        xr["spec"].update({"location": "swedencentral", "postgresVersion": "16"})
+        cases = (
+            (sku, size, storage)
+            for sku in ("B_Standard_B2s", "GP_Standard_D2ds_v5")
+            for size, storage in (
+                ("small", 32768), ("medium", 131072), ("large", 262144)
+            )
+        )
+        for sku, size, storage in cases:
+            with self.subTest(sku=sku, size=size):
+                xr["spec"].update({"skuName": sku, "size": size})
                 result = subprocess.run(
                     ["go", "run", str(RENDER)],
                     input=json.dumps({"template": template, "xr": xr}),
@@ -40,7 +44,7 @@ class AppTemplateTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 server = list(yaml.safe_load_all(result.stdout))[0]["spec"]["forProvider"]
-                self.assertEqual(server["skuName"], "B_Standard_B2s")
+                self.assertEqual(server["skuName"], sku)
                 self.assertEqual(server["storageMb"], storage)
                 self.assertEqual(server["location"], "swedencentral")
 

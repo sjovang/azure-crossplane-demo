@@ -156,13 +156,21 @@ class WebApplicationCompositionTests(unittest.TestCase):
         self.assertTrue(all(field in self.xr["spec"] for field in required))
         self.assertTrue(all(field in self.auth_xr["spec"] for field in required))
         self.assertTrue(self.auth_xr["spec"]["entraIdAuth"]["enabled"])
-        team_xr = next(
-            xr for xr in yaml.safe_load_all(
-                (TESTS.parents[1] / "teams/crd-dev/webapplication.yaml").read_text()
-            )
-            if xr["metadata"]["name"] == "webdemo01"
+        team_xrs = list(yaml.safe_load_all(
+            (TESTS.parents[1] / "teams/crd-dev/webapplication.yaml").read_text()
+        ))
+        self.assertEqual(
+            [xr["metadata"]["name"] for xr in team_xrs],
+            ["webdemo01", "webdemo02"],
         )
-        self.assertEqual(team_xr["spec"]["databaseSkuName"], "B_Standard_B2s")
+        for xr, sku in zip(
+            team_xrs, ("B_Standard_B2s", "GP_Standard_D2ds_v5")
+        ):
+            with self.subTest(name=xr["metadata"]["name"]):
+                self.assertTrue(all(field in xr["spec"] for field in required))
+                self.assertEqual(xr["spec"]["databaseSkuName"], sku)
+                self.assertEqual(xr["spec"]["databaseSize"], "small")
+                self.assertEqual(xr["spec"]["location"], "swedencentral")
 
     def test_unconditional_resources_do_not_depend_on_optional_auth(self):
         resources = self.composition["spec"]["pipeline"][0]["input"]["resources"]

@@ -22,5 +22,5 @@ spec:
   location: swedencentral
   appSize: small
   databaseSize: small
-  databaseSkuName: B_Standard_B2s
+  databaseSkuName: GP_Standard_D2ds_v5
   port: 80
