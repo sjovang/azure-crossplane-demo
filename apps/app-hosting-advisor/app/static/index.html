@@ -98,15 +98,21 @@
         const input = document.querySelector("#message");
         const text = input.value.trim();
         if (!text) return;
-        input.value = "";
-        line("user", text);
+        const send = document.querySelector("#send");
+        send.disabled = true;
         try {
           const result = await request("/api/chat", {sessionId, message: text});
+          input.value = "";
+          line("user", text);
           line("assistant", result.message);
           if (result.action === "recommend") {
             document.querySelector("#publishSection").hidden = false;
           }
-        } catch (error) { line("error", error.message); }
+        } catch (error) {
+          line("error", error.message);
+        } finally {
+          send.disabled = false;
+        }
       };
 
       document.querySelector("#publish").onclick = async () => {
