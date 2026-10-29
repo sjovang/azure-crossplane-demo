@@ -5,3 +5,4 @@ namespace: app-hosting-advisor
 resources:
   - ../_base
   - infrastructure.yaml
+  - keyvault-replacement.yaml

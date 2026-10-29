@@ -8,6 +8,8 @@ exampleNotes: >-
   Keep the source Kubernetes Secret out of Git. Updating its value creates a
   new Azure Key Vault secret version. keyVaultRef.name is the referenced
   XKeyVault's Kubernetes metadata.name, which may differ from spec.name.
+  The vault reference is immutable; use a new XKeyVaultSecret to copy the
+  same source value into a replacement vault without retargeting the original.
 commonErrors:
   - symptom: The composite is Ready but has no Azure secret ID.
     cause: >-
@@ -21,3 +23,12 @@ commonErrors:
     fix: >-
       Confirm valueSecretRef points to a Secret in the XKeyVaultSecret
       namespace.
+  - symptom: An active Azure secret already exists and needs to be imported.
+    cause: >-
+      The provider's external-name must contain secretName/version, not just
+      the secret name. Overwriting it makes Upjet attempt creation again.
+    fix: >-
+      Preserve the provider-owned external-name. The composition recovers a
+      bare annotation from a matching observed status.atProvider.id without
+      reading the value. If that ID is absent, verify and adopt the existing
+      version before retrying; do not delete or purge the secret.

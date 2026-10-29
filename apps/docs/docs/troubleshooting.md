@@ -55,6 +55,89 @@ After correcting a team manifest, ask Flux to reconcile it:
 flux reconcile kustomization teams -n flux-system --with-source
 ```
 
+## Key Vault secrets already exist but Crossplane tries to create them
+
+The Upbound Key Vault provider tracks a secret with
+`crossplane.io/external-name: <secret-name>/<version>`. A bare secret name
+does not identify an existing version and causes another create attempt.
+An `already exists ... needs to be imported` error with a versioned HTTPS ID
+is not evidence of soft deletion. Check active and deleted vault metadata
+separately; do not delete or purge either vaults or secrets to clear this error.
+
+The `XKeyVaultSecret` composition preserves the provider-owned version. For
+older resources with a bare annotation, it restores the identity from
+`status.atProvider.id` only when the vault and secret name match. This does
+not read or replace the credential value. Without a matching observed ID,
+stop and verify the existing secret's version metadata before adoption.
+`keyVaultRef` and `XKeyVault.spec.vaultName` are immutable: replacement needs
+new XRs, not an in-place rename or a changed reference.
+
+### Staged vault replacements
+
+The replacement manifests in `teams/app-hosting-advisor/` and `teams/crd-dev/`
+are additive. They retain every original XR and its Azure vault/secret,
+reuse existing Kubernetes Secret values, and grant the same provider and
+App Service identities access through `XKeyVault.spec.appServiceRef`.
+Replacement XRs have Flux pruning disabled. Their vault names were available
+on 2026-10-29, but availability must be checked again before rollout:
+
+| Existing vault | Replacement vault | Existing value source |
+| --- | --- | --- |
+| `kv-appadvisor-lsdev` | `kv-advisor-261029-297651` | `appadvisor-github-oauth`: `client-id`, `client-secret` |
+| `kv-crd-dev-demo-01` | `kv-crddev-261029-297651` | `keyvault-demo-value`: `password` |
+| `kv-webdemo01-5635b6ca` | `kv-web01-261029-297651` | `webdemo01-database-admin`: `password` |
+
+These manifests **prepare replacements, not a consumer cutover**. After
+the identity fix and replacement manifests have been reviewed and deployed:
+
+1. Confirm all existing source Secrets and keys still exist. Do not delete
+   an ExternalSecret, password generator, or database credential Secret to
+   regenerate a missing value. If source continuity is uncertain, stop:
+   authorized credential recovery is required before copying or switching.
+2. Wait for replacement `XKeyVault` and `XKeyVaultSecret` resources to be
+   Ready/Synced with IDs, and both provider/App Service role assignments
+   to be Ready at the replacement vault scope. A vault ID alone is not
+   proof of working data-plane RBAC. Confirm both OAuth values still match
+   the existing OAuth registration and the database password remains valid,
+   without logging values or changing the database password.
+3. In a separate reviewed cutover, update **both**
+   `XAppService/appadvisor.spec.keyVaultSecretEnvVars` vault names in
+   `teams/app-hosting-advisor/infrastructure.yaml` to
+   `kv-advisor-261029-297651`. Keep their secret names unchanged. The resulting
+   App Service URIs must be
+   `https://kv-advisor-261029-297651.vault.azure.net/secrets/github-oauth-client-id`
+   and
+   `https://kv-advisor-261029-297651.vault.azure.net/secrets/github-oauth-client-secret`.
+4. `webdemo01` is controlled by `XWebApplication`: its App Service's
+   `DATABASE_PASSWORD` setting is generated from its original composed vault
+   and secret version. **Do not patch the child App Service or rename the
+   original vault.** A follow-up composition change must explicitly select
+   the replacement vault and its observed secret version while retaining
+   the original composed vault and secret resource keys. The target URI is
+   `https://kv-web01-261029-297651.vault.azure.net/secrets/database-password/<replacement-version>`.
+   Until that selection exists and is verified, keep the current URI.
+   The standalone demo secret has no App Service consumer to cut over.
+5. Verify OAuth login, application Key Vault reference resolution, and
+   database connectivity. Keep original resources and sources for rollback;
+   reverting URI selection must not delete either generation. Retirement
+   or purge requires separate authorization and is not part of this rollout.
+
+### A new secret reports `ForbiddenByRbac`
+
+Compare the error's principal object ID with the provider role assignment,
+its scope with the exact vault ID, and its role with **Key Vault Secrets
+Officer**. The App Service identity separately needs **Key Vault Secrets
+User**. Subscription Contributor alone does not grant secret data access.
+Initial retries can fail while role assignments are being created or
+propagating; do not treat an old warning as a current failure.
+
+On 2026-10-29, `webdemo02` initially failed at 12:04Z, then its secret became
+Ready/Synced by 12:04:50Z. Both assignments subsequently became Ready with
+the correct principals and scope. No persistent RBAC defect or replacement
+vault was needed for that environment. If a 403 persists after assignments
+are Ready, investigate current role metadata and authorization errors rather
+than rotating credentials, widening roles, or recreating a healthy vault.
+
 ## A resource kind is not recognized
 
 When a composition uses a new managed-resource kind, its MRD must be listed in

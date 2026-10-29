@@ -8,6 +8,11 @@ properties:
     properties:
       keyVaultRef:
         description: XKeyVault selected by Kubernetes metadata.name.
+        x-kubernetes-validations:
+          - rule: self == oldSelf
+            message: >-
+              keyVaultRef is immutable; create a new XKeyVaultSecret for
+              another vault
       valueSecretRef:
         description: Kubernetes Secret containing the value.
         x-kubernetes-validations:
