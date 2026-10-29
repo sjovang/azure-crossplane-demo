@@ -12,6 +12,7 @@ resources:
   - enterpriseapp.yaml
   - accesspackages.yaml
   - keyvault.yaml
+  - keyvault-replacement.yaml
 patches:
   # Apply the team-wide region only to APIs whose specs expose location.
   - target:

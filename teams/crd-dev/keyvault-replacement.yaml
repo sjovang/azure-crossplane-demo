@@ -1,0 +1,55 @@
+---
+# Reuse the existing sources; never generate a replacement database password.
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+metadata:
+  name: crd-dev-keyvault-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: crd-dev-keyvault-next
+  vaultName: kv-crddev-261029-297651
+  resourceGroupRef:
+    name: crd-dev-keyvault
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: keyvault-demo-value-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: demo-value
+  keyVaultRef:
+    name: crd-dev-keyvault-next
+  valueSecretRef:
+    name: keyvault-demo-value
+    key: password
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVault
+metadata:
+  name: webdemo01-keyvault-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: webdemo01-keyvault-next
+  vaultName: kv-web01-261029-297651
+  resourceGroupRef:
+    name: webdemo01
+  appServiceRef:
+    name: webdemo01
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XKeyVaultSecret
+metadata:
+  name: webdemo01-database-password-next
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: database-password
+  keyVaultRef:
+    name: webdemo01-keyvault-next
+  valueSecretRef:
+    name: webdemo01-database-admin
+    key: password

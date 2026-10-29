@@ -30,6 +30,9 @@ spec:
                   required:
                     - name
                   type: object
+                  x-kubernetes-validations:
+                    - message: keyVaultRef is immutable; create a new XKeyVaultSecret for another vault
+                      rule: self == oldSelf
                 name:
                   description: Azure Key Vault secret name.
                   type: string
