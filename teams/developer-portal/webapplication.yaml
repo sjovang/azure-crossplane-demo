@@ -7,7 +7,7 @@ metadata:
   name: devportal
 spec:
   name: devportal
-  image: ghcr.io/sjovang/azure-crossplane-demo/backstage:latest
+  image: ghcr.io/sjovang/azure-crossplane-demo/backstage:sha-e84b6ce
   location: swedencentral
   appSize: small
   databaseSize: small
