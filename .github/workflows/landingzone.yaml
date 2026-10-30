@@ -1,0 +1,133 @@
+---
+# yamllint disable rule:line-length rule:truthy
+name: landing zone OCI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - compositions/apis/azure/landingzone/**
+      - compositions/Makefile
+      - .github/workflows/landingzone.yaml
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: landingzone-publish
+  cancel-in-progress: false
+
+env:
+  CROSSPLANE_VERSION: v2.5.0
+  CROSSPLANE_SHA256: 065dd6b40c9ea5fc71e49900d5c924cc0bec7f58375922ddbde6b402f292347e
+  YQ_VERSION: v4.54.1
+  YQ_SHA256: 8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f
+  FLUX_VERSION: 2.10.0
+  FLUX_SHA256: 208dd7012c04fedeed5b2d0b6e63df3b15b1c34a381527811685c098bc9f8659
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          curl -fsSLo "$bin/crossplane" "https://cli.crossplane.io/stable/${CROSSPLANE_VERSION}/bin/linux_amd64/crossplane"
+          curl -fsSLo "$bin/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          curl -fsSLo "$RUNNER_TEMP/flux.tar.gz" "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}/flux_${FLUX_VERSION}_linux_amd64.tar.gz"
+          echo "${CROSSPLANE_SHA256}  $bin/crossplane" | sha256sum -c -
+          echo "${YQ_SHA256}  $bin/yq" | sha256sum -c -
+          echo "${FLUX_SHA256}  $RUNNER_TEMP/flux.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/flux.tar.gz" -C "$bin" flux
+          chmod +x "$bin/crossplane" "$bin/yq"
+          echo "$bin" >> "$GITHUB_PATH"
+          python -m pip install --quiet pyyaml
+
+      - name: Build and verify the locked release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          make -C compositions landingzone-artifact
+          git diff --exit-code -- compositions/apis/azure/landingzone/definition.yaml compositions/apis/azure/landingzone/xrd-patch.yaml compositions/apis/azure/landingzone/library-lock.json
+          python -m unittest discover -s compositions/apis/azure/landingzone/tests
+          kubectl kustomize compositions/.artifacts/landingzone > "$RUNNER_TEMP/landingzone.yaml"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish the OCI artifact
+        id: publish
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          release=$(jq -r .alz compositions/apis/azure/landingzone/release.json)
+          image="ghcr.io/${REPOSITORY,,}/landingzone"
+          flux push artifact "oci://${image}:${release}-sha-${GITHUB_SHA}" \
+            --path=compositions/.artifacts/landingzone \
+            --source="https://github.com/${REPOSITORY}" \
+            --revision="${GITHUB_REF_NAME}@sha1:${GITHUB_SHA}" \
+            --annotations="org.opencontainers.image.version=${release}" \
+            --reproducible --output=json > "$RUNNER_TEMP/artifact.json"
+          digest=$(jq -er .digest "$RUNNER_TEMP/artifact.json")
+          flux tag artifact "oci://${image}@${digest}" --tag="$release"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+          # Flux has no registry Secret by default. Fail before pinning an
+          # artifact the cluster cannot read (new GHCR packages may be private).
+          mkdir -p "$RUNNER_TEMP/anonymous"
+          DOCKER_CONFIG="$RUNNER_TEMP/anonymous" flux pull artifact \
+            "oci://${image}@${digest}" --output="$RUNNER_TEMP/roundtrip"
+          diff -r compositions/.artifacts/landingzone "$RUNNER_TEMP/roundtrip"
+
+      - name: Pin the published digest in Git
+        env:
+          DIGEST: ${{ steps.publish.outputs.digest }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          manifest=compositions/apis/azure/landingzone/oci-repository.yaml
+          yq -i '.spec.ref = {"digest": strenv(DIGEST)}' "$manifest"
+          if git diff --quiet -- "$manifest"; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$manifest"
+          git commit -m "chore(alz): pin published OCI artifact" \
+            -m "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>"
+          remote="https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git"
+          for attempt in 1 2 3; do
+            if git push "$remote" "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              git fetch "$remote" "$GITHUB_REF_NAME"
+              git rebase FETCH_HEAD
+            fi
+          done
+          echo "::error::Failed to pin the published artifact after 3 attempts."
+          exit 1

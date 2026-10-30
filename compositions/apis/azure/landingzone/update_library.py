@@ -1,16 +1,42 @@
-"""Refresh the reviewed ALZ input snapshot; ordinary generation is offline."""
+"""Resolve an ALZ release or restore its reviewed, hash-locked snapshot."""
 
+import argparse
 import hashlib
 import io
 import json
+import re
 import subprocess
 import tarfile
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-ALZ_COMMIT = "4eae565287844360a61545f9799400431adb6d0a"
-POLICY_COMMIT = "99313872e9f5095d5da76d22377f01b016da35a6"
+BUILD = ROOT / ".build"
+ALZ_REPOSITORY = "Azure/azure-landing-zones-library"
+POLICY_REPOSITORY = "Azure/azure-policy"
+
+
+def release_config():
+    config = json.loads((ROOT / "release.json").read_text())
+    if not re.fullmatch(r"\d{4}\.\d{2}\.\d+", config["alz"]):
+        raise ValueError("ALZ release must use YYYY.MM.PATCH, for example 2026.10.0")
+    if not re.fullmatch(r"[0-9a-f]{40}", config["builtinPoliciesCommit"]):
+        raise ValueError("builtinPoliciesCommit must be a full Git commit SHA")
+    return config
+
+
+def resolve_release(release):
+    ref = f"tags/platform/alz/{release}"
+    obj = json.loads(subprocess.check_output([
+        "gh", "api", f"repos/{ALZ_REPOSITORY}/git/ref/{ref}",
+    ]))["object"]
+    while obj["type"] == "tag":
+        obj = json.loads(subprocess.check_output([
+            "gh", "api", f"repos/{ALZ_REPOSITORY}/git/tags/{obj['sha']}",
+        ]))["object"]
+    if obj["type"] != "commit":
+        raise ValueError(f"ALZ release {release} does not resolve to a commit")
+    return obj["sha"]
 
 
 def archive(repo, commit):
@@ -23,9 +49,29 @@ def archive(repo, commit):
     return files
 
 
-def refresh():
-    alz = archive("Azure/azure-landing-zones-library", ALZ_COMMIT)
-    builtin = archive("Azure/azure-policy", POLICY_COMMIT)
+def refresh(locked=False, if_missing=False):
+    config = release_config()
+    release = "platform/alz/" + config["alz"]
+    lock = json.loads((ROOT / "library-lock.json").read_text()) if locked else None
+    if locked:
+        sources = lock["sources"]
+        if (
+            sources["alz"]["release"] != release
+            or sources["builtinPolicies"]["commit"] != config["builtinPoliciesCommit"]
+            or sources["alz"]["repository"] != ALZ_REPOSITORY
+            or sources["builtinPolicies"]["repository"] != POLICY_REPOSITORY
+        ):
+            raise ValueError("release.json changed; run update_library.py to review a new lock")
+        snapshot = BUILD / "library.json"
+        if if_missing and snapshot.exists():
+            if hashlib.sha256(snapshot.read_bytes()).hexdigest() != lock["sha256"]:
+                raise ValueError("library.json differs from its reviewed source lock")
+            return
+        alz_commit = sources["alz"]["commit"]
+    else:
+        alz_commit = resolve_release(config["alz"])
+    alz = archive(ALZ_REPOSITORY, alz_commit)
+    builtin = archive(POLICY_REPOSITORY, config["builtinPoliciesCommit"])
     assets = {}
     for path, data in alz.items():
         if path.startswith("platform/alz/") and path.endswith(".json"):
@@ -80,13 +126,13 @@ def refresh():
     snapshot = {
         "sources": {
             "alz": {
-                "repository": "Azure/azure-landing-zones-library",
-                "release": "platform/alz/2026.10.0",
-                "commit": ALZ_COMMIT,
+                "repository": ALZ_REPOSITORY,
+                "release": release,
+                "commit": alz_commit,
             },
             "builtinPolicies": {
-                "repository": "Azure/azure-policy",
-                "commit": POLICY_COMMIT,
+                "repository": POLICY_REPOSITORY,
+                "commit": config["builtinPoliciesCommit"],
             },
         },
         "architecture": json.loads(
@@ -98,7 +144,10 @@ def refresh():
         "defaults": json.loads(alz["platform/alz/alz_policy_default_values.json"]),
     }
     encoded = (json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n").encode()
-    (ROOT / "library.json").write_bytes(encoded)
+    if locked and hashlib.sha256(encoded).hexdigest() != lock["sha256"]:
+        raise ValueError("Restored ALZ snapshot differs from its reviewed source lock")
+    BUILD.mkdir(exist_ok=True)
+    (BUILD / "library.json").write_bytes(encoded)
     lock = {
         "sources": snapshot["sources"],
         "sha256": hashlib.sha256(encoded).hexdigest(),
@@ -110,4 +159,10 @@ def refresh():
 
 
 if __name__ == "__main__":
-    refresh()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--locked", action="store_true", help="Restore exact locked commits and hash")
+    parser.add_argument("--if-missing", action="store_true", help="Reuse a matching local snapshot")
+    args = parser.parse_args()
+    if args.if_missing and not args.locked:
+        parser.error("--if-missing requires --locked")
+    refresh(locked=args.locked, if_missing=args.if_missing)

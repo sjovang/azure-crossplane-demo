@@ -15,6 +15,7 @@ import yaml
 
 
 API = Path(__file__).resolve().parents[1]
+BUILD = API / ".build"
 PROJECT = API.parents[2]
 spec = importlib.util.spec_from_file_location("alz_generator", API / "generate.py")
 generator = importlib.util.module_from_spec(spec)
@@ -26,15 +27,16 @@ from function_client import defaults, observe, run_pipeline, schemas  # noqa: E4
 class ProjectionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.source = json.loads((API / "library.json").read_text())
+        cls.source = json.loads((BUILD / "library.json").read_text())
         cls.definitions, cls.initiatives, cls.assignments, cls.report = (
             generator.compile_profile(cls.source)
         )
-        cls.composition = yaml.safe_load((API / "composition.yaml").read_text())
+        cls.composition = yaml.safe_load((BUILD / "composition.yaml").read_text())
 
     def test_locked_generation_is_deterministic(self):
         for name, content in generator.generate().items():
-            self.assertEqual((API / name).read_text(), content, name)
+            path = (API if name == "xrd-patch.yaml" else BUILD) / name
+            self.assertEqual(path.read_text(), content, name)
         xrd = yaml.safe_load((API / "definition.yaml").read_text())
         self.assertEqual(
             xrd["spec"]["names"]["kind"], "XLandingZoneArchitecture",
@@ -47,7 +49,7 @@ class ProjectionTests(unittest.TestCase):
             self.composition["spec"]["compositeTypeRef"]["kind"],
             "XLandingZoneArchitecture",
         )
-        self.assertLess(len((API / "composition.yaml").read_bytes()), 900000)
+        self.assertLess(len((BUILD / "composition.yaml").read_bytes()), 900000)
         for node in self.composition["spec"]["pipeline"][1]["input"]["resources"]:
             template = node["template"]
             if template["kind"] in ("PolicySetDefinition", "ManagementGroupPolicyAssignment"):
@@ -210,7 +212,7 @@ class ProjectionTests(unittest.TestCase):
         ), "Disabled")
 
     def test_required_inputs_are_typed_and_no_deployment_placeholders(self):
-        profile = json.loads((API / "profile.json").read_text())
+        profile = json.loads((BUILD / "profile.json").read_text())
         patch = yaml.safe_load((API / "xrd-patch.yaml").read_text())
         properties = patch["properties"]["spec"]["properties"]
         self.assertEqual(
@@ -400,7 +402,7 @@ class ProjectionTests(unittest.TestCase):
 class RuntimeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.composition = yaml.safe_load((API / "composition.yaml").read_text())
+        cls.composition = yaml.safe_load((BUILD / "composition.yaml").read_text())
         cls.schema = yaml.safe_load((API / "definition.yaml").read_text())[
             "spec"
         ]["versions"][0]["schema"]["openAPIV3Schema"]
@@ -569,7 +571,7 @@ class RuntimeTests(unittest.TestCase):
         expected = {
             "assignment" + generator.token(name)
             for name, assignment in generator.compile_profile(
-                json.loads((API / "library.json").read_text())
+                json.loads((BUILD / "library.json").read_text())
             )[2].items() if "sandbox" in assignment["archetypes"]
         }
         actual = {
@@ -588,7 +590,7 @@ class RuntimeTests(unittest.TestCase):
             {"name": "root", "displayName": "Root", "archetypes": ["root"]},
             {"name": "child", "displayName": "Child", "parentRef": {"name": "root"}},
         ])
-        fields = json.loads((API / "profile.json").read_text())["requiredInputs"]
+        fields = json.loads((BUILD / "profile.json").read_text())["requiredInputs"]
         xr["spec"]["policyDefaults"] = {name: "/synthetic/input" for name in fields}
         before, observed = self.settled(xr)
         self.assertTrue(any(
@@ -678,13 +680,13 @@ class RuntimeTests(unittest.TestCase):
         xr = self.xr([
             {"name": "root", "displayName": "Root", "archetypes": ["root"]},
         ])
-        fields = json.loads((API / "profile.json").read_text())["requiredInputs"]
+        fields = json.loads((BUILD / "profile.json").read_text())["requiredInputs"]
         xr["spec"]["policyDefaults"] = {name: "/synthetic/input" for name in fields}
         observed = {}
         for _ in range(5):
             state = self.render(xr, observed)
             observed.update(observe(state))
-        source = json.loads((API / "library.json").read_text())
+        source = json.loads((BUILD / "library.json").read_text())
         _, initiatives, assignments, _ = generator.compile_profile(source)
         selected = {
             assignment["initiative"] for assignment in assignments.values()
@@ -786,7 +788,7 @@ class RuntimeTests(unittest.TestCase):
             observed.update(observe(partial))
         self.assertEqual(len(partial["composite"]["resource"]["status"]["managementGroups"]), 12)
         self.assertNotEqual(partial["composite"].get("ready"), "READY_TRUE")
-        fields = json.loads((API / "profile.json").read_text())["requiredInputs"]
+        fields = json.loads((BUILD / "profile.json").read_text())["requiredInputs"]
         xr["spec"]["policyDefaults"] = {name: "/synthetic/input" for name in fields}
         xr["spec"]["policyDefaults"]["resourceGroupLocation"] = "swedencentral"
         complete = None
@@ -836,7 +838,7 @@ class RuntimeTests(unittest.TestCase):
             {"name": "child", "displayName": "Child", "archetypes": [],
              "parentRef": {"name": "root"}},
         ])
-        inputs = json.loads((API / "profile.json").read_text())["requiredInputs"]
+        inputs = json.loads((BUILD / "profile.json").read_text())["requiredInputs"]
         xr["spec"]["policyDefaults"] = {name: "/synthetic/input" for name in inputs}
         _, observed = self.settled(xr)
         usage_name = "usage-rootGroups-example-root-managementGroups-example-child"

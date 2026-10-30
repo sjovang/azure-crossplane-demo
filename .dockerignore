@@ -15,3 +15,6 @@ apps/docs/README.md
 clusters
 infrastructure
 docs
+
+compositions/apis/azure/landingzone/.build
+compositions/.artifacts

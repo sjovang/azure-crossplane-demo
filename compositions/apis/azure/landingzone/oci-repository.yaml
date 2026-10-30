@@ -1,0 +1,14 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: crossplane-landingzone
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: oci://ghcr.io/sjovang/azure-crossplane-demo/landingzone
+  ref:
+    tag: "2026.10.0"
+  layerSelector:
+    mediaType: application/vnd.cncf.flux.content.v1.tar+gzip
+    operation: extract
