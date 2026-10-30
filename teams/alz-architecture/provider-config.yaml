@@ -1,0 +1,11 @@
+---
+apiVersion: azure.m.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: alz-architecture-source
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: azure-secret
+      key: creds
