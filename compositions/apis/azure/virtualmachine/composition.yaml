@@ -10,6 +10,9 @@ spec:
     kind: XVirtualMachine
   mode: Pipeline
   pipeline:
+    - step: validate-azure-vm-sku
+      functionRef:
+        name: function-azure-vm-sku
     - step: kro
       functionRef:
         name: function-kro
@@ -77,7 +80,7 @@ spec:
                   location: ${schema.spec.location}
                   resourceGroupName: rg-${schema.spec.resourceGroupRef.name}
                   # anchored so windowsVm reuses the same tshirt-size mapping
-                  size: &vmSize '${schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms")}'
+                  size: &vmSize '${schema.spec.?azureVmSku.orValue("") != "" ? schema.spec.?azureVmSku.orValue("") : (schema.spec.size == "small" ? "Standard_B2s" : (schema.spec.size == "medium" ? "Standard_B4ms" : "Standard_B8ms"))}'
                   adminUsername: ${schema.spec.adminUsername}
                   adminSshKey:
                     - username: ${schema.spec.adminUsername}

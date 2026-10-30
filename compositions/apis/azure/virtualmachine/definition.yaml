@@ -40,6 +40,10 @@ spec:
                   default: azureuser
                   description: Local administrator user name.
                   type: string
+                azureVmSku:
+                  description: 'Experimental: exact Azure VM SKU override. Validated for availability in the selected region during Crossplane reconciliation.'
+                  maxLength: 64
+                  type: string
                 location:
                   default: swedencentral
                   description: Azure region for the virtual machine.
@@ -129,7 +133,7 @@ spec:
                   description: Private IP address assigned to the NIC.
                   type: string
                 vmSize:
-                  description: Azure VM SKU resolved from the requested size.
+                  description: Azure VM SKU used, from azureVmSku or the requested size.
                   type: string
               type: object
           required:

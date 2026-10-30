@@ -1,0 +1,9 @@
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: function-azure-vm-sku
+spec:
+  package: ghcr.io/sjovang/azure-crossplane-demo/function-azure-vm-sku:v0.1.0
+  runtimeConfigRef:
+    name: azure-vm-sku-function

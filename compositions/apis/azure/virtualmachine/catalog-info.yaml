@@ -5,7 +5,8 @@ metadata:
   name: azure-virtualmachine
   description: >-
     A Linux or Windows virtual machine with its network interface,
-    attached to an existing virtual network subnet.
+    attached to an existing virtual network subnet. Includes an experimental
+    Azure VM SKU override validated against regional availability.
 spec:
   type: crossplane-xrd
   lifecycle: experimental

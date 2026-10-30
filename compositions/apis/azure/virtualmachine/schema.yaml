@@ -13,6 +13,10 @@ spec:
     string | enum="small,medium,large" default="small"
     description="T-shirt size: small = 2 vCPU, medium = 4 vCPU,
     large = 8 vCPU."
+  azureVmSku: >-
+    string | maxLength=64
+    description="Experimental: exact Azure VM SKU override. Validated for
+    availability in the selected region during Crossplane reconciliation."
   resourceGroupRef:
     name: >-
       string | required=true
@@ -39,7 +43,8 @@ spec:
 status:
   id: string | description="Azure resource ID of the virtual machine."
   vmSize: >-
-    string | description="Azure VM SKU resolved from the requested size."
+    string | description="Azure VM SKU used, from azureVmSku or the requested
+    size."
   privateIp: >-
     string | description="Private IP address assigned to the NIC."
   networkInterfaceId: >-

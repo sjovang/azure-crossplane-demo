@@ -99,6 +99,12 @@ class VirtualMachineRenderTests(unittest.TestCase):
 
     def render(self, xr, observed=(), required=(), baseline=False):
         composition = yaml.safe_load((API / "composition.yaml").read_text())
+        # The custom Azure SKU function is covered by its Go unit tests. These
+        # render tests exercise the pinned kro/template/auto-ready functions.
+        composition["spec"]["pipeline"] = [
+            step for step in composition["spec"]["pipeline"]
+            if step["step"] != "validate-azure-vm-sku"
+        ]
         if baseline:
             composition["spec"]["pipeline"] = [
                 step for step in composition["spec"]["pipeline"]
