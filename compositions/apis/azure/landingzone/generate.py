@@ -98,6 +98,15 @@ def resolve(value, parameters):
     return value
 
 
+def definition_version(version):
+    """Map a metadata version to Azure's '{major}.{minor}.*[-preview]' reference form."""
+    match = re.fullmatch(r"([1-9]\d*)\.(\d+)\.\d+(?:-(preview|deprecated))?", version)
+    if not match:
+        raise ValueError(f"Unsupported policy definition version: {version}")
+    # '-deprecated' is a metadata label; Azure publishes the version without it.
+    return f"{match[1]}.{match[2]}.*" + ("-preview" if match[3] == "preview" else "")
+
+
 def policy_key(resource_id):
     parts = resource_id.split("/")
     return parts[-2] + "/" + parts[-1].lower()
@@ -175,6 +184,12 @@ def compile_profile(source):
             name = "safe-" + token(key + effect)
             desired = copy.deepcopy(properties)
             desired["policyRule"]["then"]["effect"] = effect
+            # Azure rejects definitions declaring parameters the rule no longer uses.
+            rule = json.dumps(desired["policyRule"]).lower()
+            for parameter in list(desired.get("parameters", {})):
+                if f"parameters('{parameter.lower()}')" not in rule:
+                    del desired["parameters"][parameter]
+                    values.pop(parameter, None)
             definitions[name] = desired
             resource_id = "@definition:" + name
         report.append({
@@ -397,7 +412,7 @@ def generate():
                 "parameterValues": expr("json.marshal(" + cel(member["parameters"], inputs) + ")"),
             }
             if member["version"] and not member["policyDefinitionId"].startswith("@definition:"):
-                reference["version"] = member["version"]
+                reference["version"] = definition_version(member["version"])
             references.append(reference)
         node["template"]["spec"]["forProvider"].update({
             "managementGroupId": expr(root_id), "policyType": "Custom",
