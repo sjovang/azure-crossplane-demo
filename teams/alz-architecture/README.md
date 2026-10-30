@@ -8,6 +8,24 @@ Every group explicitly selects its corresponding built-in archetype, including
 composition's audit/deny-only ALZ policy projection, not the full upstream
 remediation baseline. Azure policies inherited from the tenant root still apply.
 
+`management-subscription.yaml` attaches the existing subscription
+`ee491bdd-aef3-4616-9083-1cddf4d5310c` to the `management` group and deploys the
+management monitoring baseline through `XManagementSubscription`. Do not add
+this subscription to `landingzone.yaml`: the management-subscription XR is its
+sole attachment owner. The baseline uses the `swedencentral` location and is
+configured by
+[`XManagementSubscription`](../../compositions/apis/environments/managementsubscription/README.md).
+
+Before reconciling the baseline, securely provision a Secret named
+`azure-secret`, key `creds`, in the `alz-architecture` namespace. The source
+`ProviderConfig` in `provider-config.yaml` is namespaced and reads credentials
+from that Secret; the bootstrap-created `crossplane-system/azure-secret`
+cannot be referenced across namespaces by this composition. Keep the Secret
+out of Git. The provider identity also needs access to the existing
+subscription and permission to move it from its current management group to
+the ALZ `management` group; subscription Contributor alone does not grant
+those management-group move permissions.
+
 The existing parent is read from the cluster-scoped `EnvironmentConfig`
 `azure-platform`, at `data.parentManagementGroupId`. No tenant ID is stored in
 this team's manifests.
@@ -76,9 +94,12 @@ Before rollout, separately authorize the provider identity to manage policy
 definitions, initiatives, and assignments at the ALZ root and descendant scopes.
 Subscription attachments also need separate grants.
 
-No subscriptions are created or moved. No networking, monitoring resources,
-identities, or role assignments are provisioned. Supply the existing resource
-IDs/settings required by the selected archetypes through `spec.policyDefaults`:
+No subscriptions are created or deleted. The management subscription is
+associated with the `management` group by its separate XR. That XR provisions
+the monitoring baseline, including its workspace and user-assigned identity;
+it does not configure networking, grant Azure roles, or enable Defender.
+Supply the existing resource IDs/settings required by the selected archetypes
+through `spec.policyDefaults`:
 Log Analytics workspace ID, AMA user-assigned managed identity ID, DDoS
 protection plan ID, and Service Health resource-group name/location. See the
 [policy inputs](../../compositions/apis/azure/landingzone/README.md#policy-effects-and-required-values)

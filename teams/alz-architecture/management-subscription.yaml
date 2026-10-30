@@ -1,0 +1,18 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XManagementSubscription
+metadata:
+  name: management
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: management
+  subscriptionId: ee491bdd-aef3-4616-9083-1cddf4d5310c
+  location: swedencentral
+  landingZoneRef:
+    name: alz-architecture
+  managementGroupRef:
+    name: management
+  providerConfigRef:
+    kind: ProviderConfig
+    name: alz-architecture-source

@@ -4,4 +4,6 @@ kind: Kustomization
 namespace: alz-architecture
 resources:
   - ../_base
+  - provider-config.yaml
   - landingzone.yaml
+  - management-subscription.yaml
