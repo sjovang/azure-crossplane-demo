@@ -11,6 +11,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parent
+BUILD = ROOT / ".build"
 SAFE = {"audit": "Audit", "auditifnotexists": "AuditIfNotExists", "deny": "Deny"}
 UNSAFE = {
     "deployifnotexists", "modify", "append", "denyaction", "disabled", "manual",
@@ -330,11 +331,18 @@ def selected_archetypes(archetypes):
 
 
 def generate():
-    raw = (ROOT / "library.json").read_bytes()
+    raw = (BUILD / "library.json").read_bytes()
     lock = json.loads((ROOT / "library-lock.json").read_text())
     if hashlib.sha256(raw).hexdigest() != lock["sha256"]:
         raise ValueError("library.json differs from its reviewed source lock")
     source = json.loads(raw)
+    release = json.loads((ROOT / "release.json").read_text())
+    if (
+        source["sources"] != lock["sources"]
+        or lock["sources"]["alz"]["release"] != "platform/alz/" + release["alz"]
+        or lock["sources"]["builtinPolicies"]["commit"] != release["builtinPoliciesCommit"]
+    ):
+        raise ValueError("release.json differs from its reviewed source lock")
     definitions, initiatives, assignments, report = compile_profile(source)
     initiative_archetypes = {
         assignment["initiative"]: assignment["archetypes"] for assignment in assignments.values()
@@ -486,7 +494,11 @@ def generate():
     sequences.append({"sequence": ["rootGroups-.*", "subscriptions-.*"]})
     graph = {"apiVersion": "kro.fn.crossplane.io/v1alpha1", "kind": "ResourceGraph", "resources": resources}
     validation = (ROOT / "validate.gotmpl").read_text()
-    status = (ROOT / "status.gotmpl").read_text().replace("__CATALOG__", compact(catalog))
+    status = (
+        (ROOT / "status.gotmpl").read_text()
+        .replace("__CATALOG__", compact(catalog))
+        .replace("__LIBRARY_VERSION__", source["sources"]["alz"]["release"])
+    )
     composition = {
         "apiVersion": "apiextensions.crossplane.io/v1", "kind": "Composition",
         "metadata": {"name": "landingzonearchitectures.azure.platform.example.org"},
@@ -555,7 +567,7 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     for name, content in generate().items():
-        path = ROOT / name
+        path = (ROOT if name == "xrd-patch.yaml" else BUILD) / name
         if args.check:
             if not path.exists() or path.read_text() != content:
                 raise SystemExit(f"{path} is stale; run generate.py")

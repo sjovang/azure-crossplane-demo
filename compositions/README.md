@@ -108,7 +108,12 @@ To add an API, create the directory, run `make generate`, add a
 default ALZ hierarchy or a custom camelCase YAML hierarchy, built-in
 archetypes projected to audit/deny-only policies, observed management-group
 IDs, and attachment of existing subscriptions. Upstream content is pinned and
-compiled offline.
+compiled into a release-specific Flux OCI artifact in GHCR. Its API directory
+contains source inputs and OCI pointers rather than the large generated policy
+catalog/Composition. Deployment customization remains in team XR manifests.
+`make landingzone-artifact` builds the package; ordinary generation and tests
+restore the locked upstream snapshot on first use (`gh` and network required),
+then run offline.
 
 [`XManagementSubscription`](apis/environments/managementsubscription/README.md)
 follows `XWebApplication`'s orchestration pattern: it composes separate

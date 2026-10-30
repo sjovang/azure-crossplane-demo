@@ -73,10 +73,21 @@ jobs:
           python -m pip install --quiet pyyaml
 
       - name: Check generated XRDs are up to date
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: make -C compositions check
 
       - name: Run composition tests
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: make -C compositions test
+
+      - name: Build the landing zone OCI artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          make -C compositions landingzone-artifact
+          kubectl kustomize compositions/.artifacts/landingzone > "$RUNNER_TEMP/landingzone.yaml"
 
       - name: Run bootstrap permission tests
         run: python -m unittest discover -s infrastructure/tests

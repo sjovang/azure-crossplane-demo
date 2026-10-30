@@ -135,7 +135,7 @@ landing-zone prefix is used only for that child's Kubernetes metadata name.
 
 ## Policy effects and required values
 
-`profile.json` records every retained/converted/omitted member and the inputs
+The artifact's `profile.json` records every retained/converted/omitted member and the inputs
 needed by each assignment. Only effective `Audit`, `AuditIfNotExists`, and
 `Deny` effects are permitted. Policies without a supported audit alternative
 are omitted, including hardcoded DINE/Modify/Append/DenyAction policies.
@@ -211,20 +211,117 @@ Azure rejects deletion of nonempty groups rather than deleting unrelated assets.
 Management-subscription teardown deletes its owned monitoring resources, which
 can include stored workspace data, but never deletes the subscription.
 
-## Reproducible generation and tests
+## Release-driven OCI delivery
 
-`library-lock.json` pins upstream commits and the snapshot hash. `library.json`
-contains only the transitive assets needed by built-in archetype assignments.
-The two `LICENSE-*` files retain upstream licensing.
+`release.json` selects the ALZ release (currently `2026.10.0`) and the Azure
+built-in policy commit. `library-lock.json` records the resolved ALZ commit
+and snapshot hash. No floating `latest` source is used.
+
+The `landing zone OCI` workflow builds a **Flux OCI artifact**, not a runnable
+container or Crossplane Configuration package. It publishes to
+`ghcr.io/sjovang/azure-crossplane-demo/landingzone` on `main` changes or manual
+dispatch from `main`. No Docker daemon is needed. The artifact includes:
+
+- The generated XRD and audit/deny-only Composition, applied by an explicit
+  artifact-local `kustomization.yaml`.
+- The transitive `library.json` snapshot, `profile.json` decision report,
+  release inputs, source lock, and upstream licenses, retained as provenance
+  but never applied to Kubernetes.
+
+Publishing creates `<release>-sha-<git-sha>` and `<release>` tags, verifies an
+anonymous pull and byte-for-byte round trip, then commits the artifact's
+**digest** into `oci-repository.yaml`. Tags are discovery conveniences;
+subsequent installs use the pinned digest, including when compiler changes
+rebuild the same upstream release.
+
+`oci-kustomization.yaml` installs the package after Crossplane and its functions
+are ready. Its XRD health gate and the `teams` dependency prevent XRs from
+being applied before their API exists. The Git-backed Kustomization in this
+directory includes **only** the two OCI pointers; it never includes generated
+manifests or build inputs.
+
+**Deployment customization stays in team XR manifests.** The package supplies
+the implementation and defaults, not a particular deployment.
+`managementGroups`, `archetypes`, `subscriptions`, `policyDefaults`,
+`parentManagementGroupId`/`environmentConfigRef`, and `providerConfigRef`
+remain configurable without rebuilding the artifact. Existing XR names,
+resource identities, filtering, and deletion sequencing are unchanged.
+To test a release on selected XRs, use Crossplane's manual
+CompositionRevision selection rather than updating every existing XR at once.
+
+### Publishing prerequisites
+
+GitHub Actions needs permission to write packages and push its digest commit
+to `main` (including any repository rules/branch protection exceptions).
+The workflow requests `packages: write` and `contents: write`.
+The GHCR package must be **public** because this source has no registry
+Secret. A newly created GHCR package may initially be private: make it public
+in GitHub's package settings, then rerun the workflow. The anonymous-pull
+check deliberately fails before updating the Git pin if Flux cannot read it.
+The initial tag reference is replaced by a digest on the first successful run.
+
+### Existing-cluster migration
+
+Moving the XRD and Composition between Flux inventories must not prune the
+live API or its XRs. **Before reconciling this change**, temporarily protect
+the two existing objects:
 
 ```sh
-# Explicit, reviewed source refresh; requires gh and network access.
+kubectl annotate \
+  xrd/xlandingzonearchitectures.azure.platform.example.org \
+  composition/landingzonearchitectures.azure.platform.example.org \
+  kustomize.toolkit.fluxcd.io/prune=disabled --overwrite
+```
+
+Wait for the artifact to be published and `crossplane-landingzone` to be
+Ready. Confirm both objects' `kustomize.toolkit.fluxcd.io/name` label is
+`crossplane-landingzone`, then remove the temporary protections:
+
+```sh
+kubectl annotate \
+  xrd/xlandingzonearchitectures.azure.platform.example.org \
+  composition/landingzonearchitectures.azure.platform.example.org \
+  kustomize.toolkit.fluxcd.io/prune-
+```
+
+Do not delete/recreate the XRD to migrate ownership. Fresh clusters do not
+need this migration.
+
+### Building and upgrading
+
+Edit `release.json`, resolve and review the new lock, then build:
+
+```sh
+# Explicit source refresh after selecting a release; requires gh and network.
 python3 compositions/apis/azure/landingzone/update_library.py
-# Offline generation and drift detection.
-make -C compositions generate
-python3 compositions/apis/azure/landingzone/generate.py --check
+make -C compositions landingzone-artifact
 python3 -m unittest discover -s compositions/apis/azure/landingzone/tests
 ```
+
+Commit `release.json`, `library-lock.json`, regenerated `definition.yaml` and
+`xrd-patch.yaml`, and any license changes. Review the decision report at
+`.build/profile.json` before upgrading. An unsupported upstream policy change
+fails generation rather than silently relaxing the projection.
+
+Ordinary `make generate`, `make check`, and `make test` restore the exact
+locked snapshot on first use (requiring `gh` authentication and network);
+subsequent generation is offline. A corrupt cache or changed release without
+a matching reviewed lock is an error. Large generated files live only in the
+gitignored `.build/` directory. The small generated XRD and schema patch stay
+in Git for API review, drift checks, and documentation.
+
+`make -C compositions landingzone-artifact` stages the publishable content in
+`compositions/.artifacts/landingzone/`. To publish manually with an existing
+GHCR login (Flux reads the registry credentials from Docker's config):
+
+```sh
+flux push artifact \
+  oci://ghcr.io/sjovang/azure-crossplane-demo/landingzone:2026.10.0 \
+  --path=compositions/.artifacts/landingzone --reproducible
+```
+
+Pin the returned digest in `oci-repository.yaml` after verifying the pull,
+or let the workflow perform publishing and pinning.
 
 Optional real-function tests use `crossplane-function-sdk-python` (Python 3.11+)
 and PyYAML. Run the exact pinned functions with `--insecure` on localhost ports

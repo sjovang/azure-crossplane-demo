@@ -8,6 +8,7 @@ SHELL := bash
 CROSSPLANE ?= crossplane
 YQ ?= yq
 PYTHON ?= python3
+ALZ := apis/azure/landingzone
 
 SCHEMAS := $(sort $(wildcard apis/*/*/schema.yaml))
 DEFINITIONS := $(SCHEMAS:schema.yaml=definition.yaml)
@@ -34,9 +35,6 @@ NORMALIZE := ... comments="" | (.. | select(tag == "!!map" and (.required | tag)
 # openAPIV3Schema. Always regenerate: file timestamps cannot detect a deleted
 # xrd-patch.yaml, and generation is fast.
 apis/%/definition.yaml: FORCE
-	@if [[ "$*" == "azure/landingzone" ]]; then \
-		$(PYTHON) apis/azure/landingzone/generate.py; \
-	fi
 	@$(CROSSPLANE) xrd generate --from simpleschema --replace \
 		--path $*/definition.yaml apis/$*/schema.yaml >/dev/null
 	@if [[ -f apis/$*/xrd-patch.yaml ]]; then \
@@ -56,14 +54,25 @@ clean: ## Delete generated definition.yaml files.
 
 .PHONY: check
 check: ## Regenerate and fail if any definition.yaml is out of date.
-	@$(PYTHON) apis/azure/landingzone/generate.py --check
 	@$(MAKE) --no-print-directory generate
-	@if ! git diff --exit-code -- apis \
+	@$(PYTHON) $(ALZ)/generate.py --check
+	@if ! git diff --exit-code -- $(DEFINITIONS) $(ALZ)/xrd-patch.yaml \
 		|| [[ -n "$$(git ls-files --others --exclude-standard -- 'apis/*definition.yaml')" ]]; then \
 		echo 'definition.yaml is out of date; run `make generate` and commit the result.' >&2; \
 		exit 1; \
 	fi
 
 .PHONY: test
-test: ## Run the composition tests in tests/.
+test: landingzone-prepare ## Run the composition tests in tests/.
 	$(PYTHON) -m unittest discover -s tests
+
+.PHONY: landingzone-prepare
+landingzone-prepare: ## Restore locked ALZ inputs (network on first use) and compile.
+	$(PYTHON) $(ALZ)/update_library.py --locked --if-missing
+	$(PYTHON) $(ALZ)/generate.py
+
+$(ALZ)/definition.yaml: landingzone-prepare
+
+.PHONY: landingzone-artifact
+landingzone-artifact: tools $(ALZ)/definition.yaml ## Build the ALZ Flux OCI artifact directory.
+	$(PYTHON) $(ALZ)/package.py

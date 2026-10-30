@@ -1,7 +1,9 @@
 ---
 # A separate Kustomization for teams/ (outside clusters/base/, mimicking
 # separate teams/repos sharing one demo cluster). dependsOn flux-system,
-# crossplane-compositions and external-secrets: a team's XResourceGroup and
+# crossplane-compositions, crossplane-landingzone and external-secrets:
+# the landing-zone API is delivered separately through OCI. A team's
+# XResourceGroup and
 # ExternalSecret manifests require their CRDs to be established before this
 # batch applies. Keep the teams path explicitly scoped so Flux does not use
 # an implicit recursive kustomization that mixes team resources into an
@@ -24,4 +26,5 @@ spec:
   dependsOn:
     - name: flux-system
     - name: crossplane-compositions
+    - name: crossplane-landingzone
     - name: external-secrets

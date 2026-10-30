@@ -1,0 +1,25 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: crossplane-landingzone
+  namespace: flux-system
+spec:
+  interval: 5m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  path: ./
+  sourceRef:
+    kind: OCIRepository
+    name: crossplane-landingzone
+  dependsOn:
+    - name: flux-system
+    - name: crossplane-functions
+  wait: true
+  healthCheckExprs:
+    - apiVersion: apiextensions.crossplane.io/v2
+      kind: CompositeResourceDefinition
+      current: >-
+        status.conditions.exists(c,
+        c.type == 'Established' && c.status == 'True')

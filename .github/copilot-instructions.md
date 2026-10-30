@@ -104,6 +104,16 @@ following the chain across several files:
    applying a Composition doesn't strictly need its functions, but waiting
    avoids `missing required capabilities` warnings. A health check keeps it
    not-Ready until every XRD is `Established`).
+   Landing zones are the exception: `apis/azure/landingzone/release.json`
+   selects the ALZ release and `library-lock.json` pins its sources/hash.
+   Large generated inputs/Composition live in gitignored `.build/`, not Git.
+   `make landingzone-artifact` stages a Flux OCI artifact; the
+   `landing zone OCI` workflow publishes it to GHCR and commits a digest pin.
+   The API directory applies only the OCI source and a separate
+   `crossplane-landingzone` Kustomization, gated on core/functions and XRD
+   establishment. Team XR inputs remain customizable. First-use generation
+   restores the locked snapshot with `gh` (network required); cached builds
+   are offline. Keep the generated XRD/schema patch in Git for review/docs.
    `teams/` — team resources, one subfolder per team (e.g.
    `teams/mvpdagen/`), with no prefix or suffix on the team name. Each team
    folder owns a `kustomization.yaml` and may contain any layout it needs;
@@ -115,7 +125,8 @@ following the chain across several files:
    resources or Namespace names from directory names. Applied by the
    dependent `teams` Kustomization
    (`clusters/base/teams-kustomization.yaml`, `path: ./teams`), which
-   `dependsOn` **both** `flux-system` and `crossplane-compositions`.
+   depends on `flux-system`, `crossplane-compositions`, and
+   `crossplane-landingzone` (as well as other team-resource CRD dependencies).
    Keep each team's `catalog-info.yaml` in Git for Backstage's Git discovery,
    but do not include it in the team's Kubernetes Kustomization: Backstage
    entity kinds such as `Group` and `System` are not Kubernetes resources.

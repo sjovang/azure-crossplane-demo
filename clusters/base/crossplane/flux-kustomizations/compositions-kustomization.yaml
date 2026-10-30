@@ -8,6 +8,8 @@
 # also waits on crossplane-functions. The health check keeps this
 # Kustomization (and teams, which dependsOn it) not-Ready until every XRD is
 # Established.
+# Landing-zone manifests are delivered by the nested crossplane-landingzone
+# OCI Kustomization, which waits on core/functions rather than this parent.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
