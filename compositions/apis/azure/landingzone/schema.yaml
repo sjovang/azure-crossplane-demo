@@ -1,6 +1,6 @@
 ---
 apiVersion: azure.platform.example.org/v1alpha1
-kind: XLandingZone
+kind: XLandingZoneArchitecture
 customTypes:
   ParentReference:
     name: string | required=true

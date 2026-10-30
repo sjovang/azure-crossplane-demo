@@ -41,7 +41,7 @@ spec:
               {{- if $spec.landingZoneRef }}
               landingZone:
                 apiVersion: azure.platform.example.org/v1alpha1
-                kind: XLandingZone
+                kind: XLandingZoneArchitecture
                 matchName: {{ $spec.landingZoneRef.name | quote }}
                 namespace: {{ $xr.metadata.namespace | quote }}
               {{- end }}
@@ -96,7 +96,7 @@ spec:
               replayDeletion: true
               of:
                 apiVersion: azure.platform.example.org/v1alpha1
-                kind: XLandingZone
+                kind: XLandingZoneArchitecture
                 resourceRef:
                   name: {{ $spec.landingZoneRef.name }}
               by:

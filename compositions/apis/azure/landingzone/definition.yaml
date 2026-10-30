@@ -3,21 +3,21 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: xlandingzones.azure.platform.example.org
+  name: xlandingzonearchitectures.azure.platform.example.org
 spec:
   group: azure.platform.example.org
   names:
     categories:
       - crossplane
-    kind: XLandingZone
-    plural: xlandingzones
+    kind: XLandingZoneArchitecture
+    plural: xlandingzonearchitectures
   scope: Namespaced
   versions:
     - name: v1alpha1
       referenceable: true
       schema:
         openAPIV3Schema:
-          description: XLandingZone is the Schema for the XLandingZone API.
+          description: XLandingZoneArchitecture is the Schema for the XLandingZoneArchitecture API.
           properties:
             spec:
               properties:

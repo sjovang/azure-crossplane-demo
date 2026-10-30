@@ -4,11 +4,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: landingzones.azure.platform.example.org
+  name: landingzonearchitectures.azure.platform.example.org
 spec:
   compositeTypeRef:
     apiVersion: azure.platform.example.org/v1alpha1
-    kind: XLandingZone
+    kind: XLandingZoneArchitecture
   mode: Pipeline
   pipeline:
     - step: validate-hierarchy
@@ -9005,7 +9005,7 @@ spec:
             {{- end }}
             ---
             apiVersion: azure.platform.example.org/v1alpha1
-            kind: XLandingZone
+            kind: XLandingZoneArchitecture
             metadata:
               {{- if not (and $groupsReady $policiesReady $subscriptionsReady) }}
               annotations:

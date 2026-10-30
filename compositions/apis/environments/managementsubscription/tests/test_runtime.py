@@ -128,7 +128,8 @@ class RealManagementFunctions(unittest.TestCase):
         del xr["spec"]["managementGroupId"]
         xr["spec"]["landingZoneRef"] = {"name": "enterprise"}
         request["requiredResources"]["landingZone"] = {"items": [{"resource": {
-            "apiVersion": "azure.platform.example.org/v1alpha1", "kind": "XLandingZone",
+            "apiVersion": "azure.platform.example.org/v1alpha1",
+            "kind": "XLandingZoneArchitecture",
             "metadata": {"name": "enterprise", "namespace": "platform"},
             "status": {
                 "conditions": [{"type": "Ready", "status": "False"}],

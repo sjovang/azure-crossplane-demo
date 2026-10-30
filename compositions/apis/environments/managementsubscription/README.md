@@ -3,7 +3,8 @@
 `environments.platform.example.org/v1alpha1 XManagementSubscription` is a
 namespaced environment API for an **existing** Azure subscription. It follows
 `XWebApplication`: kro composes resource-level child XRs, not an inline ARM
-deployment. Governance remains independently owned by `XLandingZone`.
+deployment. Governance remains independently owned by
+`XLandingZoneArchitecture`.
 
 ## Contract
 
@@ -107,7 +108,7 @@ are included. A Defender SQL DCR **does not enable Defender**.
 No deployIfNotExists policy or remediation is involved.
 
 Exactly one composition may own the management subscription attachment:
-do not also put the UUID in `XLandingZone.spec.subscriptions`.
+do not also put the UUID in `XLandingZoneArchitecture.spec.subscriptions`.
 
 ## Readiness and deletion
 
@@ -149,7 +150,7 @@ Remove/suspend the GitOps manifest first so reconciliation does not recreate it:
 kubectl delete xmanagementsubscriptions.environments.platform.example.org \
   operations -n platform --cascade=foreground --wait=true --timeout=30m
 # Only after management cleanup, if this landing zone is also owned:
-kubectl delete xlandingzones.azure.platform.example.org \
+kubectl delete xlandingzonearchitectures.azure.platform.example.org \
   enterprise -n platform --cascade=foreground --wait=true --timeout=30m
 ```
 
@@ -186,7 +187,8 @@ The Crossplane composition controller needs:
 
 - Read access to `azure.m.upbound.io` ClusterProviderConfigs and same-namespace
   ProviderConfigs; full compose/manage access to namespaced ProviderConfigs.
-- Read access to same-namespace `azure.platform.example.org` XLandingZones.
+- Read access to same-namespace `azure.platform.example.org`
+  XLandingZoneArchitectures.
 - Compose/manage access to the child XR kinds, core ConfigMaps, and
   `protection.crossplane.io` Usages (including finalizers/owner references).
 - Existing managed-resource and required-schema discovery permissions.

@@ -92,10 +92,11 @@ To add an API, create the directory, run `make generate`, add a
 
 ## Azure landing zones
 
-[`XLandingZone`](apis/azure/landingzone/README.md) provides the default ALZ
-hierarchy or a custom camelCase YAML hierarchy, built-in archetypes projected
-to audit/deny-only policies, observed management-group IDs, and attachment of
-existing subscriptions. Upstream content is pinned and compiled offline.
+[`XLandingZoneArchitecture`](apis/azure/landingzone/README.md) deploys the
+default ALZ hierarchy or a custom camelCase YAML hierarchy, built-in
+archetypes projected to audit/deny-only policies, observed management-group
+IDs, and attachment of existing subscriptions. Upstream content is pinned and
+compiled offline.
 
 [`XManagementSubscription`](apis/environments/managementsubscription/README.md)
 follows `XWebApplication`'s orchestration pattern: it composes separate

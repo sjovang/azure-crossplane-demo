@@ -121,7 +121,7 @@ spec: {{ $usage.spec | toJson }}
 {{- end }}
 ---
 apiVersion: azure.platform.example.org/v1alpha1
-kind: XLandingZone
+kind: XLandingZoneArchitecture
 metadata:
   {{- if not (and $groupsReady $policiesReady $subscriptionsReady) }}
   annotations:

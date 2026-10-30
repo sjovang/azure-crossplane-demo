@@ -16,7 +16,7 @@ It never creates or deletes a subscription.
   cleanup protection.
 
 Exactly one XR may own each subscription attachment. Do not also list this
-subscription under `XLandingZone.spec.subscriptions`.
+subscription under `XLandingZoneArchitecture.spec.subscriptions`.
 
 The principal needs permission to move the existing subscription under the
 target group, including Azure's current/target-parent and subscription move

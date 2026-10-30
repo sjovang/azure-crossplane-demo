@@ -33,6 +33,18 @@ class ProjectionTests(unittest.TestCase):
     def test_locked_generation_is_deterministic(self):
         for name, content in generator.generate().items():
             self.assertEqual((API / name).read_text(), content, name)
+        xrd = yaml.safe_load((API / "definition.yaml").read_text())
+        self.assertEqual(
+            xrd["spec"]["names"]["kind"], "XLandingZoneArchitecture",
+        )
+        self.assertEqual(
+            xrd["metadata"]["name"],
+            "xlandingzonearchitectures.azure.platform.example.org",
+        )
+        self.assertEqual(
+            self.composition["spec"]["compositeTypeRef"]["kind"],
+            "XLandingZoneArchitecture",
+        )
         self.assertLess(len((API / "composition.yaml").read_bytes()), 900000)
         for node in self.composition["spec"]["pipeline"][1]["input"]["resources"]:
             template = node["template"]
@@ -232,7 +244,7 @@ class RuntimeTests(unittest.TestCase):
 
     def xr(self, custom=None):
         value = {
-            "apiVersion": generator.GROUP, "kind": "XLandingZone",
+            "apiVersion": generator.GROUP, "kind": "XLandingZoneArchitecture",
             "metadata": {
                 "name": "example", "namespace": "alz-test",
                 "uid": "11111111-1111-4111-8111-111111111111",

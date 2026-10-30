@@ -1,6 +1,6 @@
 # Azure landing zone governance
 
-`XLandingZone` creates management groups and an **audit/deny-only projection**
+`XLandingZoneArchitecture` deploys management groups and an **audit/deny-only projection**
 of the built-in Azure landing zones archetypes. It is not the complete,
 unmodified ALZ policy baseline.
 
@@ -14,7 +14,7 @@ policy identities, or remediation tasks.
 ```yaml
 ---
 apiVersion: azure.platform.example.org/v1alpha1
-kind: XLandingZone
+kind: XLandingZoneArchitecture
 metadata:
   name: contoso
   namespace: platform
@@ -40,7 +40,7 @@ explicitly; these compositions do not grant themselves tenant-wide access.
 ```yaml
 ---
 apiVersion: azure.platform.example.org/v1alpha1
-kind: XLandingZone
+kind: XLandingZoneArchitecture
 metadata:
   name: contoso
   namespace: platform
@@ -134,7 +134,7 @@ DDoS remains external connectivity configuration.
 Get role-assignment scopes from observed status, not reconstructed strings:
 
 ```sh
-kubectl -n platform get xlandingzone contoso \
+kubectl -n platform get xlandingzonearchitecture contoso \
   -o 'jsonpath={.status.managementGroups.management.id}'
 ```
 
@@ -154,7 +154,7 @@ First remove the management environment, then the landing zone:
 
 ```sh
 kubectl -n platform delete xmanagementsubscription management --cascade=foreground
-kubectl -n platform delete xlandingzone contoso --cascade=foreground
+kubectl -n platform delete xlandingzonearchitecture contoso --cascade=foreground
 ```
 
 Stop reconciliation of their manifests before teardown. The examples disable

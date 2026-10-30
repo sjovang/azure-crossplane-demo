@@ -273,7 +273,7 @@ class ManagementContracts(unittest.TestCase):
         ].endswith("/observed"))
         usage = resources["landingZoneUsage"]
         self.assertEqual(usage["spec"]["by"]["kind"], "ProviderConfig")
-        self.assertEqual(usage["spec"]["of"]["kind"], "XLandingZone")
+        self.assertEqual(usage["spec"]["of"]["kind"], "XLandingZoneArchitecture")
         self.assertNotIn("ownerReferences", usage["spec"]["of"])
 
     def test_missing_source_and_pending_group_fail_without_pruning(self):

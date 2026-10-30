@@ -473,9 +473,11 @@ def generate():
     status = (ROOT / "status.gotmpl").read_text().replace("__CATALOG__", compact(catalog))
     composition = {
         "apiVersion": "apiextensions.crossplane.io/v1", "kind": "Composition",
-        "metadata": {"name": "landingzones.azure.platform.example.org"},
+        "metadata": {"name": "landingzonearchitectures.azure.platform.example.org"},
         "spec": {
-            "compositeTypeRef": {"apiVersion": GROUP, "kind": "XLandingZone"},
+            "compositeTypeRef": {
+                "apiVersion": GROUP, "kind": "XLandingZoneArchitecture",
+            },
             "mode": "Pipeline",
             "pipeline": [
                 {"step": "validate-hierarchy", "functionRef": {"name": "function-go-templating"},

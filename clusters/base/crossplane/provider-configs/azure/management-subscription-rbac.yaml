@@ -19,5 +19,5 @@ rules:
     resources: ["usages"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["azure.platform.example.org"]
-    resources: ["xlandingzones"]
+    resources: ["xlandingzonearchitectures"]
     verbs: ["get", "list", "watch"]
