@@ -9,6 +9,7 @@ spec:
   name: alz-architecture
   environmentConfigRef:
     name: azure-platform
+  location: swedencentral
   managementGroups:
     - name: alz
       displayName: Azure Landing Zones

@@ -195,6 +195,17 @@ fields need `.?x.orValue(...)`. Prefer `function-kro` over `function-go-templati
 It exposes the application ID and connection Secret name through status but
 never puts the generated credential in XR status.
 
+### Stuck creates (`external-create-pending`)
+
+Upjet providers don't enable crossplane-runtime's deterministic external
+name option, so a dropped Azure create blocks its managed resource until
+`crossplane.io/external-create-pending` is removed. The
+`crossplane-system/create-pending-recovery` CronJob
+(`clusters/base/crossplane/recovery/`) clears it every 5 minutes for
+ManagementGroups and the policy kinds once it is newer than both
+`create-succeeded` and `create-failed` and at least 5 minutes old. Add a kind
+there only if it always has a caller-chosen `crossplane.io/external-name`.
+
 ### Managed resource activation
 
 The Crossplane chart's default `'*'` `ManagedResourceActivationPolicy` is
