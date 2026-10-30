@@ -8,7 +8,7 @@ customTypes:
     name: string | required=true
     displayName: string | required=true minLength=1 maxLength=90
     parentRef: ParentReference
-    archetypes: "[]string | required=true"
+    archetypes: "[]string | default=[]"
   Subscription:
     name: string | required=true
     subscriptionId: string | required=true immutable=true

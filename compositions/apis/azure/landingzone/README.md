@@ -72,8 +72,15 @@ spec:
 
 Public fields are camelCase and hierarchy/archetype names are DNS-safe.
 The importer translates internal ALZ names such as `landing_zones`.
-Every group must connect to exactly one root, which has the `root` archetype.
-Parent references are logical names within this list. An empty list, unknown
+Every group must connect to exactly one root, determined by the absence of
+`parentRef`. The `root` archetype is optional but may only be selected on that
+top-level group; other supported archetypes may also be selected there.
+For explicitly supplied groups, omitted `archetypes` defaults to `[]`.
+An empty selection creates the group without assigning policies to it.
+Omitting the entire `managementGroups` field still selects the original default
+topology and archetypes.
+
+Parent references are logical names within this list. An empty group list, unknown
 archetypes, cycles, duplicate names/subscriptions, and unknown targets are errors.
 Account for the existing parent's depth within Azure's six-level limit.
 The API supports up to 100 groups and 100 subscription attachments per XR.
@@ -82,6 +89,14 @@ Reordering, adding groups, and updating display names/archetype selections are
 supported. Removing or reparenting existing groups is rejected in v1; use an
 explicit teardown rather than an implicit destructive replacement.
 Group names and the tenant-wide prefix are identity, not display settings.
+Changing archetype selections can remove previously selected composition-owned
+policy assignments, initiatives, and definitions that are no longer needed.
+It does not disable policies inherited from ancestor management groups.
+
+The [`alz-architecture` example](../../../../teams/alz-architecture/README.md)
+declares the complete 12-group topology with empty archetypes on every group.
+It creates no policy assets and needs no `policyDefaults`, while retaining
+hierarchy readiness checks and foreground deletion protections.
 
 Only one XR may own a subscription attachment. Do not list the management
 subscription here if `XManagementSubscription` owns it. A subscription referenced

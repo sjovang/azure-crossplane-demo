@@ -38,8 +38,8 @@ properties:
               self.exists(p, p.name == g.parentRef.name))
             message: Every parent reference must identify a group in this list.
           - rule: >-
-              self.all(g, ('root' in g.archetypes) == !has(g.parentRef))
-            message: Only the ALZ root must have the root archetype.
+              self.all(g, !('root' in g.archetypes) || !has(g.parentRef))
+            message: Only the ALZ root may have the root archetype.
       subscriptions:
         maxItems: 100
         x-kubernetes-list-type: map

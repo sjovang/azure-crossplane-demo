@@ -50,8 +50,8 @@ properties:
             message: Exactly one ALZ root group is required.
           - rule: self.all(g, !has(g.parentRef) || self.exists(p, p.name == g.parentRef.name))
             message: Every parent reference must identify a group in this list.
-          - rule: self.all(g, ('root' in g.archetypes) == !has(g.parentRef))
-            message: Only the ALZ root must have the root archetype.
+          - rule: self.all(g, !('root' in g.archetypes) || !has(g.parentRef))
+            message: Only the ALZ root may have the root archetype.
         default:
           - name: alz
             displayName: Azure Landing Zones

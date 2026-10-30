@@ -5,6 +5,8 @@ import importlib.util
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -186,6 +188,93 @@ class ProjectionTests(unittest.TestCase):
         )
         self.assertTrue(any("lowerAscii" in rule["rule"] for rule in validations))
 
+    def test_archetypes_are_optional_without_changing_default_architecture(self):
+        xrd = yaml.safe_load((API / "definition.yaml").read_text())
+        schema = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"]
+        groups = schema["properties"]["spec"]["properties"]["managementGroups"]
+        self.assertNotIn("archetypes", groups["items"]["required"])
+        self.assertEqual(groups["items"]["properties"]["archetypes"]["default"], [])
+        rules = [item["rule"] for item in groups["x-kubernetes-validations"]]
+        self.assertIn(
+            "self.all(g, !('root' in g.archetypes) || !has(g.parentRef))", rules,
+        )
+        self.assertIn("self.filter(g, !has(g.parentRef)).size() == 1", rules)
+        expected = []
+        for group in self.source["architecture"]["management_groups"]:
+            entry = {
+                "name": generator.public_name(group["id"]),
+                "displayName": group["display_name"],
+                "archetypes": [generator.public_name(a) for a in group["archetypes"]],
+            }
+            if group["parent_id"]:
+                entry["parentRef"] = {"name": generator.public_name(group["parent_id"])}
+            expected.append(entry)
+        self.assertEqual(groups["default"], expected)
+        for selection in (None, [], ["sandbox"], ["root"]):
+            root = {"name": "root", "displayName": "Root"}
+            if selection is not None:
+                root["archetypes"] = selection
+            xr = defaults({"spec": {"managementGroups": [root]}}, schema)
+            self.assertEqual(
+                xr["spec"]["managementGroups"][0]["archetypes"],
+                [] if selection is None else selection,
+            )
+
+    def test_team_example_preserves_topology_without_selecting_policies(self):
+        xr = yaml.safe_load(
+            (PROJECT.parent / "teams/alz-architecture/landingzone.yaml").read_text()
+        )
+        xrd = yaml.safe_load((API / "definition.yaml").read_text())
+        groups = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
+            "properties"
+        ]["spec"]["properties"]["managementGroups"]["default"]
+        expected = [{**group, "archetypes": []} for group in groups]
+        self.assertEqual(xr["spec"]["managementGroups"], expected)
+        self.assertFalse(xr["spec"].get("subscriptions"))
+        self.assertNotIn("policyDefaults", xr["spec"])
+
+    @unittest.skipUnless(shutil.which("crossplane"), "Crossplane CLI schema/CEL validation")
+    def test_root_archetype_schema_and_cel_validation(self):
+        root = {"name": "root", "displayName": "Root"}
+        child = {"name": "child", "displayName": "Child", "parentRef": {"name": "root"}}
+        cases = [
+            ("omitted", [root, child], None),
+            ("empty", [{**root, "archetypes": []}, child], None),
+            ("alternate", [{**root, "archetypes": ["sandbox"]}, child], None),
+            ("root", [{**root, "archetypes": ["root"]}, child], None),
+            ("descendant-root", [root, {**child, "archetypes": ["root"]}],
+             "Only the ALZ root may have the root archetype"),
+            ("multiple-roots", [root, {"name": "second", "displayName": "Second"}],
+             "Exactly one ALZ root group is required"),
+            ("unknown-archetype", [{**root, "archetypes": ["unknown"]}],
+             "Unsupported value"),
+            ("unknown-parent", [root, {**child, "parentRef": {"name": "missing"}}],
+             "Every parent reference must identify a group in this list"),
+        ]
+        for name, groups, error in cases:
+            with self.subTest(name=name):
+                xr = {
+                    "apiVersion": generator.GROUP, "kind": "XLandingZoneArchitecture",
+                    "metadata": {"name": "example", "namespace": "alz-test"},
+                    "spec": {
+                        "name": "example",
+                        "parentManagementGroupId":
+                            "/providers/Microsoft.Management/managementGroups/external",
+                        "managementGroups": groups,
+                    },
+                }
+                result = subprocess.run(
+                    ["crossplane", "resource", "validate", str(API / "definition.yaml"),
+                     "-", "--error-on-missing-schemas"],
+                    input=yaml.safe_dump(xr), text=True, capture_output=True, timeout=60,
+                )
+                output = result.stdout + result.stderr
+                if error is None:
+                    self.assertEqual(result.returncode, 0, output)
+                else:
+                    self.assertNotEqual(result.returncode, 0, output)
+                    self.assertIn(error, output)
+
     def test_foreground_sequencer_and_explicit_dynamic_usages(self):
         pipeline = self.composition["spec"]["pipeline"]
         sequencing = next(s["input"] for s in pipeline if s["step"] == "sequence")
@@ -312,6 +401,134 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(
             set(state["resources"]), set(self.render(reordered, observed)["resources"]),
         )
+
+    def test_empty_and_omitted_root_archetypes_are_policy_free_and_ready(self):
+        for selection in (None, []):
+            with self.subTest(selection=selection):
+                root = {"name": "root", "displayName": "Root"}
+                if selection is not None:
+                    root["archetypes"] = selection
+                xr = self.xr([
+                    root, {"name": "child", "displayName": "Child",
+                           "parentRef": {"name": "root"}},
+                ])
+                pending = self.render(xr)
+                self.assertNotEqual(pending["composite"].get("ready"), "READY_TRUE")
+                state, observed = self.settled(xr)
+                self.assertEqual(
+                    {item["resource"]["kind"] for item in state["resources"].values()},
+                    {"ManagementGroup", "Usage"},
+                )
+                self.assertEqual(
+                    set(state["composite"]["resource"]["status"]["managementGroups"]),
+                    {"root", "child"},
+                )
+                self.assertEqual(
+                    state["composite"]["resource"]["status"]["id"],
+                    observed["rootGroups-example-root"]["resource"]["status"]["atProvider"]["id"],
+                )
+                self.assertNotEqual(state["composite"].get("ready"), "READY_FALSE")
+                self.assertTrue(all(
+                    item.get("ready") == "READY_TRUE" for item in state["resources"].values()
+                ))
+                usage_name = "usage-rootGroups-example-root-managementGroups-example-child"
+                usage = state["resources"][usage_name]["resource"]
+                self.assertEqual(usage["spec"]["of"]["resourceRef"]["name"], "example-root")
+                self.assertEqual(usage["spec"]["by"]["resourceRef"]["name"], "example-child")
+                observed[usage_name]["resource"]["status"]["conditions"][0]["status"] = "False"
+                self.assertNotEqual(
+                    self.render(xr, observed)["composite"].get("ready"), "READY_TRUE",
+                )
+
+    def test_root_can_select_an_alternate_archetype(self):
+        xr = self.xr([{"name": "root", "displayName": "Root", "archetypes": ["sandbox"]}])
+        state, _ = self.settled(xr)
+        expected = {
+            "assignment" + generator.token(name)
+            for name, assignment in generator.compile_profile(
+                json.loads((API / "library.json").read_text())
+            )[2].items() if "sandbox" in assignment["archetypes"]
+        }
+        actual = {
+            name.split("-", 1)[0] for name, item in state["resources"].items()
+            if item["resource"]["kind"] == "ManagementGroupPolicyAssignment"
+        }
+        self.assertTrue(expected)
+        self.assertEqual(actual, expected)
+        self.assertNotEqual(state["composite"].get("ready"), "READY_FALSE")
+        self.assertTrue(all(
+            item.get("ready") == "READY_TRUE" for item in state["resources"].values()
+        ))
+
+    def test_clearing_archetypes_removes_policies_but_preserves_hierarchy(self):
+        xr = self.xr([
+            {"name": "root", "displayName": "Root", "archetypes": ["root"]},
+            {"name": "child", "displayName": "Child", "parentRef": {"name": "root"}},
+        ])
+        fields = json.loads((API / "profile.json").read_text())["requiredInputs"]
+        xr["spec"]["policyDefaults"] = {name: "/synthetic/input" for name in fields}
+        before, observed = self.settled(xr)
+        self.assertTrue(any(
+            item["resource"]["kind"] == "ManagementGroupPolicyAssignment"
+            for item in before["resources"].values()
+        ))
+        xr["spec"]["managementGroups"][0]["archetypes"] = []
+        del xr["spec"]["policyDefaults"]
+        after = self.render(xr, observed)
+        def hierarchy(state):
+            return {
+                name: item["resource"]["spec"] for name, item in state["resources"].items()
+                if item["resource"]["kind"] == "ManagementGroup"
+                or (item["resource"]["kind"] == "Usage"
+                    and item["resource"]["spec"]["by"]["kind"] == "ManagementGroup")
+            }
+
+        self.assertEqual(
+            {item["resource"]["kind"] for item in after["resources"].values()},
+            {"ManagementGroup", "Usage"},
+        )
+        self.assertEqual(hierarchy(after), hierarchy(before))
+        self.assertEqual(
+            before["composite"]["resource"]["status"]["id"],
+            after["composite"]["resource"]["status"]["id"],
+        )
+        self.assertNotEqual(after["composite"].get("ready"), "READY_FALSE")
+        # Sequencer keeps protection until the previously observed policies disappear.
+        completed = self.render(xr, observe(after))
+        self.assertEqual(
+            {name: item["resource"]["spec"] for name, item in completed["resources"].items()},
+            hierarchy(before),
+        )
+
+    def test_policy_free_team_example_settles_without_policy_inputs(self):
+        example = yaml.safe_load(
+            (PROJECT.parent / "teams/alz-architecture/landingzone.yaml").read_text()
+        )
+        xr = self.xr(example["spec"]["managementGroups"])
+        state, _ = self.settled(xr)
+        resources = [item["resource"] for item in state["resources"].values()]
+        self.assertEqual(sum(r["kind"] == "ManagementGroup" for r in resources), 12)
+        self.assertEqual({r["kind"] for r in resources}, {"ManagementGroup", "Usage"})
+        expected_edges = {
+            ("example-" + group["parentRef"]["name"], "example-" + group["name"])
+            for group in xr["spec"]["managementGroups"] if group.get("parentRef")
+        }
+        self.assertEqual(len(expected_edges), 11)
+        root = next(g["name"] for g in xr["spec"]["managementGroups"] if not g.get("parentRef"))
+        # Sequencer also protects every descendant against deletion of the ALZ root.
+        expected_edges |= {
+            ("example-" + root, "example-" + group["name"])
+            for group in xr["spec"]["managementGroups"] if group.get("parentRef")
+        }
+        self.assertEqual({
+            (r["spec"]["of"]["resourceRef"]["name"], r["spec"]["by"]["resourceRef"]["name"])
+            for r in resources if r["kind"] == "Usage"
+        }, expected_edges)
+        self.assertEqual(len(state["composite"]["resource"]["status"]["managementGroups"]), 12)
+        self.assertNotEqual(state["composite"].get("ready"), "READY_FALSE")
+        self.assertTrue(all(
+            item.get("ready") == "READY_TRUE" for item in state["resources"].values()
+        ))
 
     def test_cycles_and_disconnected_graphs_are_fatal(self):
         groups = [

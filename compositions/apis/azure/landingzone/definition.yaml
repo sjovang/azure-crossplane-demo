@@ -96,6 +96,7 @@ spec:
                   items:
                     properties:
                       archetypes:
+                        default: []
                         items:
                           enum:
                             - connectivity
@@ -132,7 +133,6 @@ spec:
                           - name
                         type: object
                     required:
-                      - archetypes
                       - displayName
                       - name
                     type: object
@@ -150,8 +150,8 @@ spec:
                       rule: self.filter(g, !has(g.parentRef)).size() == 1
                     - message: Every parent reference must identify a group in this list.
                       rule: self.all(g, !has(g.parentRef) || self.exists(p, p.name == g.parentRef.name))
-                    - message: Only the ALZ root must have the root archetype.
-                      rule: self.all(g, ('root' in g.archetypes) == !has(g.parentRef))
+                    - message: Only the ALZ root may have the root archetype.
+                      rule: self.all(g, !('root' in g.archetypes) || !has(g.parentRef))
                 name:
                   description: Tenant-unique prefix for the ALZ root and child groups.
                   maxLength: 20

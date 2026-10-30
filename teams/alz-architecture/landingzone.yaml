@@ -1,0 +1,71 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XLandingZoneArchitecture
+metadata:
+  name: alz-architecture
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: alz-architecture
+  parentManagementGroupId: >-
+    /providers/Microsoft.Management/managementGroups/414815d3-f2c3-461d-8982-7c57e77a660c
+  managementGroups:
+    - name: alz
+      displayName: Azure Landing Zones
+      archetypes: []
+    - name: platform
+      displayName: Platform
+      archetypes: []
+      parentRef:
+        name: alz
+    - name: landingzones
+      displayName: Landing zones
+      archetypes: []
+      parentRef:
+        name: alz
+    - name: corp
+      displayName: Corp
+      archetypes: []
+      parentRef:
+        name: landingzones
+    - name: online
+      displayName: Online
+      archetypes: []
+      parentRef:
+        name: landingzones
+    - name: local
+      displayName: Local
+      archetypes: []
+      parentRef:
+        name: landingzones
+    - name: sandbox
+      displayName: Sandbox
+      archetypes: []
+      parentRef:
+        name: alz
+    - name: security
+      displayName: Security
+      archetypes: []
+      parentRef:
+        name: platform
+    - name: management
+      displayName: Management
+      archetypes: []
+      parentRef:
+        name: platform
+    - name: connectivity
+      displayName: Connectivity
+      archetypes: []
+      parentRef:
+        name: platform
+    - name: identity
+      displayName: Identity
+      archetypes: []
+      parentRef:
+        name: platform
+    - name: decommissioned
+      displayName: Decommissioned
+      archetypes: []
+      parentRef:
+        name: alz
+  subscriptions: []
