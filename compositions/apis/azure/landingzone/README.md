@@ -140,8 +140,11 @@ needed by each assignment. Only effective `Audit`, `AuditIfNotExists`, and
 `Deny` effects are permitted. Policies without a supported audit alternative
 are omitted, including hardcoded DINE/Modify/Append/DenyAction policies.
 Mixed initiatives become distinctly named root-scoped filtered variants.
-Microsoft built-in definitions remain untouched; referenced versions are pinned
-to the reviewed built-in snapshot.
+Microsoft built-in definitions remain untouched; references are pinned to the
+reviewed snapshot's `major.minor.*` version (Azure's reference format; a
+`-deprecated` metadata label is dropped, `-preview` is kept). Custom
+definitions hardcode the selected effect and drop parameters the rule no
+longer uses, which Azure rejects.
 Upstream `DoNotEnforce` assignments remain non-enforcing; filtering never
 promotes them into enforced denies. Supported non-compliance messages are kept.
 Supported assignment-level `policyEffect` overrides are retained for `Audit`,

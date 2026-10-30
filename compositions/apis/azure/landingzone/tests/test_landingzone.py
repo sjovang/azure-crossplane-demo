@@ -81,6 +81,32 @@ class ProjectionTests(unittest.TestCase):
                     if allowed and isinstance(value["value"], str):
                         self.assertIn(value["value"], allowed)
 
+    def test_custom_definitions_declare_only_used_parameters(self):
+        # Azure rejects unused parameters with UnusedPolicyParameters.
+        for name, properties in self.definitions.items():
+            rule = json.dumps(properties["policyRule"]).lower()
+            for parameter in properties.get("parameters", {}):
+                self.assertIn(f"parameters('{parameter.lower()}')", rule, name)
+
+    def test_definition_version_references_use_azure_format(self):
+        # Azure accepts '{major}.{minor|*}[.*][-preview]' with a positive major.
+        valid = re.compile(r"[1-9]\d*\.(\d+|\*)(\.\*)?(-preview)?")
+        versions = [
+            reference["version"]
+            for node in self.composition["spec"]["pipeline"][1]["input"]["resources"]
+            if node["template"]["kind"] == "PolicySetDefinition"
+            for reference in node["template"]["spec"]["forProvider"]["policyDefinitionReference"]
+            if "version" in reference
+        ]
+        self.assertTrue(versions)
+        for version in versions:
+            self.assertRegex(version, valid)
+            self.assertIsNotNone(valid.fullmatch(version), version)
+        self.assertEqual(generator.definition_version("3.1.0-deprecated"), "3.1.*")
+        self.assertEqual(generator.definition_version("1.0.0-preview"), "1.0.*-preview")
+        with self.assertRaises(ValueError):
+            generator.definition_version("0.1.0")
+
     def test_hardcoded_mutating_effect_is_not_rewritten(self):
         for effect in ("DeployIfNotExists", "Modify", "Append", "DenyAction"):
             result, _, _ = generator.selected_effect({
