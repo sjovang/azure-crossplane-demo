@@ -1833,6 +1833,9 @@ spec:
                   policyDefinitionId: ${initiative122104d0c035.status.atProvider.id}
                   displayName: Configure backup on virtual machines without a given tag to a new recovery services vault with a default polic (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Backup on virtual machines without a given tag must be configured to a new recovery services vault with a default policy.
             forEach:
@@ -1991,6 +1994,9 @@ spec:
                   policyDefinitionId: ${initiatived0cbc36bb187.status.atProvider.id}
                   displayName: Enable ChangeTracking and Inventory for virtual machine scale sets (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Change Tracking must be enabled for Virtual Machines Scales Sets.
             forEach:
@@ -2172,6 +2178,9 @@ spec:
                   policyDefinitionId: ${initiative705ba8c8e280.status.atProvider.id}
                   displayName: Enable Defender for SQL on SQL VMs and Arc-enabled SQL Servers (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Microsoft Defender for SQL must be deployed.
             forEach:
@@ -2412,6 +2421,9 @@ spec:
                   policyDefinitionId: ${initiativedab7825b8e8c.status.atProvider.id}
                   displayName: Enable ChangeTracking and Inventory for virtual machines (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Change Tracking must be enabled for Virtual Machines.
             forEach:
@@ -2692,6 +2704,9 @@ spec:
                   policyDefinitionId: ${initiativee86baf4a2000.status.atProvider.id}
                   displayName: Enable Azure Monitor for VMs (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Azure Monitor must be enabled for Virtual Machines.
             forEach:
@@ -3233,6 +3248,9 @@ spec:
                   policyDefinitionId: ${initiativececb4293f2da.status.atProvider.id}
                   displayName: Enable category group resource logging for supported resources to Log Analytics (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Diagnostic settings must be deployed to Azure services to forward logs to Log Analytics.
             forEach:
@@ -6617,6 +6635,9 @@ spec:
                   policyDefinitionId: ${initiative0c53f16f2bae.status.atProvider.id}
                   displayName: Microsoft Cloud Security Benchmark v2 (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Microsoft Cloud Security Benchmark v2 must be met.
             forEach:
@@ -6659,6 +6680,9 @@ spec:
                   policyDefinitionId: ${initiative496928ce5feb.status.atProvider.id}
                   displayName: Configure subscriptions to enable service health alert monitoring rule (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Service Health alerts must be configured on all subscriptions.
             forEach:
@@ -6789,6 +6813,9 @@ spec:
                   policyDefinitionId: ${initiativecc076451354d.status.atProvider.id}
                   displayName: '[Preview]: Deploy Microsoft Defender for Endpoint agent (audit/deny only)'
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Microsoft Defender for Endpoint agent must be deployed on applicable images.
             forEach:
@@ -7852,6 +7879,9 @@ spec:
                   policyDefinitionId: ${initiative81ff3228e3be.status.atProvider.id}
                   displayName: Enable Azure Monitor for Virtual Machine Scale Sets (audit/deny only)
                   enforce: true
+                  identity:
+                    type: SystemAssigned
+                  location: ${schema.spec.location}
                   nonComplianceMessage:
                     - content: Azure Monitor must be enabled for Virtual Machines Scales Sets.
             forEach:

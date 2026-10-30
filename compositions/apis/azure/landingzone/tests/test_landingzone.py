@@ -107,6 +107,34 @@ class ProjectionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             generator.definition_version("0.1.0")
 
+    def test_assignments_with_deployment_rules_have_identity(self):
+        # Azure returns ResourceIdentityRequired otherwise, even for audit effects.
+        initiatives = {
+            node["id"]: node["template"]["spec"]["forProvider"]["policyDefinitionReference"]
+            for node in self.composition["spec"]["pipeline"][1]["input"]["resources"]
+            if node["template"]["kind"] == "PolicySetDefinition"
+        }
+        checked = 0
+        for node in self.composition["spec"]["pipeline"][1]["input"]["resources"]:
+            if node["template"]["kind"] != "ManagementGroupPolicyAssignment":
+                continue
+            provider = node["template"]["spec"]["forProvider"]
+            initiative = provider["policyDefinitionId"][2:].split(".", 1)[0]
+            deployment = any(
+                not reference["policyDefinitionId"].startswith("${")
+                and generator.has_deployment(self.source["policies"][
+                    generator.policy_key(reference["policyDefinitionId"])
+                ]["properties"])
+                for reference in initiatives[initiative]
+            )
+            if deployment:
+                checked += 1
+                self.assertEqual(provider.get("identity"), {"type": "SystemAssigned"})
+                self.assertEqual(provider.get("location"), "${schema.spec.location}")
+            else:
+                self.assertNotIn("identity", provider)
+        self.assertGreater(checked, 0)
+
     def test_hardcoded_mutating_effect_is_not_rewritten(self):
         for effect in ("DeployIfNotExists", "Modify", "Append", "DenyAction"):
             result, _, _ = generator.selected_effect({

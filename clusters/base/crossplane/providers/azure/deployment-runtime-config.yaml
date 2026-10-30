@@ -1,7 +1,9 @@
 ---
 # Shared runtime settings for the Azure provider Deployments. Requests make
 # scheduling predictable on small nodes (kiac); the limit guards the node
-# against runaway memory use.
+# against runaway memory use. The default reconcile rate (100/s) lets large
+# compositions such as the ALZ burst many concurrent ARM calls; a lower rate
+# limits that concurrency.
 apiVersion: pkg.crossplane.io/v1beta1
 kind: DeploymentRuntimeConfig
 metadata:
@@ -14,6 +16,8 @@ spec:
         spec:
           containers:
             - name: package-runtime
+              args:
+                - --max-reconcile-rate=10
               resources:
                 requests:
                   cpu: 100m

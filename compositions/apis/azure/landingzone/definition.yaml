@@ -32,6 +32,14 @@ spec:
                   required:
                     - name
                   type: object
+                location:
+                  default: swedencentral
+                  description: Region for policy assignment identities.
+                  minLength: 1
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
                 managementGroups:
                   default:
                     - archetypes:

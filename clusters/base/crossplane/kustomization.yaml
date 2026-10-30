@@ -5,6 +5,7 @@ resources:
   - core/namespace.yaml
   - core/helm-repository.yaml
   - core/helm-release.yaml
+  - recovery/create-pending-recovery.yaml
   - flux-kustomizations/azure-activation-policy-kustomization.yaml
   - flux-kustomizations/azure-provider-kustomization.yaml
   - flux-kustomizations/azure-provider-config-kustomization.yaml

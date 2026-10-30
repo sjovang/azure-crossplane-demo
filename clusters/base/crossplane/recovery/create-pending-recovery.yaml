@@ -1,0 +1,132 @@
+---
+# Upjet providers don't enable crossplane-runtime's deterministic external
+# name option. A dropped Azure create therefore leaves
+# crossplane.io/external-create-pending set and the managed resource stops
+# reconciling until the annotation is removed. The kinds below always carry
+# a caller-chosen crossplane.io/external-name, so retrying is safe: Crossplane
+# adopts the object if Azure created it, or creates it otherwise.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: create-pending-recovery
+  namespace: crossplane-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane-create-pending-recovery
+rules:
+  - apiGroups:
+      - management.azure.m.upbound.io
+    resources:
+      - managementgroups
+    verbs:
+      - list
+      - patch
+  - apiGroups:
+      - authorization.azure.m.upbound.io
+    resources:
+      - policydefinitions
+      - policysetdefinitions
+      - managementgrouppolicyassignments
+    verbs:
+      - list
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: crossplane-create-pending-recovery
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: crossplane-create-pending-recovery
+subjects:
+  - kind: ServiceAccount
+    name: create-pending-recovery
+    namespace: crossplane-system
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: create-pending-recovery
+  namespace: crossplane-system
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 240
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          serviceAccountName: create-pending-recovery
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: recover
+              # alpine/k8s 1.35.9 (kubectl + jq), pinned by digest.
+              image: >-
+                docker.io/alpine/k8s@sha256:b9cb6db0091a2327c0a56ecda69d37fa830c7a96ea669e7382b3ee778aa07a24
+              env:
+                - name: HOME
+                  value: /tmp
+                - name: MIN_AGE_SECONDS
+                  value: "300"
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  now=$(date +%s)
+                  cutoff=$(date -u -d "@$((now - MIN_AGE_SECONDS))" \
+                    +%Y-%m-%dT%H:%M:%SZ)
+                  for kind in \
+                    managementgroups.management \
+                    policydefinitions.authorization \
+                    policysetdefinitions.authorization \
+                    managementgrouppolicyassignments.authorization
+                  do
+                    resource="$kind.azure.m.upbound.io"
+                    kubectl get "$resource" -A -o json |
+                      jq -r --arg cutoff "$cutoff" '
+                        .items[]
+                        | (.metadata.annotations // {}) as $a
+                        | "crossplane.io/external-" as $p
+                        | $a[$p + "create-pending"] as $pending
+                        | select($pending != null and $pending < $cutoff)
+                        | select(($a[$p + "name"] // "") != "")
+                        | select(($a[$p + "create-succeeded"] // "")
+                            < $pending)
+                        | select(($a[$p + "create-failed"] // "") < $pending)
+                        | "\(.metadata.namespace) \(.metadata.name)"' |
+                      while read -r ns name; do
+                        echo "clearing create-pending on $resource $ns/$name"
+                        kubectl annotate "$resource" -n "$ns" "$name" \
+                          crossplane.io/external-create-pending- || true
+                      done
+                  done
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 128Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}

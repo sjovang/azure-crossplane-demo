@@ -28,6 +28,9 @@ spec:
     description="Existing parent group, never owned by this composition."
   environmentConfigRef:
     name: string | required=true immutable=true minLength=1
+  location: >-
+    string | default="swedencentral" immutable=true minLength=1
+    description="Region for policy assignment identities."
   managementGroups: "[]ManagementGroup"
   subscriptions: "[]Subscription | default=[]"
   providerConfigRef:
