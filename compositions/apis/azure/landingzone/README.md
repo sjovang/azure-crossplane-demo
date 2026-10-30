@@ -151,6 +151,12 @@ Supported assignment-level `policyEffect` overrides are retained for `Audit`,
 `AuditIfNotExists`, and `Deny`; unsupported override kinds or effects fail
 generation rather than silently changing policy behavior.
 
+Azure requires a managed identity on any assignment whose initiative contains
+a built-in with a deployment in its effect details, even when the selected
+effect is audit-only (`ResourceIdentityRequired`). Those assignments get a
+system-assigned identity in `spec.location` (default `swedencentral`,
+immutable). No roles are granted, so the identity cannot remediate.
+
 The pinned built-in snapshot includes newer Kubernetes policy versions than
 some ALZ references. Unsupported deny effects become a supported audit effect;
 the host-port policy's old bounds are migrated to its version-8 range input.

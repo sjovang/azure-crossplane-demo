@@ -113,6 +113,11 @@ def policy_key(resource_id):
     return parts[-2] + "/" + parts[-1].lower()
 
 
+def has_deployment(properties):
+    details = properties["policyRule"]["then"].get("details")
+    return isinstance(details, dict) and "deployment" in details
+
+
 def selected_effect(properties, overrides):
     expression = properties["policyRule"]["then"]["effect"]
     values = parameter_values(properties, overrides)
@@ -291,6 +296,14 @@ def compile_profile(source):
             }
             if assignment_overrides:
                 assignments[name]["overrides"] = assignment_overrides
+            # Azure requires an identity whenever a member rule contains a deployment,
+            # even if the selected effect is audit-only. It receives no role assignments.
+            if any(
+                not member["policyDefinitionId"].startswith("@definition:")
+                and has_deployment(policies[policy_key(member["policyDefinitionId"])]["properties"])
+                for member in members
+            ):
+                assignments[name]["identity"] = True
         else:
             report.append({"assignment": name, "action": "empty-initiative-omitted"})
     return definitions, initiatives, assignments, report
@@ -459,6 +472,11 @@ def generate():
         })
         if assignment.get("overrides"):
             node["template"]["spec"]["forProvider"]["overrides"] = assignment["overrides"]
+        if assignment.get("identity"):
+            node["template"]["spec"]["forProvider"].update({
+                "identity": {"type": "SystemAssigned"},
+                "location": expr("schema.spec.location"),
+            })
         if assignment["nonComplianceMessage"]:
             node["template"]["spec"]["forProvider"]["nonComplianceMessage"] = (
                 assignment["nonComplianceMessage"]

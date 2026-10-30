@@ -77,7 +77,7 @@ spec:
   name: appadvisor
   resourceGroupRef:
     name: app-hosting-advisor
-  image: ghcr.io/sjovang/azure-crossplane-demo/app-hosting-advisor:sha-0dcc96b
+  image: ghcr.io/sjovang/azure-crossplane-demo/app-hosting-advisor:sha-e37184c
   port: 8080
   size: small
   location: swedencentral
