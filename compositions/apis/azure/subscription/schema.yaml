@@ -1,0 +1,26 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XSubscription
+spec:
+  name: >-
+    string | required=true immutable=true minLength=1 maxLength=40
+    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    description="Logical attachment name; does not create a subscription."
+  subscriptionId: >-
+    string | required=true immutable=true
+    pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  managementGroupId: >-
+    string | required=true
+    pattern="^/providers/Microsoft.Management/managementGroups/[^/]+$"
+  providerConfigRef:
+    kind: >-
+      string | default="ClusterProviderConfig"
+      enum="ProviderConfig,ClusterProviderConfig"
+    name: string | default="default" minLength=1
+status:
+  id: >-
+    string | description="Existing subscription ARM ID,
+    not an owned subscription."
+  associationId: >-
+    string | description="Observed management-group association ARM ID."
+  managedResourceName: string

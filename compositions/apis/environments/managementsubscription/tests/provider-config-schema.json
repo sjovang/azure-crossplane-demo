@@ -1,0 +1,257 @@
+{
+  "package": "xpkg.upbound.io/upbound/provider-family-azure:v2.7.2",
+  "extractedPackageSHA256": "779c9cd964e2a7c804c60d24357f0b47fb0c88d04652b5ab1a7ce2678e698256",
+  "crd": {
+    "apiVersion": "apiextensions.k8s.io/v1",
+    "kind": "CustomResourceDefinition",
+    "metadata": {
+      "annotations": {
+        "controller-gen.kubebuilder.io/version": "v0.20.1",
+        "kustomize.config.k8s.io/id": "group: apiextensions.k8s.io\nkind: CustomResourceDefinition\nname: providerconfigs.azure.m.upbound.io\nversion: v1\n"
+      },
+      "name": "providerconfigs.azure.m.upbound.io"
+    },
+    "spec": {
+      "group": "azure.m.upbound.io",
+      "names": {
+        "categories": [
+          "crossplane",
+          "providerconfig",
+          "azure"
+        ],
+        "kind": "ProviderConfig",
+        "listKind": "ProviderConfigList",
+        "plural": "providerconfigs",
+        "singular": "providerconfig"
+      },
+      "scope": "Namespaced",
+      "versions": [
+        {
+          "name": "v1beta1",
+          "schema": {
+            "openAPIV3Schema": {
+              "properties": {
+                "apiVersion": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "metadata": {
+                  "type": "object"
+                },
+                "spec": {
+                  "properties": {
+                    "clientID": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "env": {
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "type": "object"
+                        },
+                        "fs": {
+                          "properties": {
+                            "path": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "path"
+                          ],
+                          "type": "object"
+                        },
+                        "secretRef": {
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "namespace": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "name",
+                            "namespace"
+                          ],
+                          "type": "object"
+                        },
+                        "source": {
+                          "enum": [
+                            "None",
+                            "Secret",
+                            "UserAssignedManagedIdentity",
+                            "SystemAssignedManagedIdentity",
+                            "OIDCTokenFile",
+                            "Upbound",
+                            "Filesystem"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "source"
+                      ],
+                      "type": "object"
+                    },
+                    "environment": {
+                      "type": "string"
+                    },
+                    "features": {
+                      "properties": {
+                        "postgreSQLFlexibleServer": {
+                          "properties": {
+                            "restartServerOnConfigurationValueChange": {
+                              "type": "boolean"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "msiEndpoint": {
+                      "type": "string"
+                    },
+                    "oidcTokenFilePath": {
+                      "type": "string"
+                    },
+                    "reconciliationPolicy": {
+                      "properties": {
+                        "exponentialFailureRateLimiter": {
+                          "properties": {
+                            "baseDelay": {
+                              "type": "string",
+                              "x-kubernetes-validations": [
+                                {
+                                  "message": "baseDelay must be at least 1s",
+                                  "rule": "duration(self) >= duration('1s')"
+                                }
+                              ]
+                            },
+                            "maxDelay": {
+                              "type": "string",
+                              "x-kubernetes-validations": [
+                                {
+                                  "message": "maxDelay must be at least 60s",
+                                  "rule": "duration(self) >= duration('60s')"
+                                }
+                              ]
+                            }
+                          },
+                          "type": "object",
+                          "x-kubernetes-validations": [
+                            {
+                              "message": "maxDelay must be greater than or equal to baseDelay",
+                              "rule": "!has(self.maxDelay) || !has(self.baseDelay) || duration(self.maxDelay) >= duration(self.baseDelay)"
+                            }
+                          ]
+                        }
+                      },
+                      "type": "object",
+                      "x-kubernetes-validations": [
+                        {
+                          "message": "when maxDelay is omitted it defaults to 60s; baseDelay must be <= 60s",
+                          "rule": "!has(self.exponentialFailureRateLimiter) || !has(self.exponentialFailureRateLimiter.baseDelay) || has(self.exponentialFailureRateLimiter.maxDelay) || duration(self.exponentialFailureRateLimiter.baseDelay) <= duration('60s')"
+                        }
+                      ]
+                    },
+                    "storageUseAzureAD": {
+                      "type": "boolean"
+                    },
+                    "subscriptionID": {
+                      "type": "string"
+                    },
+                    "tenantID": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "credentials"
+                  ],
+                  "type": "object"
+                },
+                "status": {
+                  "properties": {
+                    "conditions": {
+                      "items": {
+                        "properties": {
+                          "lastTransitionTime": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "observedGeneration": {
+                            "format": "int64",
+                            "type": "integer"
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "lastTransitionTime",
+                          "reason",
+                          "status",
+                          "type"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array",
+                      "x-kubernetes-list-map-keys": [
+                        "type"
+                      ],
+                      "x-kubernetes-list-type": "map"
+                    },
+                    "users": {
+                      "format": "int64",
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "required": [
+                "spec"
+              ],
+              "type": "object"
+            }
+          },
+          "served": true,
+          "storage": true,
+          "subresources": {
+            "status": {}
+          }
+        }
+      ]
+    },
+    "status": {
+      "acceptedNames": {
+        "kind": "",
+        "plural": ""
+      },
+      "conditions": null,
+      "storedVersions": null
+    }
+  }
+}

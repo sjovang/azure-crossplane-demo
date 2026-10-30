@@ -1,0 +1,46 @@
+---
+apiVersion: environments.platform.example.org/v1alpha1
+kind: XManagementSubscription
+spec:
+  name: >-
+    string | required=true immutable=true minLength=1 maxLength=30
+    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    description="Unique baseline name within the namespace."
+  subscriptionId: >-
+    string | required=true immutable=true
+    pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  location: string | required=true immutable=true minLength=1
+  managementGroupId: >-
+    string |
+    pattern="^/providers/Microsoft.Management/managementGroups/[^/]+$"
+  landingZoneRef:
+    name: string | required=true minLength=1
+  managementGroupRef:
+    name: >-
+      string | minLength=1 maxLength=63
+      pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+  providerConfigRef:
+    kind: >-
+      string | default="ClusterProviderConfig"
+      enum="ProviderConfig,ClusterProviderConfig"
+    name: string | default="default" minLength=1
+  retentionInDays: integer | default=30 minimum=30 maximum=730
+  dailyQuotaGb: integer | default=-1 minimum=-1
+status:
+  id: string
+  resourceGroupId: string
+  workspaceId: string
+  identity:
+    id: string
+    clientId: string
+    principalId: string
+  dataCollectionRuleIds:
+    vmInsights: string
+    changeTracking: string
+    defenderSql: string
+  diagnosticSettingId: string
+  associationId: string
+  managementGroupId: string
+  providerConfigRef:
+    kind: string
+    name: string

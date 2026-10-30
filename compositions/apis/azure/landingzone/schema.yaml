@@ -1,0 +1,40 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XLandingZoneArchitecture
+customTypes:
+  ParentReference:
+    name: string | required=true
+  ManagementGroup:
+    name: string | required=true
+    displayName: string | required=true minLength=1 maxLength=90
+    parentRef: ParentReference
+    archetypes: "[]string | required=true"
+  Subscription:
+    name: string | required=true
+    subscriptionId: string | required=true immutable=true
+    managementGroupRef: ParentReference
+  GroupStatus:
+    id: string
+    name: string
+    displayName: string
+spec:
+  name: >-
+    string | required=true immutable=true maxLength=20
+    pattern="^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$"
+    description="Tenant-unique prefix for the ALZ root and child groups."
+  parentManagementGroupId: >-
+    string | required=true immutable=true
+    pattern="^/providers/Microsoft.Management/managementGroups/[^/]+$"
+    description="Existing parent group, never owned by this composition."
+  managementGroups: "[]ManagementGroup"
+  subscriptions: "[]Subscription | default=[]"
+  providerConfigRef:
+    name: string | default="default"
+    kind: >-
+      string | enum="ProviderConfig,ClusterProviderConfig"
+      default="ClusterProviderConfig"
+status:
+  id: string | description="Observed Azure ID of the created ALZ root."
+  managementGroups: "map[string]GroupStatus"
+  libraryVersion: string
+  policyProfile: string

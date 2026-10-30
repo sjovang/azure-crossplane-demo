@@ -26,6 +26,9 @@ spec:
                   name: default
             patches:
               - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef
+              - type: FromCompositeFieldPath
                 fromFieldPath: spec.name
                 toFieldPath: metadata.annotations[crossplane.io/external-name]
                 transforms:
@@ -42,6 +45,9 @@ spec:
               - type: ToCompositeFieldPath
                 fromFieldPath: status.atProvider.id
                 toFieldPath: status.id
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: status.managedResourceName
               - type: ToCompositeFieldPath
                 fromFieldPath: metadata.annotations[crossplane.io/external-name]
                 toFieldPath: status.name

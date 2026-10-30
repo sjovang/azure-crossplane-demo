@@ -1,0 +1,274 @@
+---
+# Generated from schema.yaml by `make generate`. Do not edit.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xlandingzonearchitectures.azure.platform.example.org
+spec:
+  group: azure.platform.example.org
+  names:
+    categories:
+      - crossplane
+    kind: XLandingZoneArchitecture
+    plural: xlandingzonearchitectures
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: XLandingZoneArchitecture is the Schema for the XLandingZoneArchitecture API.
+          properties:
+            spec:
+              properties:
+                managementGroups:
+                  default:
+                    - archetypes:
+                        - root
+                      displayName: Azure Landing Zones
+                      name: alz
+                    - archetypes:
+                        - platform
+                      displayName: Platform
+                      name: platform
+                      parentRef:
+                        name: alz
+                    - archetypes:
+                        - landing-zones
+                      displayName: Landing zones
+                      name: landingzones
+                      parentRef:
+                        name: alz
+                    - archetypes:
+                        - corp
+                      displayName: Corp
+                      name: corp
+                      parentRef:
+                        name: landingzones
+                    - archetypes:
+                        - online
+                      displayName: Online
+                      name: online
+                      parentRef:
+                        name: landingzones
+                    - archetypes:
+                        - local
+                      displayName: Local
+                      name: local
+                      parentRef:
+                        name: landingzones
+                    - archetypes:
+                        - sandbox
+                      displayName: Sandbox
+                      name: sandbox
+                      parentRef:
+                        name: alz
+                    - archetypes:
+                        - security
+                      displayName: Security
+                      name: security
+                      parentRef:
+                        name: platform
+                    - archetypes:
+                        - management
+                      displayName: Management
+                      name: management
+                      parentRef:
+                        name: platform
+                    - archetypes:
+                        - connectivity
+                      displayName: Connectivity
+                      name: connectivity
+                      parentRef:
+                        name: platform
+                    - archetypes:
+                        - identity
+                      displayName: Identity
+                      name: identity
+                      parentRef:
+                        name: platform
+                    - archetypes:
+                        - decommissioned
+                      displayName: Decommissioned
+                      name: decommissioned
+                      parentRef:
+                        name: alz
+                  items:
+                    properties:
+                      archetypes:
+                        items:
+                          enum:
+                            - connectivity
+                            - corp
+                            - decommissioned
+                            - identity
+                            - landing-zones
+                            - local
+                            - management
+                            - online
+                            - platform
+                            - root
+                            - sandbox
+                            - security
+                          maxLength: 80
+                          type: string
+                        maxItems: 32
+                        type: array
+                        x-kubernetes-list-type: set
+                      displayName:
+                        maxLength: 90
+                        minLength: 1
+                        type: string
+                      name:
+                        maxLength: 32
+                        pattern: ^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$
+                        type: string
+                      parentRef:
+                        properties:
+                          name:
+                            maxLength: 32
+                            type: string
+                        required:
+                          - name
+                        type: object
+                    required:
+                      - archetypes
+                      - displayName
+                      - name
+                    type: object
+                    x-kubernetes-validations:
+                      - message: A group cannot be its own parent.
+                        rule: '!has(self.parentRef) || self.parentRef.name != self.name'
+                  maxItems: 100
+                  minItems: 1
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+                  x-kubernetes-validations:
+                    - message: Exactly one ALZ root group is required.
+                      rule: self.filter(g, !has(g.parentRef)).size() == 1
+                    - message: Every parent reference must identify a group in this list.
+                      rule: self.all(g, !has(g.parentRef) || self.exists(p, p.name == g.parentRef.name))
+                    - message: Only the ALZ root must have the root archetype.
+                      rule: self.all(g, ('root' in g.archetypes) == !has(g.parentRef))
+                name:
+                  description: Tenant-unique prefix for the ALZ root and child groups.
+                  maxLength: 20
+                  pattern: ^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                parentManagementGroupId:
+                  description: Existing parent group, never owned by this composition.
+                  pattern: ^/providers/Microsoft.Management/managementGroups/[^/]+$
+                  type: string
+                  x-kubernetes-validations:
+                    - message: field is immutable
+                      rule: self == oldSelf
+                policyDefaults:
+                  properties:
+                    amaUserAssignedManagedIdentityId:
+                      minLength: 1
+                      type: string
+                    ddosProtectionPlanId:
+                      minLength: 1
+                      type: string
+                    logAnalyticsWorkspaceId:
+                      minLength: 1
+                      type: string
+                    resourceGroupLocation:
+                      minLength: 1
+                      type: string
+                    resourceGroupNameServiceHealthAlerts:
+                      minLength: 1
+                      type: string
+                  type: object
+                providerConfigRef:
+                  default:
+                    kind: ClusterProviderConfig
+                    name: default
+                  properties:
+                    kind:
+                      default: ClusterProviderConfig
+                      enum:
+                        - ProviderConfig
+                        - ClusterProviderConfig
+                      type: string
+                    name:
+                      default: default
+                      type: string
+                  required:
+                    - kind
+                    - name
+                  type: object
+                subscriptions:
+                  default: []
+                  items:
+                    properties:
+                      managementGroupRef:
+                        properties:
+                          name:
+                            maxLength: 32
+                            type: string
+                        required:
+                          - name
+                        type: object
+                      name:
+                        maxLength: 32
+                        pattern: ^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$
+                        type: string
+                      subscriptionId:
+                        maxLength: 36
+                        pattern: ^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$
+                        type: string
+                        x-kubernetes-validations:
+                          - message: field is immutable
+                            rule: self == oldSelf
+                    required:
+                      - managementGroupRef
+                      - name
+                      - subscriptionId
+                    type: object
+                  maxItems: 100
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+              required:
+                - name
+                - parentManagementGroupId
+              type: object
+              x-kubernetes-validations:
+                - message: Removing or reparenting managed groups is not supported in v1. Use explicit foreground teardown instead.
+                  rule: oldSelf.managementGroups.all(old, self.managementGroups.exists(g, g.name == old.name && has(g.parentRef) == has(old.parentRef) && (!has(old.parentRef) || g.parentRef.name == old.parentRef.name)))
+                - message: Every subscription target must exist in managementGroups.
+                  rule: self.subscriptions.all(s, self.managementGroups.exists(g, g.name == s.managementGroupRef.name))
+                - message: A subscription may only have one attachment in this hierarchy.
+                  rule: self.subscriptions.all(s, self.subscriptions.filter(other, other.subscriptionId.lowerAscii() == s.subscriptionId.lowerAscii()) .size() == 1)
+            status:
+              properties:
+                id:
+                  description: Observed Azure ID of the created ALZ root.
+                  type: string
+                libraryVersion:
+                  type: string
+                managementGroups:
+                  additionalProperties:
+                    properties:
+                      displayName:
+                        type: string
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  type: object
+                policyProfile:
+                  type: string
+              type: object
+          required:
+            - spec
+          type: object
+      served: true

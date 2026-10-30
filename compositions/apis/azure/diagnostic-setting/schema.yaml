@@ -1,0 +1,21 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XDiagnosticSetting
+spec:
+  name: >-
+    string | required=true immutable=true minLength=1 maxLength=63
+    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+  subscriptionId: >-
+    string | required=true immutable=true
+    pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  workspaceId: >-
+    string | required=true
+    pattern="^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.OperationalInsights/workspaces/[^/]+$"
+  providerConfigRef:
+    kind: >-
+      string | default="ClusterProviderConfig"
+      enum="ProviderConfig,ClusterProviderConfig"
+    name: string | default="default" minLength=1
+status:
+  id: string
+  managedResourceName: string

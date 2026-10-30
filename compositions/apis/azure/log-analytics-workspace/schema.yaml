@@ -1,0 +1,20 @@
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XLogAnalyticsWorkspace
+spec:
+  name: >-
+    string | required=true immutable=true minLength=4 maxLength=63
+    pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+  resourceGroupName: string | required=true immutable=true minLength=1
+  location: string | required=true immutable=true minLength=1
+  retentionInDays: integer | default=30 minimum=30 maximum=730
+  dailyQuotaGb: integer | default=-1 minimum=-1
+  providerConfigRef:
+    kind: >-
+      string | default="ClusterProviderConfig"
+      enum="ProviderConfig,ClusterProviderConfig"
+    name: string | default="default" minLength=1
+status:
+  id: string
+  workspaceId: string
+  managedResourceName: string

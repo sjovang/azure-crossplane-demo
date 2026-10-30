@@ -11,3 +11,4 @@ kind: Kustomization
 resources:
   - provider-config.yaml
   - provider-config-azuread.yaml
+  - management-subscription-rbac.yaml

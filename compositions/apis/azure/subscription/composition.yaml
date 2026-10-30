@@ -1,0 +1,50 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: subscriptions.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XSubscription
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: association
+            base:
+              apiVersion: management.azure.m.upbound.io/v1beta1
+              kind: ManagementGroupSubscriptionAssociation
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.subscriptionId
+                toFieldPath: spec.forProvider.subscriptionId
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: /subscriptions/%s
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.managementGroupId
+                toFieldPath: spec.forProvider.managementGroupId
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.subscriptionId
+                toFieldPath: status.id
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.id
+                toFieldPath: status.associationId
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: status.managedResourceName

@@ -20,3 +20,7 @@ resources:
   - provider-containerapp.yaml
   - provider-dbforpostgresql.yaml
   - provider-azuread.yaml
+  - provider-management.yaml
+  - provider-operationalinsights.yaml
+  - provider-managedidentity.yaml
+  - provider-insights.yaml

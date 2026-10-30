@@ -11,6 +11,13 @@ spec:
   tags: >-
     map[string]string
     | description="Optional tags to apply to the resource group."
+  providerConfigRef:
+    kind: >-
+      string | default="ClusterProviderConfig"
+      enum="ProviderConfig,ClusterProviderConfig"
+    name: string | default="default" minLength=1
 status:
   id: string | description="Azure resource ID of the resource group."
   name: string | description="Name of the provisioned resource group."
+  managedResourceName: >-
+    string | description="Observed managed resource Kubernetes name."

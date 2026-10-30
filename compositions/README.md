@@ -102,6 +102,31 @@ quote YAML 1.1 boolean-like keys such as `n` or `on`.
 To add an API, create the directory, run `make generate`, add a
 `kustomization.yaml` and list the directory in `apis/<provider>/kustomization.yaml`.
 
+## Azure landing zones
+
+[`XLandingZoneArchitecture`](apis/azure/landingzone/README.md) deploys the
+default ALZ hierarchy or a custom camelCase YAML hierarchy, built-in
+archetypes projected to audit/deny-only policies, observed management-group
+IDs, and attachment of existing subscriptions. Upstream content is pinned and
+compiled offline.
+
+[`XManagementSubscription`](apis/environments/managementsubscription/README.md)
+follows `XWebApplication`'s orchestration pattern: it composes separate
+`XSubscription`, `XResourceGroup`, `XLogAnalyticsWorkspace`,
+`XUserAssignedIdentity`, `XDataCollectionRule`, and `XDiagnosticSetting` XRs.
+Those resource-level compositions are independently reusable.
+The imported subscription is never created or deleted, and credentials are
+reused through an automatically targeted ProviderConfig.
+Secret-based credentials must already be in the XR's namespace; cross-namespace
+Secret sources are rejected rather than silently targeting an unavailable
+Secret. The composition never copies credential data.
+
+New composition fixtures live beside their API in `tests/`; central discovery
+loads them. Both top-level APIs require foreground teardown for deletion
+sequencing. Their examples disable Flux pruning rather than relying on
+background deletion. See their READMEs for permission requirements and the
+monitoring/policy limitations.
+
 ## Entra entitlement management
 
 `apis/entraid/accesspackagecatalog/` creates a catalog and can grant the

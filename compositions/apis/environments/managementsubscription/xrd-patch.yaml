@@ -1,0 +1,30 @@
+---
+properties:
+  spec:
+    x-kubernetes-validations:
+      - rule: has(self.managementGroupId) != has(self.landingZoneRef)
+        message: Supply exactly one of managementGroupId or landingZoneRef.
+      - rule: "!has(self.managementGroupRef) || has(self.landingZoneRef)"
+        message: managementGroupRef requires landingZoneRef.
+      - rule: has(self.landingZoneRef) == has(oldSelf.landingZoneRef)
+        message: The external-ID or landing-zone reference mode is immutable.
+    properties:
+      managementGroupRef:
+        properties:
+          name:
+            default: management
+      providerConfigRef:
+        default:
+          kind: ClusterProviderConfig
+          name: default
+        x-kubernetes-validations:
+          - rule: self == oldSelf
+            message: source providerConfigRef is immutable
+      landingZoneRef:
+        x-kubernetes-validations:
+          - rule: self == oldSelf
+            message: landingZoneRef is immutable
+  status:
+    properties:
+      identity:
+        description: Observed identity IDs only; no credential material.

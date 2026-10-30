@@ -1,0 +1,59 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: loganalyticsworkspaces.azure.platform.example.org
+spec:
+  compositeTypeRef:
+    apiVersion: azure.platform.example.org/v1alpha1
+    kind: XLogAnalyticsWorkspace
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: workspace
+            base:
+              apiVersion: operationalinsights.azure.m.upbound.io/v1beta1
+              kind: Workspace
+              spec:
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+                forProvider:
+                  sku: PerGB2018
+                  localAuthenticationEnabled: false
+                  internetIngestionEnabled: true
+                  internetQueryEnabled: true
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.providerConfigRef
+                toFieldPath: spec.providerConfigRef
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.name
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.resourceGroupName
+                toFieldPath: spec.forProvider.resourceGroupName
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.location
+                toFieldPath: spec.forProvider.location
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.retentionInDays
+                toFieldPath: spec.forProvider.retentionInDays
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.dailyQuotaGb
+                toFieldPath: spec.forProvider.dailyQuotaGb
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.id
+                toFieldPath: status.id
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.workspaceId
+                toFieldPath: status.workspaceId
+              - type: ToCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: status.managedResourceName

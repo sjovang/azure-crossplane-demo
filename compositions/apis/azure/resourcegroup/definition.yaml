@@ -31,6 +31,20 @@ spec:
                   x-kubernetes-validations:
                     - message: field is immutable
                       rule: self == oldSelf
+                providerConfigRef:
+                  default: {}
+                  properties:
+                    kind:
+                      default: ClusterProviderConfig
+                      enum:
+                        - ProviderConfig
+                        - ClusterProviderConfig
+                      type: string
+                    name:
+                      default: default
+                      minLength: 1
+                      type: string
+                  type: object
                 tags:
                   additionalProperties:
                     type: string
@@ -45,6 +59,9 @@ spec:
               properties:
                 id:
                   description: Azure resource ID of the resource group.
+                  type: string
+                managedResourceName:
+                  description: Observed managed resource Kubernetes name.
                   type: string
                 name:
                   description: Name of the provisioned resource group.
