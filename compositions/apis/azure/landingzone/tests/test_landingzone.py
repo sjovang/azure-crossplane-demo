@@ -220,7 +220,7 @@ class ProjectionTests(unittest.TestCase):
                 [] if selection is None else selection,
             )
 
-    def test_team_example_preserves_topology_without_selecting_policies(self):
+    def test_team_example_selects_builtin_archetypes_for_each_group(self):
         xr = yaml.safe_load(
             (PROJECT.parent / "teams/alz-architecture/landingzone.yaml").read_text()
         )
@@ -228,8 +228,7 @@ class ProjectionTests(unittest.TestCase):
         groups = xrd["spec"]["versions"][0]["schema"]["openAPIV3Schema"][
             "properties"
         ]["spec"]["properties"]["managementGroups"]["default"]
-        expected = [{**group, "archetypes": []} for group in groups]
-        self.assertEqual(xr["spec"]["managementGroups"], expected)
+        self.assertEqual(xr["spec"]["managementGroups"], groups)
         self.assertFalse(xr["spec"].get("subscriptions"))
         self.assertNotIn("policyDefaults", xr["spec"])
         self.assertNotIn("parentManagementGroupId", xr["spec"])
@@ -570,11 +569,13 @@ class RuntimeTests(unittest.TestCase):
             hierarchy(before),
         )
 
-    def test_policy_free_team_example_settles_without_policy_inputs(self):
+    def test_team_topology_settles_when_policy_archetypes_are_cleared(self):
         example = yaml.safe_load(
             (PROJECT.parent / "teams/alz-architecture/landingzone.yaml").read_text()
         )
         xr = self.xr(example["spec"]["managementGroups"])
+        for group in xr["spec"]["managementGroups"]:
+            group["archetypes"] = []
         del xr["spec"]["parentManagementGroupId"]
         xr["spec"]["environmentConfigRef"] = example["spec"]["environmentConfigRef"]
         required = {"environmentConfig": {"items": [{"resource": {

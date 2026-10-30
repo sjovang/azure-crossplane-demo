@@ -3,9 +3,10 @@
 This GitOps example creates the pinned ALZ topology of 12 management groups in
 namespace `alz-architecture`, using
 [`XLandingZoneArchitecture`](../../compositions/apis/azure/landingzone/README.md).
-Every group explicitly selects `archetypes: []`: no composition-owned policy
-definitions, initiatives, or assignments are created, and no policy inputs are
-needed. Azure policies inherited from the tenant root still apply.
+Every group explicitly selects its corresponding built-in archetype, including
+`root` on `alz` and `landing-zones` on `landingzones`. This enables the
+composition's audit/deny-only ALZ policy projection, not the full upstream
+remediation baseline. Azure policies inherited from the tenant root still apply.
 
 The existing parent is read from the cluster-scoped `EnvironmentConfig`
 `azure-platform`, at `data.parentManagementGroupId`. No tenant ID is stored in
@@ -70,13 +71,20 @@ ensure_alz_management_group_permissions infrastructure/azure-credentials-kiac.js
 ```
 
 An existing role with broader/different permissions is rejected, not silently
-reused or overwritten. These rights cover this policy-free example only;
-enabling policy archetypes or subscription attachments needs separate grants.
+reused or overwritten. These rights cover management-group CRUD only.
+Before rollout, separately authorize the provider identity to manage policy
+definitions, initiatives, and assignments at the ALZ root and descendant scopes.
+Subscription attachments also need separate grants.
 
 No subscriptions are created or moved. No networking, monitoring resources,
-identities, or role assignments are provisioned. To add policies later, select
-supported archetypes on individual groups and supply any required
-`policyDefaults`; missing inputs leave the corresponding policies pending.
+identities, or role assignments are provisioned. Supply the existing resource
+IDs/settings required by the selected archetypes through `spec.policyDefaults`:
+Log Analytics workspace ID, AMA user-assigned managed identity ID, DDoS
+protection plan ID, and Service Health resource-group name/location. See the
+[policy inputs](../../compositions/apis/azure/landingzone/README.md#policy-effects-and-required-values)
+for the exact fields. These environment-specific values are not supplied by this
+example; missing inputs leave the corresponding policies pending while
+assignments without external inputs can reconcile.
 The `root` archetype is optional and can only be selected on the top-level group.
 Removing a selection can delete its composition-owned policy assets.
 
@@ -89,8 +97,9 @@ kubectl -n alz-architecture get xlandingzonearchitecture alz-architecture \
 ```
 
 `ManagementGroupsReady` requires observed Azure IDs and ready managed resources.
-`PoliciesReady` and `SubscriptionsReady` have no selected resources to wait for
-in this example; hierarchy Usage protections must still become ready.
+`PoliciesReady` requires all selected policy assets and inputs to be ready;
+it remains false while required inputs are missing. `SubscriptionsReady` has no
+selected resources to wait for. Hierarchy Usage protections must also become ready.
 
 ## Teardown
 

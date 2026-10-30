@@ -12,6 +12,6 @@ apiVersion: backstage.io/v1alpha1
 kind: System
 metadata:
   name: alz-architecture
-  description: Policy-free Azure landing zones management-group hierarchy.
+  description: Azure landing zones hierarchy with built-in policy archetypes.
 spec:
   owner: group:alz-architecture

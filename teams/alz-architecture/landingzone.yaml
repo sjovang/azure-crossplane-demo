@@ -12,60 +12,60 @@ spec:
   managementGroups:
     - name: alz
       displayName: Azure Landing Zones
-      archetypes: []
+      archetypes: [root]
     - name: platform
       displayName: Platform
-      archetypes: []
+      archetypes: [platform]
       parentRef:
         name: alz
     - name: landingzones
       displayName: Landing zones
-      archetypes: []
+      archetypes: [landing-zones]
       parentRef:
         name: alz
     - name: corp
       displayName: Corp
-      archetypes: []
+      archetypes: [corp]
       parentRef:
         name: landingzones
     - name: online
       displayName: Online
-      archetypes: []
+      archetypes: [online]
       parentRef:
         name: landingzones
     - name: local
       displayName: Local
-      archetypes: []
+      archetypes: [local]
       parentRef:
         name: landingzones
     - name: sandbox
       displayName: Sandbox
-      archetypes: []
+      archetypes: [sandbox]
       parentRef:
         name: alz
     - name: security
       displayName: Security
-      archetypes: []
+      archetypes: [security]
       parentRef:
         name: platform
     - name: management
       displayName: Management
-      archetypes: []
+      archetypes: [management]
       parentRef:
         name: platform
     - name: connectivity
       displayName: Connectivity
-      archetypes: []
+      archetypes: [connectivity]
       parentRef:
         name: platform
     - name: identity
       displayName: Identity
-      archetypes: []
+      archetypes: [identity]
       parentRef:
         name: platform
     - name: decommissioned
       displayName: Decommissioned
-      archetypes: []
+      archetypes: [decommissioned]
       parentRef:
         name: alz
   subscriptions: []
