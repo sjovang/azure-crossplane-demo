@@ -122,6 +122,16 @@ jobs:
             "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$manifest"
           git commit -m "chore(backstage): publish backstage ${TAG}"
-          git push \
-            "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git" \
-            "HEAD:${GITHUB_REF_NAME}"
+          remote="https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git"
+          for attempt in 1 2 3; do
+            if git push "$remote" "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              # Other image publishers may have advanced main during the build.
+              git fetch "$remote" "$GITHUB_REF_NAME"
+              git rebase FETCH_HEAD
+            fi
+          done
+          echo "::error::Failed to push the image tag after 3 attempts."
+          exit 1
