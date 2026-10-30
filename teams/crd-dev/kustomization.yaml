@@ -4,15 +4,15 @@ kind: Kustomization
 namespace: crd-dev
 resources:
   - ../_base
-  - network.yaml
-  - virtualmachines.yaml
-  - apps.yaml
-  - webapplication.yaml
-  - entraid.yaml
-  - enterpriseapp.yaml
-  - accesspackages.yaml
-  - keyvault.yaml
-  - keyvault-replacement.yaml
+  # - network.yaml
+  # - virtualmachines.yaml
+  # - apps.yaml
+  # - webapplication.yaml
+  # - entraid.yaml
+  # - enterpriseapp.yaml
+  # - accesspackages.yaml
+  # - keyvault.yaml
+  # - keyvault-replacement.yaml
 patches:
   # Apply the team-wide region only to APIs whose specs expose location.
   - target:
