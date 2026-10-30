@@ -85,7 +85,21 @@ class KeyVaultCompositionTests(unittest.TestCase):
             ['${schema.spec.?appServiceRef.?name.orValue("") != ""}'],
         )
 
-    def test_replacements_are_additive_and_reuse_existing_credentials(self):
+    def test_replacement_deployment_matches_team_configuration(self):
+        teams = ROOT.parent / "teams"
+        advisor = yaml.safe_load(
+            (teams / "app-hosting-advisor/kustomization.yaml").read_text()
+        )
+        self.assertIn("infrastructure.yaml", advisor["resources"])
+        self.assertIn("keyvault-replacement.yaml", advisor["resources"])
+
+        # Demo workloads remain in Git but are disabled to reduce running costs.
+        demo = yaml.safe_load(
+            (teams / "crd-dev/kustomization.yaml").read_text()
+        )
+        self.assertEqual(demo["resources"], ["../_base"])
+
+    def test_replacement_manifests_reuse_existing_credentials(self):
         teams = ROOT.parent / "teams"
         expected = {
             "app-hosting-advisor": {
@@ -111,7 +125,6 @@ class KeyVaultCompositionTests(unittest.TestCase):
             kustomization = yaml.safe_load(
                 (folder / "kustomization.yaml").read_text()
             )
-            self.assertIn("keyvault-replacement.yaml", kustomization["resources"])
             documents = list(yaml.safe_load_all(
                 (folder / "keyvault-replacement.yaml").read_text()
             ))
@@ -134,10 +147,10 @@ class KeyVaultCompositionTests(unittest.TestCase):
                 self.assertIn(vault, vaults)
             for doc in documents:
                 self.assertEqual(
-                    doc["metadata"]["annotations"][
+                    doc["metadata"].get("annotations", {}).get(
                         "kustomize.toolkit.fluxcd.io/prune"
-                    ],
-                    "disabled",
+                    ),
+                    "disabled" if team == "app-hosting-advisor" else None,
                 )
             for vault in vaults.values():
                 name = vault["spec"]["vaultName"]
@@ -162,8 +175,6 @@ class KeyVaultCompositionTests(unittest.TestCase):
                 for setting in app["spec"]["keyVaultSecretEnvVars"].values():
                     self.assertEqual(setting["vaultName"], "kv-appadvisor-lsdev")
             else:
-                self.assertIn("keyvault.yaml", kustomization["resources"])
-                self.assertIn("webapplication.yaml", kustomization["resources"])
                 self.assertEqual(
                     vaults["webdemo01-keyvault-next"]["spec"]["appServiceRef"]["name"],
                     "webdemo01",
