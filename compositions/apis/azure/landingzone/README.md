@@ -30,6 +30,34 @@ topology, including its Local and Security groups. Azure names are `contoso`
 for the ALZ root and `contoso-<logical-name>` for its descendants.
 The existing parent is never owned.
 
+Instead of committing an environment-specific parent ID, reference an externally
+managed, cluster-scoped `EnvironmentConfig`:
+
+```yaml
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XLandingZoneArchitecture
+metadata:
+  name: example
+  namespace: platform
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: example
+  environmentConfigRef:
+    name: azure-platform
+```
+
+Supply exactly one of `parentManagementGroupId` and `environmentConfigRef`.
+The referenced configuration must contain a valid management-group ARM ID in
+`data.parentManagementGroupId`. Provision it locally after Crossplane is
+installed, not in the public GitOps manifests; the
+[`alz-architecture` setup](../../../../teams/alz-architecture/README.md)
+derives the tenant root from bootstrap's local platform configuration.
+Missing/invalid data fails reconciliation without fallback or pruning.
+Neither the source nor the resolved parent may change once the ALZ root exists.
+The composition reads the EnvironmentConfig but never owns or deletes it.
+
 The bootstrap identity needs management-group hierarchy/policy permissions
 below this parent and access to each imported subscription. Contributor on the
 bootstrap subscription alone is insufficient. Assign appropriate permissions
@@ -72,8 +100,15 @@ spec:
 
 Public fields are camelCase and hierarchy/archetype names are DNS-safe.
 The importer translates internal ALZ names such as `landing_zones`.
-Every group must connect to exactly one root, which has the `root` archetype.
-Parent references are logical names within this list. An empty list, unknown
+Every group must connect to exactly one root, determined by the absence of
+`parentRef`. The `root` archetype is optional but may only be selected on that
+top-level group; other supported archetypes may also be selected there.
+For explicitly supplied groups, omitted `archetypes` defaults to `[]`.
+An empty selection creates the group without assigning policies to it.
+Omitting the entire `managementGroups` field still selects the original default
+topology and archetypes.
+
+Parent references are logical names within this list. An empty group list, unknown
 archetypes, cycles, duplicate names/subscriptions, and unknown targets are errors.
 Account for the existing parent's depth within Azure's six-level limit.
 The API supports up to 100 groups and 100 subscription attachments per XR.
@@ -82,6 +117,14 @@ Reordering, adding groups, and updating display names/archetype selections are
 supported. Removing or reparenting existing groups is rejected in v1; use an
 explicit teardown rather than an implicit destructive replacement.
 Group names and the tenant-wide prefix are identity, not display settings.
+Changing archetype selections can remove previously selected composition-owned
+policy assignments, initiatives, and definitions that are no longer needed.
+It does not disable policies inherited from ancestor management groups.
+
+The [`alz-architecture` example](../../../../teams/alz-architecture/README.md)
+declares the complete 12-group topology with empty archetypes on every group.
+It creates no policy assets and needs no `policyDefaults`, while retaining
+hierarchy readiness checks and foreground deletion protections.
 
 Only one XR may own a subscription attachment. Do not list the management
 subscription here if `XManagementSubscription` owns it. A subscription referenced

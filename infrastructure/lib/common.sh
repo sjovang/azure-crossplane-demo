@@ -192,6 +192,91 @@ ensure_role_assignment_permissions() {
   fi
 }
 
+# ensure_alz_management_group_permissions <credentials_file>
+# Only the policy-free hierarchy lifecycle; no policy, subscription-move or
+# RBAC administration permissions are granted at the tenant root.
+ensure_alz_management_group_permissions() {
+  local credentials_file="$1"
+  local client_id tenant_id subscription_id scope definition roles role role_id
+  local principal_id assignment_id
+
+  if ! client_id=$(jq -er '.clientId | select(type == "string" and length > 0)' "$credentials_file") \
+    || ! tenant_id=$(jq -er '.tenantId | select(test("^[0-9a-fA-F-]{36}$"))' "$credentials_file") \
+    || ! subscription_id=$(jq -er '.subscriptionId | select(test("^[0-9a-fA-F-]{36}$"))' "$credentials_file"); then
+    echo "WARNING: invalid credentials metadata; skipping ALZ management-group permissions." >&2
+    return 0
+  fi
+  scope="/providers/Microsoft.Management/managementGroups/$tenant_id"
+  definition=$(jq -n --arg scope "$scope" '{
+    Name: "azure-crossplane-demo ALZ Management Groups",
+    IsCustom: true,
+    Description: "Manage ALZ management groups without policies, subscription moves or role assignments.",
+    Actions: [
+      "Microsoft.Management/managementGroups/read",
+      "Microsoft.Management/managementGroups/write",
+      "Microsoft.Management/managementGroups/delete"
+    ],
+    NotActions: [], DataActions: [], NotDataActions: [],
+    AssignableScopes: [$scope]
+  }')
+
+  if ! roles=$(az role definition list --name "azure-crossplane-demo ALZ Management Groups" \
+    --scope "$scope" --subscription "$subscription_id" -o json); then
+    echo "WARNING: cannot read the ALZ custom role at $scope; no permissions changed." >&2
+    return 0
+  fi
+  if [[ "$(jq 'length' <<< "$roles")" == 0 ]]; then
+    echo "Creating the management-group-only ALZ custom role at $scope"
+    if ! role=$(az role definition create --role-definition "$definition" \
+      --subscription "$subscription_id" -o json); then
+      echo "WARNING: could not create the ALZ custom role." >&2
+      echo "An administrator needs Microsoft.Authorization/roleDefinitions/write at $scope." >&2
+      echo "Retry ensure_alz_management_group_permissions with $credentials_file after granting access." >&2
+      return 0
+    fi
+  elif [[ "$(jq 'length' <<< "$roles")" == 1 ]]; then
+    role=$(jq '.[0]' <<< "$roles")
+  else
+    echo "WARNING: ambiguous ALZ custom role; refusing to assign it." >&2
+    return 0
+  fi
+
+  if ! role_id=$(jq -er --argjson expected "$definition" '
+    select(.roleType == "CustomRole" and .roleName == $expected.Name
+      and .assignableScopes == $expected.AssignableScopes
+      and (.permissions | length) == 1
+      and (.permissions[0].actions | sort) == ($expected.Actions | sort)
+      and (.permissions[0].notActions | length) == 0
+      and (.permissions[0].dataActions | length) == 0
+      and (.permissions[0].notDataActions | length) == 0)
+    | .name | select(type == "string" and length > 0)' <<< "$role"); then
+    echo "WARNING: existing ALZ role does not match the least-privilege definition; refusing assignment." >&2
+    return 0
+  fi
+  if ! principal_id=$(az ad sp show --id "$client_id" --query id -o tsv) \
+    || [[ -z "$principal_id" ]]; then
+    echo "WARNING: cannot resolve the ALZ service principal; skipping role assignment." >&2
+    return 0
+  fi
+  if ! assignment_id=$(az role assignment list --assignee "$principal_id" \
+    --role "$role_id" --scope "$scope" --subscription "$subscription_id" \
+    --query "[?scope=='$scope'].id | [0]" -o tsv); then
+    echo "WARNING: cannot read ALZ role assignments; refusing to create a duplicate." >&2
+    return 0
+  fi
+  [[ -z "$assignment_id" ]] || return 0
+
+  echo "Granting management-group read/write/delete at $scope to $client_id"
+  if ! az role assignment create --assignee-object-id "$principal_id" \
+    --assignee-principal-type ServicePrincipal --role "$role_id" \
+    --scope "$scope" --subscription "$subscription_id" --output none; then
+    echo "WARNING: could not grant ALZ management-group permissions; the hierarchy will not converge." >&2
+    echo "An administrator with Microsoft.Authorization/roleAssignments/write at $scope can run:" >&2
+    echo "  az role assignment create --assignee-object-id $principal_id \\" >&2
+    echo "    --assignee-principal-type ServicePrincipal --role $role_id --scope $scope" >&2
+  fi
+}
+
 # register_azure_provider <subscription_id> <provider_namespace>
 # Idempotently registers an Azure resource provider on a subscription.
 register_azure_provider() {

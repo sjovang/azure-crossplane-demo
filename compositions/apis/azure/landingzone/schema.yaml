@@ -8,7 +8,7 @@ customTypes:
     name: string | required=true
     displayName: string | required=true minLength=1 maxLength=90
     parentRef: ParentReference
-    archetypes: "[]string | required=true"
+    archetypes: "[]string | default=[]"
   Subscription:
     name: string | required=true
     subscriptionId: string | required=true immutable=true
@@ -23,9 +23,11 @@ spec:
     pattern="^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$"
     description="Tenant-unique prefix for the ALZ root and child groups."
   parentManagementGroupId: >-
-    string | required=true immutable=true
+    string | immutable=true
     pattern="^/providers/Microsoft.Management/managementGroups/[^/]+$"
     description="Existing parent group, never owned by this composition."
+  environmentConfigRef:
+    name: string | required=true immutable=true minLength=1
   managementGroups: "[]ManagementGroup"
   subscriptions: "[]Subscription | default=[]"
   providerConfigRef:

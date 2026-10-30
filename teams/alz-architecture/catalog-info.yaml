@@ -1,0 +1,17 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: alz-architecture
+  description: Team owning the Azure landing zones reference hierarchy.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: alz-architecture
+  description: Azure landing zones hierarchy with built-in policy archetypes.
+spec:
+  owner: group:alz-architecture
