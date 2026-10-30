@@ -1,0 +1,17 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: silly-idea
+  description: Team created by the app hosting advisor.
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: silly-idea
+  description: Azure resources provisioned for the silly-idea team.
+spec:
+  owner: group:silly-idea
