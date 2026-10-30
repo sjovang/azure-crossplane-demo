@@ -68,6 +68,12 @@ properties:
           - kind
     x-kubernetes-validations:
       - rule: >-
+          has(self.parentManagementGroupId) != has(self.environmentConfigRef)
+        message: Supply either parentManagementGroupId or environmentConfigRef.
+      - rule: >-
+          has(oldSelf.environmentConfigRef) == has(self.environmentConfigRef)
+        message: The parent configuration source cannot be changed.
+      - rule: >-
           oldSelf.managementGroups.all(old,
           self.managementGroups.exists(g, g.name == old.name &&
           has(g.parentRef) == has(old.parentRef) &&

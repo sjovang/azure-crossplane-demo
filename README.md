@@ -43,6 +43,12 @@ flowchart LR
   `Application.ReadWrite.All`, `EntitlementManagement.ReadWrite.All`,
   `Group.ReadWrite.All`, and `User.Read.All` (admin consent required; the
   bootstrap warns and continues if it cannot grant them).
+  Both bootstraps also grant the custom `azure-crossplane-demo ALZ Management Groups`
+  role at the credentials' tenant root management group. It allows only management
+  group read/write/delete for the policy-free ALZ hierarchy, not policy changes,
+  subscription moves, or role assignment administration at that scope.
+  Creating/assigning the role requires an administrator's root-scoped RBAC
+  permissions; bootstrap never elevates itself and warns if these are unavailable.
 - Full convergence takes a few minutes after bootstrap. Watch it with `flux get kustomizations -A`, then run `./infrastructure/verify-crossplane.sh`.
 
 > [!NOTE]

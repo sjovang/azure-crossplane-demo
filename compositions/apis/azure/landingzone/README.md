@@ -30,6 +30,34 @@ topology, including its Local and Security groups. Azure names are `contoso`
 for the ALZ root and `contoso-<logical-name>` for its descendants.
 The existing parent is never owned.
 
+Instead of committing an environment-specific parent ID, reference an externally
+managed, cluster-scoped `EnvironmentConfig`:
+
+```yaml
+---
+apiVersion: azure.platform.example.org/v1alpha1
+kind: XLandingZoneArchitecture
+metadata:
+  name: example
+  namespace: platform
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  name: example
+  environmentConfigRef:
+    name: azure-platform
+```
+
+Supply exactly one of `parentManagementGroupId` and `environmentConfigRef`.
+The referenced configuration must contain a valid management-group ARM ID in
+`data.parentManagementGroupId`. Provision it locally after Crossplane is
+installed, not in the public GitOps manifests; the
+[`alz-architecture` setup](../../../../teams/alz-architecture/README.md)
+derives the tenant root from bootstrap's local platform configuration.
+Missing/invalid data fails reconciliation without fallback or pruning.
+Neither the source nor the resolved parent may change once the ALZ root exists.
+The composition reads the EnvironmentConfig but never owns or deletes it.
+
 The bootstrap identity needs management-group hierarchy/policy permissions
 below this parent and access to each imported subscription. Contributor on the
 bootstrap subscription alone is insufficient. Assign appropriate permissions

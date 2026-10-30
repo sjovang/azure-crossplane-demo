@@ -232,6 +232,8 @@ class ProjectionTests(unittest.TestCase):
         self.assertEqual(xr["spec"]["managementGroups"], expected)
         self.assertFalse(xr["spec"].get("subscriptions"))
         self.assertNotIn("policyDefaults", xr["spec"])
+        self.assertNotIn("parentManagementGroupId", xr["spec"])
+        self.assertEqual(xr["spec"]["environmentConfigRef"], {"name": "azure-platform"})
 
     @unittest.skipUnless(shutil.which("crossplane"), "Crossplane CLI schema/CEL validation")
     def test_root_archetype_schema_and_cel_validation(self):
@@ -274,6 +276,36 @@ class ProjectionTests(unittest.TestCase):
                 else:
                     self.assertNotEqual(result.returncode, 0, output)
                     self.assertIn(error, output)
+
+    @unittest.skipUnless(shutil.which("crossplane"), "Crossplane CLI schema/CEL validation")
+    def test_exactly_one_parent_source_is_required(self):
+        for direct, reference, valid in (
+            (False, False, False), (True, True, False),
+            (True, False, True), (False, True, True),
+        ):
+            with self.subTest(direct=direct, reference=reference):
+                xr = {
+                    "apiVersion": generator.GROUP, "kind": "XLandingZoneArchitecture",
+                    "metadata": {"name": "example", "namespace": "alz-test"},
+                    "spec": {"name": "example"},
+                }
+                if direct:
+                    xr["spec"]["parentManagementGroupId"] = (
+                        "/providers/Microsoft.Management/managementGroups/external"
+                    )
+                if reference:
+                    xr["spec"]["environmentConfigRef"] = {"name": "azure-platform"}
+                result = subprocess.run(
+                    ["crossplane", "resource", "validate", str(API / "definition.yaml"),
+                     "-", "--error-on-missing-schemas"],
+                    input=yaml.safe_dump(xr), text=True, capture_output=True, timeout=60,
+                )
+                self.assertEqual(result.returncode == 0, valid, result.stdout + result.stderr)
+                if not valid:
+                    self.assertIn(
+                        "Supply either parentManagementGroupId or environmentConfigRef",
+                        result.stdout + result.stderr,
+                    )
 
     def test_foreground_sequencer_and_explicit_dynamic_usages(self):
         pipeline = self.composition["spec"]["pipeline"]
@@ -347,13 +379,51 @@ class RuntimeTests(unittest.TestCase):
             value["spec"]["managementGroups"] = custom
         return defaults(value, self.schema)
 
-    def render(self, xr, observed=None):
-        return run_pipeline(self.composition, xr, self.schemas, self.endpoints, observed)
+    def render(self, xr, observed=None, required=None):
+        return run_pipeline(
+            self.composition, xr, self.schemas, self.endpoints, observed, required,
+        )
 
-    def settled(self, xr):
+    def test_environment_config_resolves_parent_without_owning_config(self):
+        xr = self.xr([{"name": "root", "displayName": "Root"}])
+        del xr["spec"]["parentManagementGroupId"]
+        xr["spec"]["environmentConfigRef"] = {"name": "azure-platform"}
+        parent = "/providers/Microsoft.Management/managementGroups/configured-parent"
+        required = {"environmentConfig": {"items": [{"resource": {
+            "apiVersion": "apiextensions.crossplane.io/v1beta1",
+            "kind": "EnvironmentConfig", "metadata": {"name": "azure-platform"},
+            "data": {"parentManagementGroupId": parent},
+        }}]}}
+        state = self.render(xr, required=required)
+        root = state["resources"]["rootGroups-example-root"]["resource"]
+        self.assertEqual(root["spec"]["forProvider"]["parentManagementGroupId"], parent)
+        self.assertFalse(any(
+            item["resource"]["kind"] == "EnvironmentConfig"
+            for item in state["resources"].values()
+        ))
+        observed = observe(state)
+        changed = copy.deepcopy(required)
+        changed["environmentConfig"]["items"][0]["resource"]["data"][
+            "parentManagementGroupId"
+        ] = "/providers/Microsoft.Management/managementGroups/changed"
+        with self.assertRaisesRegex(AssertionError, "Changing the EnvironmentConfig parent"):
+            self.render(xr, observed=observed, required=changed)
+        for invalid in ("", "not-an-arm-id"):
+            required["environmentConfig"]["items"][0]["resource"]["data"][
+                "parentManagementGroupId"
+            ] = invalid
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                AssertionError, "must be a management-group resource ID",
+            ):
+                self.render(xr, required=required)
+        required["environmentConfig"]["items"] = []
+        with self.assertRaisesRegex(AssertionError, "EnvironmentConfig is missing"):
+            self.render(xr, required=required)
+
+    def settled(self, xr, required=None):
         observed = {}
         for _ in range(6):
-            state = self.render(xr, observed)
+            state = self.render(xr, observed, required)
             next_observed = observe(state)
             for item in next_observed.values():
                 resource = item["resource"]
@@ -505,7 +575,15 @@ class RuntimeTests(unittest.TestCase):
             (PROJECT.parent / "teams/alz-architecture/landingzone.yaml").read_text()
         )
         xr = self.xr(example["spec"]["managementGroups"])
-        state, _ = self.settled(xr)
+        del xr["spec"]["parentManagementGroupId"]
+        xr["spec"]["environmentConfigRef"] = example["spec"]["environmentConfigRef"]
+        required = {"environmentConfig": {"items": [{"resource": {
+            "apiVersion": "apiextensions.crossplane.io/v1beta1",
+            "kind": "EnvironmentConfig", "metadata": {"name": "azure-platform"},
+            "data": {"parentManagementGroupId":
+                     "/providers/Microsoft.Management/managementGroups/external"},
+        }}]}}
+        state, _ = self.settled(xr, required)
         resources = [item["resource"] for item in state["resources"].values()]
         self.assertEqual(sum(r["kind"] == "ManagementGroup" for r in resources), 12)
         self.assertEqual({r["kind"] for r in resources}, {"ManagementGroup", "Usage"})

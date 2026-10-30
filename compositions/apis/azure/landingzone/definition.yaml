@@ -21,6 +21,17 @@ spec:
           properties:
             spec:
               properties:
+                environmentConfigRef:
+                  properties:
+                    name:
+                      minLength: 1
+                      type: string
+                      x-kubernetes-validations:
+                        - message: field is immutable
+                          rule: self == oldSelf
+                  required:
+                    - name
+                  type: object
                 managementGroups:
                   default:
                     - archetypes:
@@ -238,9 +249,12 @@ spec:
                   x-kubernetes-list-type: map
               required:
                 - name
-                - parentManagementGroupId
               type: object
               x-kubernetes-validations:
+                - message: Supply either parentManagementGroupId or environmentConfigRef.
+                  rule: has(self.parentManagementGroupId) != has(self.environmentConfigRef)
+                - message: The parent configuration source cannot be changed.
+                  rule: has(oldSelf.environmentConfigRef) == has(self.environmentConfigRef)
                 - message: Removing or reparenting managed groups is not supported in v1. Use explicit foreground teardown instead.
                   rule: oldSelf.managementGroups.all(old, self.managementGroups.exists(g, g.name == old.name && has(g.parentRef) == has(old.parentRef) && (!has(old.parentRef) || g.parentRef.name == old.parentRef.name)))
                 - message: Every subscription target must exist in managementGroups.

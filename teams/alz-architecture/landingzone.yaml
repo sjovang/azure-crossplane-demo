@@ -7,8 +7,8 @@ metadata:
     kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
   name: alz-architecture
-  parentManagementGroupId: >-
-    /providers/Microsoft.Management/managementGroups/414815d3-f2c3-461d-8982-7c57e77a660c
+  environmentConfigRef:
+    name: azure-platform
   managementGroups:
     - name: alz
       displayName: Azure Landing Zones

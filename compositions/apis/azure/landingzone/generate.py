@@ -341,7 +341,8 @@ def generate():
     root["template"]["metadata"]["name"] = group_name
     root["template"]["spec"]["forProvider"] = {
         "displayName": expr("group.displayName"),
-        "parentManagementGroupId": expr("schema.spec.parentManagementGroupId"),
+        # The final template resolves EnvironmentConfig references before apply.
+        "parentManagementGroupId": expr('schema.spec.?parentManagementGroupId.orValue("")'),
     }
     children = resource(
         "managementGroups", "ManagementGroup", MG, provider,

@@ -196,6 +196,9 @@ ensure_graph_permissions "$credentials_file"
 echo "==> Granting Azure role-assignment permissions"
 ensure_role_assignment_permissions "$credentials_file"
 
+echo "==> Granting ALZ management-group permissions"
+ensure_alz_management_group_permissions "$credentials_file"
+
 subscription_id=$(jq -r .subscriptionId "$credentials_file")
 register_azure_provider "$subscription_id" Microsoft.KeyVault
 

@@ -1,4 +1,42 @@
 {{- $xr := .observed.composite.resource -}}
+{{- if $xr.spec.environmentConfigRef }}
+---
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: ExtraResources
+requirements:
+  environmentConfig:
+    apiVersion: apiextensions.crossplane.io/v1beta1
+    kind: EnvironmentConfig
+    matchName: {{ $xr.spec.environmentConfigRef.name | quote }}
+{{- if .extraResources -}}
+  {{- $configs := get .extraResources "environmentConfig" -}}
+  {{- if not $configs.items -}}{{ fail "EnvironmentConfig is missing; refusing fallback or pruning" }}{{- end -}}
+  {{- $config := (index $configs.items 0).resource -}}
+  {{- $parent := ($config.data | default dict).parentManagementGroupId | default "" -}}
+  {{- if not (regexMatch "^/providers/Microsoft.Management/managementGroups/[^/]+$" $parent) -}}
+    {{- fail "EnvironmentConfig data.parentManagementGroupId must be a management-group resource ID" -}}
+  {{- end -}}
+  {{- range $group := $xr.spec.managementGroups -}}
+    {{- if not $group.parentRef -}}
+      {{- $key := printf "rootGroups-%s-%s" $xr.spec.name $group.name -}}
+      {{- $observed := getComposedResource $ $key | default dict -}}
+      {{- if and $observed.spec (ne $observed.spec.forProvider.parentManagementGroupId $parent) -}}
+        {{- fail "Changing the EnvironmentConfig parent of an existing ALZ root is not supported" -}}
+      {{- end -}}
+      {{- $desired := get $.desired.resources $key | default dict -}}
+      {{- if $desired.resource -}}
+        {{- $root := deepCopy $desired.resource -}}
+        {{- $_ := set $root.spec.forProvider "parentManagementGroupId" $parent -}}
+        {{- $annotations := $root.metadata.annotations | default dict -}}
+        {{- $_ := set $annotations "gotemplating.fn.crossplane.io/composition-resource-name" $key -}}
+        {{- $_ := set $root.metadata "annotations" $annotations }}
+---
+{{ $root | toJson }}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
 {{- $catalog := fromJson `__CATALOG__` -}}
 {{- $groupStatus := dict -}}
 {{- $groupsReady := true -}}
